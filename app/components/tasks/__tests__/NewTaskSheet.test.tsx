@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { createRoutesStub } from "react-router";
 import { CommandToasts } from "~/components/layout/CommandToasts";
 import { NewTaskSheet } from "~/components/tasks/NewTaskSheet";
@@ -114,4 +115,40 @@ test("Next stays disabled for a schedule over the 500-date cap", async () => {
   } finally {
     ws.semester = emptyWorkspace().semester;
   }
+});
+
+function ToggleHarness({ onClose }: { onClose: () => void }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <CommandToasts>
+      <NewTaskSheet open={open} onClose={() => { onClose(); setOpen(false); }} />
+    </CommandToasts>
+  );
+}
+
+test.each([
+  ["succeeds", { ok: true, version: 2, snapshotId: 1, label: 'Created task "Quiz"' }, 'Created task "Quiz"'],
+  ["fails", { ok: false, message: "Add a TA first." }, "Add a TA first."],
+])("a create that %s after the sheet was closed does not close it again or show the error inline", async (_, result, toastText) => {
+  const gate = deferred();
+  const onClose = vi.fn();
+  const Stub = createRoutesStub([
+    { path: "/", Component: () => <ToggleHarness onClose={onClose} /> },
+    { path: "/api/preview", action: async () => ({ ok: true, workspace: previewOf("Quiz") }) },
+    { path: "/api/command", action: () => gate.promise },
+  ]);
+  render(<ToastProvider><Stub initialEntries={["/"]} /><Toaster /></ToastProvider>);
+  await toPreview();
+  const confirm = await screen.findByRole("button", { name: "Confirm" });
+  await waitFor(() => expect(confirm).toBeEnabled());
+  fireEvent.click(confirm);
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(onClose).toHaveBeenCalledTimes(1);
+  await act(async () => gate.resolve(result));
+  // The shell's toast reports the result instead.
+  expect(await screen.findByText(toastText)).toBeInTheDocument();
+  await act(() => new Promise((r) => setTimeout(r, 30)));
+  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getAllByText(toastText)).toHaveLength(1);
 });

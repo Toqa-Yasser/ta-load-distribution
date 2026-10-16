@@ -37,9 +37,13 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
     return () => document.removeEventListener("pointerdown", onPointer);
   }, [menuOpen]);
 
-  // Opening moves focus to the first item.
+  // Opening moves focus to the first item, or the last when opened with ArrowUp.
+  const openAtLast = useRef(false);
   useEffect(() => {
-    if (menuOpen) listRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    if (!menuOpen) return;
+    const items = listRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]');
+    (openAtLast.current ? items?.[items.length - 1] : items?.[0])?.focus();
+    openAtLast.current = false;
   }, [menuOpen]);
 
   const closeMenu = (refocus: boolean) => {
@@ -102,6 +106,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown" || e.key === "ArrowUp") {
                   e.preventDefault();
+                  openAtLast.current = e.key === "ArrowUp";
                   setMenuOpen(true);
                 }
               }}

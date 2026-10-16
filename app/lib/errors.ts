@@ -1,7 +1,10 @@
 export const SERVER_ERROR_MESSAGE = "Something went wrong on the server. Please try again.";
 
-/** Shown by the root ErrorBoundary when the stored workspace document fails validation on load. */
-export const UNREADABLE_WORKSPACE_MESSAGE = "This workspace document could not be read — restore a snapshot or reset.";
+/**
+ * Shown by the root ErrorBoundary when the stored workspace document fails validation on load.
+ * Every page (History and Settings included) needs that document, so it points outside the app.
+ */
+export const UNREADABLE_WORKSPACE_MESSAGE = "The saved workspace couldn't be read, so the app can't load. Ask the administrator to restore the workspace record (for example from a database backup).";
 
 export type ApiFailure = { ok: false; message: string; code?: string };
 

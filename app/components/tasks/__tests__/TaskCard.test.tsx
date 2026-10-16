@@ -67,3 +67,13 @@ test("ArrowDown on the trigger opens the menu", async () => {
   fireEvent.keyDown(screen.getByRole("button", { name: "Actions for Quiz" }), { key: "ArrowDown" });
   await waitFor(() => expect(document.activeElement).toBe(screen.getAllByRole("menuitem")[0]));
 });
+
+test("ArrowUp on the trigger opens the menu on its last item", async () => {
+  render(
+    <MemoryRouter>
+      <TaskCard task={task} onRedistribute={() => {}} onDelete={() => {}} />
+    </MemoryRouter>,
+  );
+  fireEvent.keyDown(screen.getByRole("button", { name: "Actions for Quiz" }), { key: "ArrowUp" });
+  await waitFor(() => expect(document.activeElement).toBe(screen.getAllByRole("menuitem").at(-1)));
+});

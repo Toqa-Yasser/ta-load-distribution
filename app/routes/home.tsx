@@ -10,6 +10,7 @@ import { TurnHeader } from "~/components/dashboard/TurnHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { turnSize as computeTurnSize } from "~/engine/capacity";
 import { TASK_KINDS, type TaskKind } from "~/engine/types";
+import { useRetained } from "~/lib/retain";
 import { routeMeta } from "~/lib/seo";
 import { useWorkspace } from "~/lib/use-workspace";
 
@@ -32,8 +33,12 @@ export default function Home() {
   const { tas } = workspace;
   const stats = useMemo(() => taStats(workspace, today), [workspace, today]);
   const turnSize = useMemo(() => computeTurnSize(workspace), [workspace]);
-  // A TA removed meanwhile (e.g. by Undo) drops the sheet.
+  // A TA removed meanwhile (another tab, an undo) closes the sheet for good — adjusted during
+  // render, so it can't spring back open if a later undo restores the TA — and the sheet animates
+  // out with the last TA it showed (TA objects come from the workspace, so they are stable).
   const swapTa = swap ? taById.get(swap.taId) : undefined;
+  if (swap?.open && !swapTa) setSwap({ ...swap, open: false });
+  const shownTa = useRetained(swapTa);
   const usedUnits = (kind: TaskKind) => tas.reduce((sum, ta) => sum + (workspace.ledgers[kind].used[ta.id] ?? 0), 0);
 
   return (
@@ -88,7 +93,7 @@ export default function Home() {
         </>
       )}
 
-      {swap && swapTa && <SwapSheet open={swap.open} ta={swapTa} onClose={() => setSwap((s) => s && { ...s, open: false })} />}
+      {swap && shownTa && <SwapSheet open={swap.open} ta={shownTa} onClose={() => setSwap((s) => s && { ...s, open: false })} />}
     </div>
   );
 }

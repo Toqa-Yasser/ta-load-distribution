@@ -9,8 +9,8 @@ import { NavBar } from "./NavBar";
 
 /**
  * Three independent floating pills: brand (start), pages (centre, md and up) and actions (end) in
- * a 1fr/auto/1fr grid that sits in the same column as the page content (HEADER_COLUMN mirrors
- * AppShell's <main> max-width and padding), so the brand pill lines up with the page title and the
+ * a 1fr/auto/1fr grid that sits in the same column as the page content (CONTENT_COLUMN, shared
+ * with AppShell's <main>), so the brand pill lines up with the page title and the
  * actions pill with the content's right edge; the centre pill stays centred whatever the outer
  * pills' widths. Below md the centre column is empty (the pages live in the bottom tab bar).
  * The header is fixed and --header-h tall (12px top gap + 48px pills); AppShell's <main> pads by

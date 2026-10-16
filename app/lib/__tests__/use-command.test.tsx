@@ -174,3 +174,23 @@ test("a command toast's Undo rolls back to its snapshot and toasts the rollback 
   expect(history).toHaveBeenCalledTimes(1);
   expect(screen.getByText("Rolled back").closest("[role=status]")).toHaveTextContent("Undo");
 });
+
+test("a command slower than the stall guard still settles exactly once with its real result", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    const onSettled = vi.fn();
+    renderSettler(
+      () => new Promise((r) => setTimeout(() => r({ ok: true, version: 2, snapshotId: 1, label: "Slow but fine" }), COMMAND_STALL_MS + 1500)),
+      onSettled,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "go" }));
+    await act(async () => void vi.advanceTimersByTime(COMMAND_STALL_MS + 100));
+    expect(onSettled).not.toHaveBeenCalled();
+    await act(async () => void vi.advanceTimersByTime(2000));
+    await waitFor(() => expect(onSettled).toHaveBeenCalledTimes(1));
+    expect(onSettled).toHaveBeenCalledWith(expect.objectContaining({ ok: true, label: "Slow but fine" }));
+    expect(screen.getAllByText("Slow but fine")).toHaveLength(1);
+  } finally {
+    vi.useRealTimers();
+  }
+});

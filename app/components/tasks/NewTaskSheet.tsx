@@ -1,4 +1,4 @@
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/Button";
@@ -44,7 +44,7 @@ function StepDots({ step }: { step: Step }) {
  * Confirm keeps the sheet open until the create command settles: success closes it (the shell
  * toasts with Undo), a failure is shown here instead of in a toast.
  */
-function Wizard({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+function Wizard({ open, onDone, onCancel }: { open: boolean; onDone: () => void; onCancel: () => void }) {
   const { today, workspace } = useWorkspace();
   const reduced = useReducedMotion();
   const [state, setState] = useState<{ step: Step; kind: TaskKind; title: string; notes: string; schedule: Schedule }>({
@@ -62,22 +62,29 @@ function Wizard({ onDone, onCancel }: { onDone: () => void; onCancel: () => void
   const { submit } = useCommand();
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  // Closed mid-request: nobody would see an inline error, so the shell toasts it instead.
-  const alive = useRef(true);
-  useEffect(() => {
-    alive.current = true;
-    return () => {
-      alive.current = false;
-    };
-  }, []);
+  // Closed mid-request (Escape, scrim, X, drag, Back): the result belongs to the shell's toast
+  // only — no inline error, and no onDone, which would navigate from a possibly stale route. While
+  // the sheet animates out, AnimatePresence keeps rendering the old element (open still true),
+  // so the exit is read from useIsPresent; the unmount cleanup covers closes without an exit.
+  const present = useIsPresent();
+  const openRef = useRef(open);
+  openRef.current = open && present;
+  // Unmounted without a render at open=false (no exit animation): treat as closed too.
+  useEffect(
+    () => () => {
+      openRef.current = false;
+    },
+    [],
+  );
 
   const confirm = () => {
     setCreating(true);
     setCreateError(null);
     submit(command(), {
-      inlineError: () => alive.current,
+      inlineError: () => openRef.current,
       onSettled: (r) => {
         setCreating(false);
+        if (!openRef.current) return;
         if (r.ok) onDone();
         else setCreateError(r.message);
       },
@@ -185,7 +192,7 @@ function Wizard({ onDone, onCancel }: { onDone: () => void; onCancel: () => void
 export function NewTaskSheet({ open, onClose }: NewTaskSheetProps) {
   return (
     <Sheet open={open} onClose={onClose} title="New task">
-      <Wizard onCancel={onClose} onDone={onClose} />
+      <Wizard open={open} onCancel={onClose} onDone={onClose} />
     </Sheet>
   );
 }
