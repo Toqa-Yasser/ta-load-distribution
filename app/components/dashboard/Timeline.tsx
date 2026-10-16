@@ -2,8 +2,8 @@ import { addDays, format, parseISO } from "date-fns";
 import { motion, useReducedMotion } from "motion/react";
 import { KindBadge } from "~/components/tasks/KindBadge";
 import type { ISODate, TA, Task, TaskKind } from "~/engine/types";
-import { EASE_OUT } from "~/lib/motion";
 import { fmtDate } from "~/lib/format";
+import { EASE_OUT } from "~/lib/motion";
 
 type TimelineProps = { tasks: Task[]; taById: Map<string, TA>; today: ISODate; days?: number };
 type Row = { key: string; title: string; kind: TaskKind; ta: TA | undefined };

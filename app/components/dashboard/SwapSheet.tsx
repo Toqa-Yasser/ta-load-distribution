@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
+import { KindBadge } from "~/components/tasks/KindBadge";
 import { Button } from "~/components/ui/Button";
 import { Sheet } from "~/components/ui/Sheet";
 import type { Occurrence, OccurrenceRef, TA, Task } from "~/engine/types";
@@ -8,7 +9,6 @@ import { fmtDateLong } from "~/lib/format";
 import { EASE_OUT, stepSlide, usePressMotion } from "~/lib/motion";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
-import { KindBadge } from "~/components/tasks/KindBadge";
 
 type SwapSheetProps = { open: boolean; onClose: () => void; ta: TA };
 type Group = { task: Task; occurrences: Occurrence[] };

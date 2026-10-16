@@ -16,3 +16,13 @@ test("TurnHeader with no sections says so", () => {
   render(<TurnHeader kind="light" turn={1} usedUnits={0} turnSize={0} />);
   expect(screen.getByText("No sections yet")).toBeInTheDocument();
 });
+
+test('TurnHeader says "unit" only when one unit is used', () => {
+  render(<TurnHeader kind="light" turn={1} usedUnits={1} turnSize={8} />);
+  expect(screen.getByText("Light · Turn 1 · 1/8 unit used")).toBeInTheDocument();
+});
+
+test('TurnHeader keeps "units" for 1-unit turns with zero used', () => {
+  render(<TurnHeader kind="light" turn={1} usedUnits={0} turnSize={1} />);
+  expect(screen.getByText("Light · Turn 1 · 0/1 units used")).toBeInTheDocument();
+});

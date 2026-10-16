@@ -19,3 +19,18 @@ test("taStats reports used per kind and counts per kind", () => {
   expect(s.A.totalOccurrences).toBe(4);
   expect(s.A.nextDates).toHaveLength(3);
 });
+
+test("taStats keeps at most three distinct upcoming dates, ascending, and ignores unknown TAs", () => {
+  const ws = emptyWorkspace();
+  ws.tas = [{ id: "A", name: "Ahmed", color: "#f00" }] as any;
+  const occ = (id: string, taId: string, date: string) => ({ id, date, taId, turn: 1 });
+  ws.tasks = [
+    { id: "t1", title: "Q", kind: "light", occurrences: [
+      occ("1", "A", "2026-10-30"), occ("2", "A", "2026-10-18"), occ("3", "A", "2026-10-16"),
+      occ("4", "A", "2026-10-25"), occ("5", "A", "2026-10-18"), occ("6", "ghost", "2026-10-17") ] },
+  ] as any;
+  const s = taStats(ws, "2026-10-17");
+  expect(s.A.nextDates).toEqual(["2026-10-18", "2026-10-25", "2026-10-30"]);
+  expect(s.A.totalOccurrences).toBe(5);
+  expect(s.ghost).toBeUndefined();
+});

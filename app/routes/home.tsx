@@ -2,14 +2,14 @@ import { motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/home";
-import { SwapSheet } from "~/components/dashboard/SwapSheet";
 import { taStats } from "~/components/dashboard/stats";
+import { SwapSheet } from "~/components/dashboard/SwapSheet";
 import { TACard } from "~/components/dashboard/TACard";
 import { Timeline } from "~/components/dashboard/Timeline";
 import { TurnHeader } from "~/components/dashboard/TurnHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { turnSize as computeTurnSize } from "~/engine/capacity";
-import { TASK_KINDS, type TA, type TaskKind } from "~/engine/types";
+import { TASK_KINDS, type TaskKind } from "~/engine/types";
 import { routeMeta } from "~/lib/seo";
 import { useWorkspace } from "~/lib/use-workspace";
 
@@ -25,12 +25,15 @@ export default function Home() {
   const { workspace, today, capacities, taById } = useWorkspace();
   const navigate = useNavigate();
   const reduced = useReducedMotion();
-  // The TA stays set after closing so the sheet can animate out with its content.
-  const [swap, setSwap] = useState<{ ta: TA; open: boolean } | null>(null);
+  // The TA id stays set after closing so the sheet can animate out with its content. Holding the
+  // id (not the TA object) keeps the sheet's name current after a rename revalidates the data.
+  const [swap, setSwap] = useState<{ taId: string; open: boolean } | null>(null);
 
   const { tas } = workspace;
   const stats = useMemo(() => taStats(workspace, today), [workspace, today]);
   const turnSize = useMemo(() => computeTurnSize(workspace), [workspace]);
+  // A TA removed meanwhile (e.g. by Undo) drops the sheet.
+  const swapTa = swap ? taById.get(swap.taId) : undefined;
   const usedUnits = (kind: TaskKind) => tas.reduce((sum, ta) => sum + (workspace.ledgers[kind].used[ta.id] ?? 0), 0);
 
   return (
@@ -76,7 +79,7 @@ export default function Home() {
                   counts={stats[ta.id]?.counts ?? { light: 0, heavy: 0 }}
                   totalOccurrences={stats[ta.id]?.totalOccurrences ?? 0}
                   nextDates={stats[ta.id]?.nextDates ?? []}
-                  onSwap={() => setSwap({ ta, open: true })}
+                  onSwap={() => setSwap({ taId: ta.id, open: true })}
                 />
               </motion.li>
             ))}
@@ -85,7 +88,7 @@ export default function Home() {
         </>
       )}
 
-      {swap && <SwapSheet open={swap.open} ta={swap.ta} onClose={() => setSwap({ ...swap, open: false })} />}
+      {swap && swapTa && <SwapSheet open={swap.open} ta={swapTa} onClose={() => setSwap((s) => s && { ...s, open: false })} />}
     </div>
   );
 }

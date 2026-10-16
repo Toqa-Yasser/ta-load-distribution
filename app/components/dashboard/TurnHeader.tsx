@@ -20,7 +20,7 @@ export function TurnHeader({ kind, turn, usedUnits, turnSize }: TurnHeaderProps)
   return (
     <div className="flex max-w-md flex-col gap-2">
       <p className="text-muted">
-        {KIND_LABEL[kind]} · Turn {turn} · {usedUnits}/{turnSize} units used
+        {KIND_LABEL[kind]} · Turn {turn} · {usedUnits}/{turnSize} {usedUnits === 1 ? "unit" : "units"} used
       </p>
       <div aria-hidden className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
         {reduced ? (
