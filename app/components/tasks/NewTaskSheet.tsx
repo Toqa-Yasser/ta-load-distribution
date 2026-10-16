@@ -1,11 +1,11 @@
-import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Sheet } from "~/components/ui/Sheet";
 import type { Command, Schedule, Workspace } from "~/engine/types";
 import { SERVER_ERROR_MESSAGE } from "~/lib/errors";
-import { EASE_OUT, indicatorSpring } from "~/lib/motion";
+import { EASE_OUT, indicatorSpring, stepSlide } from "~/lib/motion";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
 import { StepName } from "./StepName";
@@ -18,13 +18,6 @@ type PreviewResult = { ok: true; workspace: Workspace } | { ok: false; message: 
 type Step = 0 | 1 | 2;
 
 const STEP_TITLES = ["Name", "Schedule", "Preview"] as const;
-const SLIDE = 40;
-
-const slide: Variants = {
-  enter: (dir: number) => ({ opacity: 0, x: dir * SLIDE }),
-  center: { opacity: 1, x: 0 },
-  exit: (dir: number) => ({ opacity: 0, x: -dir * SLIDE }),
-};
 
 function StepDots({ step }: { step: Step }) {
   const reduced = useReducedMotion();
@@ -103,7 +96,7 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
           <motion.div
             key={step}
             custom={dir}
-            variants={reduced ? undefined : slide}
+            variants={reduced ? undefined : stepSlide}
             initial="enter"
             animate="center"
             exit="exit"

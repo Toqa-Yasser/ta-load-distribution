@@ -19,6 +19,15 @@ export const reducedPageVariants: Variants = {
   exit: { opacity: 1, y: 0 },
 };
 
+const STEP_SLIDE = 40;
+
+/** Wizard step swap; `custom` is the direction (1 forward, -1 back). */
+export const stepSlide: Variants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir * STEP_SLIDE }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: -dir * STEP_SLIDE }),
+};
+
 export const indicatorSpring: Transition = { type: "spring", stiffness: 500, damping: 38 };
 
 export const hoverLift = { y: -1 };
