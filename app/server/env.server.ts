@@ -1,4 +1,5 @@
-import { DEFAULT_APP_URL } from "~/lib/seo";
+/** Same value as DEFAULT_APP_URL in ~/lib/seo; duplicated so server env code imports nothing from the client lib. */
+const DEFAULT_APP_URL = "http://localhost:5173";
 
 export interface Env {
   SUPABASE_URL?: string;

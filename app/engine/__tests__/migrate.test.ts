@@ -77,3 +77,15 @@ test("mixed legacy doc upgrades kindless tasks to light and keeps valid kinds", 
   expect("ledger" in out).toBe(false);
   expect(isCurrentWorkspace(out)).toBe(true);
 });
+
+test("legacy tasks with an invalid kind are coerced to light", () => {
+  const doc = legacy();
+  const bad = [
+    { ...doc.tasks[0], id: "a", kind: "medium" },
+    { ...doc.tasks[0], id: "b", kind: 3 },
+    { ...doc.tasks[0], id: "c", kind: null },
+    { ...doc.tasks[0], id: "d", kind: "heavy" },
+  ];
+  const out = upgradeWorkspace({ ...doc, tasks: bad });
+  expect(out.tasks.map((t) => [t.id, t.kind])).toEqual([["a", "light"], ["b", "light"], ["c", "light"], ["d", "heavy"]]);
+});

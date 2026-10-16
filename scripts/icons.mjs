@@ -1,7 +1,7 @@
 // Renders the raster icons and the Open Graph image from public/icon.svg with headless Chrome.
 // Usage: node scripts/icons.mjs   (override the browser with CHROME_PATH=/path/to/chrome)
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -10,7 +10,11 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const pub = join(root, "public");
 const chrome = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 // Rasters always use the light-scheme stroke: drop the dark media rule so the host's colour scheme can't leak in.
-const svg = readFileSync(join(pub, "icon.svg"), "utf8").replace(/@media \(prefers-color-scheme: dark\)[^\n]*\n/, "");
+// Matches the whole rule, single- or multi-line: `@media (…dark) { .s { … } }` (one nested block).
+const DARK_RULE = /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}\s*/g;
+const source = readFileSync(join(pub, "icon.svg"), "utf8");
+const svg = source.replace(DARK_RULE, "");
+if (/prefers-color-scheme/.test(svg)) throw new Error("icons.mjs: could not strip the dark @media rule from icon.svg");
 const svgUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 const work = mkdtempSync(join(tmpdir(), "ta-icons-"));
 
@@ -31,7 +35,7 @@ function shoot(name, width, height, html) {
   const file = join(work, `${name}.html`);
   writeFileSync(file, html);
   const out = join(work, `${name}.png`);
-  execFileSync(chrome, [
+  const run = spawnSync(chrome, [
     "--headless=new",
     "--disable-gpu",
     "--hide-scrollbars",
@@ -41,7 +45,12 @@ function shoot(name, width, height, html) {
     `--window-size=${width},${height}`,
     `--screenshot=${out}`,
     pathToFileURL(file).href,
-  ], { stdio: "ignore" });
+  ], { stdio: ["ignore", "ignore", "pipe"], encoding: "utf8" });
+  // Chrome is chatty on stderr even when it works; only show it when the capture failed.
+  if (run.error || run.status !== 0 || !existsSync(out)) {
+    if (run.stderr) process.stderr.write(run.stderr);
+    throw new Error(`Chrome failed to render ${name}.png (${run.error?.message ?? `exit ${run.status}`})`);
+  }
   return readFileSync(out);
 }
 

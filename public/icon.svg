@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-labelledby="t">
+  <title id="t">TA Load Distribution</title>
   <style>
     .s { stroke: #6d5dfc; }
     @media (prefers-color-scheme: dark) { .s { stroke: #9a8dff; } }

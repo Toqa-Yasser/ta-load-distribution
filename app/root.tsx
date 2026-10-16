@@ -1,10 +1,12 @@
 import { MotionConfig } from "motion/react";
-import { isRouteErrorResponse, Links, Meta, Scripts, ScrollRestoration, type ShouldRevalidateFunction } from "react-router";
+import { data, isRouteErrorResponse, Links, Meta, Scripts, ScrollRestoration, type ShouldRevalidateFunction } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import { AppShell } from "~/components/layout/AppShell";
+import { ValidationError } from "~/engine/types";
 import { Toaster } from "~/components/ui/Toast";
+import { UNREADABLE_WORKSPACE_MESSAGE } from "~/lib/errors";
 import { shouldRevalidateRoot } from "~/lib/revalidate";
 import { absoluteUrl, DEFAULT_APP_URL, SITE_DESCRIPTION, SITE_NAME } from "~/lib/seo";
 import { THEME_INIT_SCRIPT, ThemeProvider } from "~/lib/theme";
@@ -45,8 +47,18 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function loader(): Promise<RootLoaderData> {
-  const { data, version } = await loadWorkspace(getStore());
-  return { workspace: data, version, today: todayIn(), appUrl: getEnv().APP_URL };
+  try {
+    const { data: workspace, version } = await loadWorkspace(getStore());
+    return { workspace, version, today: todayIn(), appUrl: getEnv().APP_URL };
+  } catch (e) {
+    // A stored document that fails validation. Thrown errors are masked in production, so say
+    // what happened (and what to do) through a route error response instead.
+    if (e instanceof ValidationError) {
+      console.error(e);
+      throw data(UNREADABLE_WORKSPACE_MESSAGE, { status: 500 });
+    }
+    throw e;
+  }
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = shouldRevalidateRoot;
@@ -94,7 +106,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   if (isRouteErrorResponse(error)) {
     message = error.status === 404 ? "404" : "Error";
-    details = error.status === 404 ? "The requested page could not be found." : error.statusText || details;
+    // Route error responses are thrown on purpose (e.g. the unreadable-workspace 500), so their
+    // text is meant for the user; other errors stay generic outside dev.
+    const text = typeof error.data === "string" && error.data ? error.data : error.statusText;
+    details = error.status === 404 ? "The requested page could not be found." : text || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
     stack = error.stack;
