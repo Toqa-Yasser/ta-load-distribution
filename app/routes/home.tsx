@@ -1,9 +1,9 @@
 import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "TA Load Distribution" }];
+  return [{ title: "Dashboard · TA Load Distribution" }];
 }
 
 export default function Home() {
-  return <main className="p-8 font-sans">TA Load Distribution</main>;
+  return <h1 className="text-3xl font-semibold md:text-4xl">Dashboard</h1>;
 }
