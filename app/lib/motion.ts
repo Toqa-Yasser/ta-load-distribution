@@ -1,4 +1,4 @@
-import type { Transition, Variants } from "motion/react";
+import { useReducedMotion, type TargetAndTransition, type Transition, type Variants } from "motion/react";
 
 /** Springy ease used for page and toast entrances. */
 export const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -22,3 +22,16 @@ export const indicatorSpring: Transition = { type: "spring", stiffness: 500, dam
 
 export const hoverLift = { y: -1 };
 export const tapPress = { scale: 0.96 };
+
+const STILL: TargetAndTransition = {};
+
+/**
+ * Hover lift + tap press for interactive elements; inert targets under prefers-reduced-motion.
+ * MotionConfig reducedMotion="user" only makes transforms instant (they still jump), so the
+ * targets are emptied here. The props stay defined either way: motion adds tabIndex when
+ * whileTap is set, and useReducedMotion differs between SSR and the client, so dropping
+ * the prop would cause a hydration mismatch.
+ */
+export function usePressMotion(): { whileHover: TargetAndTransition; whileTap: TargetAndTransition } {
+  return useReducedMotion() ? { whileHover: STILL, whileTap: STILL } : { whileHover: hoverLift, whileTap: tapPress };
+}

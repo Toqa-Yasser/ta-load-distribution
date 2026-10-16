@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { NavLink } from "react-router";
-import { hoverLift, indicatorSpring, tapPress } from "~/lib/motion";
+import { indicatorSpring, usePressMotion } from "~/lib/motion";
 
 const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
@@ -60,6 +60,7 @@ const NAV_ITEMS: { to: string; label: string; end?: boolean; icon: ReactNode }[]
  */
 export function NavBar({ placement }: { placement: "header" | "bottom" }) {
   const reduced = useReducedMotion();
+  const press = usePressMotion();
   const spring = reduced ? { duration: 0 } : indicatorSpring;
 
   if (placement === "header") {
@@ -69,8 +70,7 @@ export function NavBar({ placement }: { placement: "header" | "bottom" }) {
           <NavLink key={item.to} to={item.to} end={item.end} className="rounded-xl focus-visible:outline-2 focus-visible:outline-accent">
             {({ isActive }) => (
               <motion.span
-                whileHover={hoverLift}
-                whileTap={tapPress}
+                {...press}
                 className={`relative isolate flex min-h-11 items-center rounded-xl px-4 text-sm font-medium transition-colors ${
                   isActive ? "text-ink" : "text-muted hover:text-ink"
                 }`}
@@ -100,7 +100,7 @@ export function NavBar({ placement }: { placement: "header" | "bottom" }) {
         <NavLink key={item.to} to={item.to} end={item.end} className="flex-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-accent">
           {({ isActive }) => (
             <motion.span
-              whileTap={tapPress}
+              whileTap={press.whileTap}
               className={`relative isolate flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[11px] font-medium transition-colors ${
                 isActive ? "text-accent" : "text-muted"
               }`}

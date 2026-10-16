@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useFetcher, useSubmit } from "react-router";
 import { useToast } from "~/components/ui/Toast";
 import type { Command } from "~/engine/types";
+import { SERVER_ERROR_MESSAGE } from "~/lib/errors";
 
 type CommandResult =
   | { ok: true; version: number; snapshotId: number; label: string }
@@ -16,9 +17,9 @@ export function useCommand(): { submit(cmd: Command, opts?: { toast?: string }):
 
   useEffect(() => {
     const data = fetcher.data;
-    if (fetcher.state !== "idle" || !data || handled.current === data) return;
+    if (fetcher.state !== "idle" || data === undefined || handled.current === data) return;
     handled.current = data;
-    if (data.ok) {
+    if (data?.ok === true) {
       const { snapshotId } = data;
       toast({
         message: toastOverride.current ?? data.label,
@@ -34,7 +35,9 @@ export function useCommand(): { submit(cmd: Command, opts?: { toast?: string }):
         },
       });
     } else {
-      toast({ message: data.message, tone: "error" });
+      // Anything that is not a well-formed success is an error, even a malformed body.
+      const message = data && typeof data.message === "string" && data.message ? data.message : SERVER_ERROR_MESSAGE;
+      toast({ message, tone: "error" });
     }
   }, [fetcher.state, fetcher.data, toast, submitForm]);
 

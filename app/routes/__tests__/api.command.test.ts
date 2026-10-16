@@ -10,3 +10,12 @@ test("api.command returns 400 with the error message", async () => {
   expect(res.status).toBe(400);
   expect(await res.json()).toMatchObject({ ok: false, message: "Assign sections to at least one TA first." });
 });
+test("api.command returns 500 JSON on unexpected errors", async () => {
+  // A renameTA with no name makes describe() hit `undefined.trim()`: a TypeError, not an EngineError.
+  const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+  const res = await post({ command: { type: "renameTA", taId: "nope" } });
+  expect(res.status).toBe(500);
+  expect(await res.json()).toEqual({ ok: false, message: "Something went wrong on the server. Please try again." });
+  expect(spy).toHaveBeenCalled();
+  spy.mockRestore();
+});

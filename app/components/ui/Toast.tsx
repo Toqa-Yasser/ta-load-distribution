@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { EASE_OUT, hoverLift, tapPress } from "~/lib/motion";
+import { EASE_OUT, usePressMotion } from "~/lib/motion";
 
 export type ToastInput = {
   message: string;
@@ -48,6 +48,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => push, [push]);
   const reduced = useReducedMotion();
+  const press = usePressMotion();
 
   return (
     <ToastContext.Provider value={value}>
@@ -76,8 +77,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               {t.action && (
                 <motion.button
                   type="button"
-                  whileHover={hoverLift}
-                  whileTap={tapPress}
+                  {...press}
                   onClick={() => {
                     t.action!.onClick();
                     dismiss(t.id);
@@ -90,7 +90,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <motion.button
                 type="button"
                 aria-label="Dismiss"
-                whileTap={tapPress}
+                whileTap={press.whileTap}
                 onClick={() => dismiss(t.id)}
                 className="grid size-11 place-items-center rounded-xl text-muted hover:bg-ink/5"
               >

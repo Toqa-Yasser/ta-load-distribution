@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { MotionConfig } from "motion/react";
 import { isRouteErrorResponse, Links, Meta, Scripts, ScrollRestoration } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -51,9 +52,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AppShell />
-    </ToastProvider>
+    // reducedMotion="user" disables transform/layout animations (hover lift, tap scale,
+    // layoutId indicators, page slides) for prefers-reduced-motion users across the app.
+    <MotionConfig reducedMotion="user">
+      <ToastProvider>
+        <AppShell />
+      </ToastProvider>
+    </MotionConfig>
   );
 }
 
