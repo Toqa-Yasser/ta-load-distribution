@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import type { Route } from "./+types/calendar";
 import { MonthGrid } from "~/components/calendar/MonthGrid";
@@ -7,6 +7,7 @@ import { Button } from "~/components/ui/Button";
 import type { OccurrenceRef, Workspace } from "~/engine/types";
 import { fmtMonth, shiftMonth } from "~/lib/calendar";
 import { routeMeta } from "~/lib/seo";
+import { useRetained } from "~/lib/retain";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
 
@@ -58,7 +59,12 @@ export default function Calendar() {
     setSwapSource(null);
   };
 
-  const current = popover && lookup(workspace, popover.ref);
+  // Memoised: useRetained needs a stable reference. If the occurrence disappears while the
+  // popover is open (deleted elsewhere, undone), it closes showing what it was opened for.
+  const current = useMemo(() => (popover ? lookup(workspace, popover.ref) : null), [workspace, popover]);
+  const shown = useRetained(current);
+  // Closed for good (adjusted during render), so it can't spring back open if an undo restores it.
+  if (popover?.open && current === null) setPopover({ ...popover, open: false });
   const swapping = swapSource && lookup(workspace, swapSource);
   const closePopover = () => setPopover((p) => p && { ...p, open: false });
 
@@ -114,11 +120,11 @@ export default function Calendar() {
         onSelect={onSelect}
       />
 
-      {popover && current && (
+      {popover && shown && (
         <OccurrencePopover
           open={popover.open}
-          task={current.task}
-          occ={current.occ}
+          task={shown.task}
+          occ={shown.occ}
           tas={workspace.tas}
           onClose={closePopover}
           onReassign={(taId) => {

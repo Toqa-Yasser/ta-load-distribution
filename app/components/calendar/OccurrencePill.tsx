@@ -24,6 +24,8 @@ const ROLE_CLASS: Record<Exclude<SwapRole, null>, string> = {
 /**
  * One occurrence, tinted with its TA's colour. 44px tall on touch screens; 36px on fine
  * pointers with a pseudo-element stretching the hit area to 44px (pills sit 8px apart).
+ * A plain button, not a toggle: pressing it opens the popover (or picks a swap target); the swap
+ * source is named in its label and the open one is ringed.
  */
 export function OccurrencePill({ task, occ, ta, selected, swapRole, onClick }: OccurrencePillProps) {
   const press = usePressMotion();
@@ -36,7 +38,6 @@ export function OccurrencePill({ task, occ, ta, selected, swapRole, onClick }: O
       whileTap={press.whileTap}
       onClick={onClick}
       aria-label={`${task.title} · ${fmtDate(occ.date)} · ${owner} · ${KIND_LABEL[task.kind]}${swapRole === "source" ? " · swapping" : ""}`}
-      aria-pressed={selected || swapRole === "source"}
       style={{ background: `color-mix(in srgb, ${color} 22%, transparent)`, borderColor: color }}
       className={`relative flex min-h-9 w-full min-w-0 items-center gap-1 rounded-lg border-l-4 px-1.5 text-left text-xs font-medium text-ink transition-[filter,opacity] before:absolute before:inset-x-0 before:-inset-y-1 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent pointer-coarse:min-h-11 pointer-coarse:before:hidden ${
         selected ? "ring-2 ring-accent" : ""

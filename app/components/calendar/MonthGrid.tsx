@@ -28,9 +28,13 @@ export function MonthGrid({ yearMonth, tasks, taById, selected, swapSource, onSe
   // Direction derived during render from the previous month (1 = forward in time).
   const [prev, setPrev] = useState(yearMonth);
   const [dir, setDir] = useState(1);
+  // The one day showing all its pills. Held here, not in DayCell: AnimatePresence revives a month
+  // that is still animating out when you come straight back, and its cells would keep their state.
+  const [expanded, setExpanded] = useState<ISODate | null>(null);
   if (prev !== yearMonth) {
     setDir(yearMonth > prev ? 1 : -1);
     setPrev(yearMonth);
+    setExpanded(null);
   }
 
   const byDate = useMemo(() => occurrencesByDate(tasks), [tasks]);
@@ -82,6 +86,8 @@ export function MonthGrid({ yearMonth, tasks, taById, selected, swapSource, onSe
                 swapTaId={swapTaId}
                 swapKind={swapKind}
                 onSelect={onSelect}
+                expanded={expanded === c.date}
+                onExpandedChange={(open) => setExpanded(open ? c.date : null)}
               />
             ))}
           </motion.div>

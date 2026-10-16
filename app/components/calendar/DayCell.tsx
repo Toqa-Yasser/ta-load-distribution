@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { ISODate, OccurrenceRef, TA, TaskKind } from "~/engine/types";
 import type { DayEntry } from "~/lib/calendar";
 import { fmtDate } from "~/lib/format";
@@ -17,6 +16,9 @@ type DayCellProps = {
   /** Kind of the swap source; only tasks of the same kind can be swapped with it. */
   swapKind: TaskKind | null;
   onSelect: (ref: OccurrenceRef) => void;
+  /** Showing every pill. Owned by MonthGrid, which collapses it whenever the month changes. */
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 };
 
 const MOBILE_MAX = 2;
@@ -35,8 +37,20 @@ const MORE =
 const same = (a: OccurrenceRef | null, b: OccurrenceRef) =>
   a !== null && a.taskId === b.taskId && a.occurrenceId === b.occurrenceId;
 
-export function DayCell({ date, inMonth, isToday, entries, taById, selected, swapSource, swapTaId, swapKind, onSelect }: DayCellProps) {
-  const [expanded, setExpanded] = useState(false);
+export function DayCell({
+  date,
+  inMonth,
+  isToday,
+  entries,
+  taById,
+  selected,
+  swapSource,
+  swapTaId,
+  swapKind,
+  onSelect,
+  expanded = false,
+  onExpandedChange: setExpanded = () => {},
+}: DayCellProps) {
   const day = Number(date.slice(8));
   const hiddenMobile = entries.length - MOBILE_MAX;
   const hiddenDesktop = entries.length - DESKTOP_MAX;
