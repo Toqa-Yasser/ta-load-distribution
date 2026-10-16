@@ -52,7 +52,7 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
               <div className="flex items-center gap-2">
                 <span className="font-semibold tabular-nums">{fmtDate(date)}</span>
                 {(date === today || date === tomorrow) && (
-                  <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-xs font-semibold text-accent">
+                  <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-xs font-semibold text-accent-ink">
                     {date === today ? "Today" : "Tomorrow"}
                   </span>
                 )}

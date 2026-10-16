@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { createRoutesStub } from "react-router";
-import { ToastProvider } from "~/components/ui/Toast";
+import { ToastProvider } from "~/lib/toast";
 import History from "~/routes/history";
 
 // AppShell keeps the exiting route mounted during its exit animation, after the router has

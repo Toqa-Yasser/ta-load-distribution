@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useFetcher, useSubmit } from "react-router";
-import { useToast } from "~/components/ui/Toast";
+import { useToast } from "~/lib/toast";
 import { SERVER_ERROR_MESSAGE } from "~/lib/errors";
 
 type HistoryRequest =

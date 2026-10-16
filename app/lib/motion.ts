@@ -42,8 +42,15 @@ const STILL: TargetAndTransition = {};
  * whileTap is set, and useReducedMotion differs between SSR and the client, so dropping
  * the prop would cause a hydration mismatch.
  */
-export function usePressMotion(): { whileHover: TargetAndTransition; whileTap: TargetAndTransition } {
-  return useReducedMotion() ? { whileHover: STILL, whileTap: STILL } : { whileHover: hoverLift, whileTap: tapPress };
+export function usePressMotion(): PressMotion {
+  return pressMotion(useReducedMotion());
+}
+
+type PressMotion = { whileHover: TargetAndTransition; whileTap: TargetAndTransition };
+
+/** usePressMotion for a component that already reads useReducedMotion() for other reasons. */
+export function pressMotion(reduced: boolean | null): PressMotion {
+  return reduced ? { whileHover: STILL, whileTap: STILL } : { whileHover: hoverLift, whileTap: tapPress };
 }
 
 /**

@@ -55,7 +55,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
             </Link>
             <div className="mt-1 flex min-w-0 items-center gap-2">
               <KindBadge kind={task.kind} size="sm" />
-              <p className="truncate text-sm text-muted">{fmtScheduleSummary(task.schedule, workspace.semester)}</p>
+              <p className="truncate text-sm text-muted">{fmtScheduleSummary(task.schedule)}</p>
             </div>
           </div>
           <div ref={menuRef} className="relative z-10">

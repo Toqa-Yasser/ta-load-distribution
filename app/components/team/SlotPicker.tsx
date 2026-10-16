@@ -34,7 +34,7 @@ export function SlotPicker({ open, title, tas, currentTaId, onPick, onClose }: S
                   aria-pressed={current}
                   onClick={() => onPick(ta.id)}
                   className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left font-medium transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent ${
-                    current ? "bg-accent/10 text-accent" : "text-ink"
+                    current ? "bg-accent/10 text-accent-ink" : "text-ink"
                   }`}
                 >
                   <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: ta.color }} />

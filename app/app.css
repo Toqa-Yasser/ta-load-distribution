@@ -8,7 +8,8 @@
   --ink: #16141a;
   --muted: #6b6672;
   --line: rgba(22, 20, 26, 0.1);
-  --accent: #6d5dfc;
+  --accent: #6d5dfc; /* fills, rings, icons; 4.1:1 on --bg, so not for text */
+  --accent-ink: #5446e0; /* accent text: 5.7:1 on --bg, 6.1:1 on glass, 4.7:1 on a 15% accent tint */
   --accent-2: #ff6b5c; /* decorative coral (rings, dots); too light for text */
   --danger: #c93a2c; /* fill behind white text: 5.1:1 */
   --danger-ink: #c93a2c; /* coral text on --bg: 4.6:1 */
@@ -17,6 +18,7 @@
   --light: #0e6650; /* light-task badge text on its 15% tint over --bg: 5.0:1 */
   --heavy: #4f3ee0; /* heavy-task badge text on its 15% tint over --bg: 4.9:1 */
   --shadow: 0 10px 30px -12px rgba(22, 20, 26, 0.18), 0 1px 2px rgba(22, 20, 26, 0.04);
+  --shadow-raised: 0 14px 36px -12px rgba(22, 20, 26, 0.28), 0 2px 6px rgba(22, 20, 26, 0.08); /* header pills once scrolled */
   --glow: color-mix(in srgb, var(--accent) 5%, transparent);
   --glare: rgba(255, 255, 255, 0.55);
   --scrim: rgba(16, 14, 20, 0.45); /* modal backdrop: must darken in both themes, so not --ink */
@@ -29,11 +31,13 @@
   --ink: #eceae4;
   --muted: #9a97a6;
   --danger-ink: #ff7b6e; /* 7.6:1 on the dark --bg */
+  --accent-ink: #9a8dff; /* lifted for dark: 7.0:1 on --bg, 6.4:1 on glass, 6.1:1 on a 15% tint (accent is 4.2:1) */
   --light: #5fe3bd; /* 8.9:1 on its tint */
   --heavy: #a99fff; /* 6.5:1 on its tint */
   --brand-stroke: #9a8dff;
   --line: rgba(236, 234, 228, 0.13);
   --shadow: 0 12px 36px -14px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-raised: 0 16px 40px -12px rgba(0, 0, 0, 0.75), 0 2px 6px rgba(0, 0, 0, 0.4);
   --glow: color-mix(in srgb, var(--accent) 6%, transparent);
   --glare: rgba(255, 255, 255, 0.09);
   --scrim: rgba(0, 0, 0, 0.6);
@@ -47,6 +51,7 @@
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
   --color-accent-2: var(--accent-2);
   --color-danger: var(--danger);
   --color-danger-ink: var(--danger-ink);
@@ -97,6 +102,13 @@ h3 {
     border: 1px solid var(--line);
     border-radius: 20px;
     box-shadow: var(--shadow);
+  }
+  /* Phones: a lighter blur is far cheaper to composite while scrolling. */
+  @media (width < 48rem) {
+    .glass {
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+      backdrop-filter: blur(10px) saturate(140%);
+    }
   }
 }
 

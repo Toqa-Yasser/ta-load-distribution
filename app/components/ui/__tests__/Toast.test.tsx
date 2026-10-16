@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { ToastProvider, useToast } from "~/components/ui/Toast";
+import { Toaster, ToastProvider, useToast } from "~/components/ui/Toast";
 
 // Exit animations would keep a dismissed toast mounted; these tests are about the timer only.
 vi.mock("motion/react", async (orig) => ({
@@ -22,7 +22,7 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 const setup = () => {
-  render(<ToastProvider><Pusher /></ToastProvider>);
+  render(<ToastProvider><Pusher /><Toaster /></ToastProvider>);
   fireEvent.click(screen.getByRole("button", { name: "push" }));
   return screen.getByRole("status");
 };

@@ -63,7 +63,7 @@ export default function TaskDetail() {
             <KindBadge kind={task.kind} />
           </div>
           <p className="mt-1 text-muted">
-            {fmtScheduleSummary(task.schedule, workspace.semester)} · {plural(task.occurrences.length, "occurrence", "occurrences")}
+            {fmtScheduleSummary(task.schedule)} · {plural(task.occurrences.length, "occurrence", "occurrences")}
           </p>
           {task.notes && <p className="mt-2 whitespace-pre-line">{task.notes}</p>}
         </div>

@@ -38,7 +38,7 @@ function Slot({ section, slot, ta, onTap }: { section: Section; slot: 0 | 1; ta:
           ? "border-accent bg-accent/10 ring-2 ring-accent"
           : ta
             ? "border-line bg-surface hover:border-ink/25"
-            : `border-dashed border-ink/20 text-muted hover:border-accent hover:text-accent ${
+            : `border-dashed border-ink/20 text-muted hover:border-accent hover:text-accent-ink ${
                 dragging ? "animate-pulse border-accent/60 motion-reduce:animate-none" : ""
               }`
       }`}

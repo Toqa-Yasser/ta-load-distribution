@@ -6,7 +6,7 @@ type BadgeProps = { tone?: BadgeTone; size?: "sm" | "md"; children: ReactNode };
 
 const TONE: Record<BadgeTone, string> = {
   neutral: "bg-ink/[0.06] text-muted",
-  accent: "bg-accent/15 text-accent",
+  accent: "bg-accent/15 text-accent-ink",
   light: "bg-light/15 text-light",
   heavy: "bg-heavy/15 text-heavy",
   danger: "bg-danger/12 text-danger-ink",

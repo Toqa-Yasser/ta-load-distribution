@@ -34,7 +34,7 @@ export function SnapshotRow({ snapshot, latest, onRollback }: SnapshotRowProps) 
             {snapshot.label}
           </span>
           {snapshot.kind === "manual" && snapshot.name && (
-            <span className="rounded-full bg-accent/12 px-2 py-0.5 text-xs font-semibold text-accent">
+            <span className="rounded-full bg-accent/12 px-2 py-0.5 text-xs font-semibold text-accent-ink">
               <span className="sr-only">Manual snapshot: </span>
               {snapshot.name}
             </span>

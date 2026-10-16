@@ -4,10 +4,11 @@ import { isRouteErrorResponse, Links, Meta, Scripts, ScrollRestoration, type Sho
 import type { Route } from "./+types/root";
 import "./app.css";
 import { AppShell } from "~/components/layout/AppShell";
-import { ToastProvider } from "~/components/ui/Toast";
+import { Toaster } from "~/components/ui/Toast";
 import { shouldRevalidateRoot } from "~/lib/revalidate";
 import { absoluteUrl, DEFAULT_APP_URL, SITE_DESCRIPTION, SITE_NAME } from "~/lib/seo";
 import { THEME_INIT_SCRIPT, ThemeProvider } from "~/lib/theme";
+import { ToastProvider } from "~/lib/toast";
 import type { RootLoaderData } from "~/lib/use-workspace";
 import { getEnv } from "~/server/env.server";
 import { getStore } from "~/server/store.server";
@@ -79,6 +80,7 @@ export default function App() {
       <ThemeProvider>
         <ToastProvider>
           <AppShell />
+          <Toaster />
         </ToastProvider>
       </ThemeProvider>
     </MotionConfig>
@@ -108,7 +110,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
             <code>{stack}</code>
           </pre>
         )}
-        <a href="/" className="mt-4 inline-flex min-h-11 items-center font-medium text-accent">
+        <a href="/" className="mt-4 inline-flex min-h-11 items-center font-medium text-accent-ink">
           Back to dashboard
         </a>
       </div>
