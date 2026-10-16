@@ -1,5 +1,6 @@
 import { generateDates, customDates } from "~/engine/schedule";
 import { TooManyOccurrencesError } from "~/engine/types";
+const TZ_AT_LOAD = process.env.TZ;
 const sem = { name: "F26", start: "2026-09-01", end: "2026-12-31" };
 
 test("one-time yields the single date", () => {
@@ -52,7 +53,10 @@ test("exactly 500 occurrences pass and 501 throw (custom)", () => {
 describe.each(["America/New_York", "Africa/Cairo", "Europe/London", "Pacific/Auckland"])("dates are stable across DST in %s", (tz) => {
   const original = process.env.TZ;
   beforeAll(() => { process.env.TZ = tz; });
-  afterAll(() => { process.env.TZ = original; });
+  afterAll(() => {
+    if (original === undefined) delete process.env.TZ;
+    else process.env.TZ = original;
+  });
   test("weekly and daily cross the autumn/spring transitions without drift", () => {
     expect(generateDates({ type: "weekly", start: "2026-10-22", end: "2026-11-12" }, sem))
       .toEqual(["2026-10-22", "2026-10-29", "2026-11-05", "2026-11-12"]);
@@ -72,3 +76,8 @@ function customDatesUnclamped(start: string, n: number): string[] {
   }
   return out;
 }
+
+test("the DST suites restore TZ exactly (unset stays unset)", () => {
+  expect(process.env.TZ).toBe(TZ_AT_LOAD);
+  if (TZ_AT_LOAD === undefined) expect("TZ" in process.env).toBe(false);
+});

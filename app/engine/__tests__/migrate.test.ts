@@ -60,3 +60,20 @@ test('garbage throws ValidationError("Unrecognised workspace document.")', () =>
     expect(() => upgradeWorkspace(doc)).toThrow(err);
   }
 });
+
+test("mixed legacy doc upgrades kindless tasks to light and keeps valid kinds", () => {
+  const base = legacy();
+  const doc = {
+    ...base,
+    tasks: [
+      { ...base.tasks[0], id: "task_1" },
+      { ...base.tasks[0], id: "task_2", kind: "heavy" },
+      { ...base.tasks[0], id: "task_3", kind: "light" },
+    ],
+  };
+  const out = upgradeWorkspace(doc);
+  expect(out.tasks.map((t) => t.kind)).toEqual(["light", "heavy", "light"]);
+  expect(out.ledgers.light).toEqual(base.ledger);
+  expect("ledger" in out).toBe(false);
+  expect(isCurrentWorkspace(out)).toBe(true);
+});

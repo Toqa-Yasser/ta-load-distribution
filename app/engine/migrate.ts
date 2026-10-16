@@ -33,19 +33,18 @@ export function isCurrentWorkspace(doc: unknown): doc is Workspace {
   );
 }
 
-/** v1.0 documents: one `ledger` and tasks without a `kind`. */
+/**
+ * v1.0 documents: one `ledger` and (normally) tasks without a `kind`. Mixed documents, where some
+ * tasks already carry a kind, are accepted too.
+ */
 function isLegacyWorkspace(doc: unknown): doc is Doc & { tasks: Doc[]; ledger: Ledger } {
-  return (
-    hasCommonShape(doc) &&
-    !("ledgers" in doc) &&
-    isLedger(doc.ledger) &&
-    doc.tasks.every((t) => !("kind" in (t as Doc)))
-  );
+  return hasCommonShape(doc) && !("ledgers" in doc) && isLedger(doc.ledger);
 }
 
 /**
  * Brings a stored document up to the current shape. A current document is returned as-is (same
- * reference); a v1.0 document becomes all-light with its ledger as the light ledger. Pure.
+ * reference); a v1.0 document keeps any valid task kinds, the other tasks become light, and its
+ * ledger becomes the light ledger. Pure.
  */
 export function upgradeWorkspace(doc: unknown): Workspace {
   if (isCurrentWorkspace(doc)) return doc;
@@ -53,7 +52,7 @@ export function upgradeWorkspace(doc: unknown): Workspace {
     const { ledger, ...rest } = doc;
     return {
       ...rest,
-      tasks: doc.tasks.map((t) => ({ ...t, kind: "light" })),
+      tasks: doc.tasks.map((t) => ({ ...t, kind: isTaskKind(t.kind) ? t.kind : "light" })),
       ledgers: { light: ledger, heavy: { turn: 1, used: {} } },
     } as unknown as Workspace;
   }

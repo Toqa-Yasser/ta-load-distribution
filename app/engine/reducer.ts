@@ -235,8 +235,8 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
       const title = cmd.title !== undefined ? requireName(cmd.title, "Title") : task.title;
       // undefined keeps the notes, null clears them.
       const notes = cmd.notes === undefined ? task.notes : cmd.notes ?? undefined;
-      const { notes: _previous, ...rest } = task;
-      let next: Task = { ...rest, title, ...(notes !== undefined ? { notes } : {}) };
+      let next: Task = { ...task, title, notes };
+      if (notes === undefined) delete next.notes;
       let ledger = ws.ledgers[task.kind];
       if (cmd.schedule) {
         const dates = generateDates(cmd.schedule, ws.semester);
