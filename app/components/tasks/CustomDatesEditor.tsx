@@ -17,20 +17,34 @@ const MAX_DATES = 500;
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 const normalize = (dates: ISODate[]) => [...new Set(dates)].sort();
 
-/** Integer input that keeps its own text (so it can be cleared while typing), emits clamped values and resyncs on blur. */
-function IntInput({ value, min, max, onValue }: { value: number; min: number; max: number; onValue: (n: number) => void }) {
+/** Integer input that keeps its own text (so it can be cleared while typing), shows and emits clamped values as you type and resyncs on blur. */
+function IntInput({
+  value,
+  min,
+  max,
+  onValue,
+  ...aria
+}: { value: number; min: number; max: number; onValue: (n: number) => void; id?: string; "aria-describedby"?: string; "aria-invalid"?: boolean }) {
   const [text, setText] = useState(String(value));
   return (
     <input
+      {...aria} // id/aria-* from <Field>, so the label is associated
       type="number"
       inputMode="numeric"
       min={min}
       max={max}
       value={text}
       onChange={(e) => {
-        setText(e.target.value);
-        const n = Math.round(Number(e.target.value));
-        if (e.target.value !== "" && Number.isFinite(n)) onValue(clamp(n, min, max));
+        const raw = e.target.value;
+        const n = Math.round(Number(raw));
+        if (raw === "" || !Number.isFinite(n)) {
+          setText(raw);
+          return;
+        }
+        // Out-of-range input shows the clamped value straight away, not only after blur.
+        const clamped = clamp(n, min, max);
+        setText(clamped === n ? raw : String(clamped));
+        onValue(clamped);
       }}
       onBlur={() => setText(String(value))}
       className={INPUT_CLASS}

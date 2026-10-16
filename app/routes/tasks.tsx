@@ -5,8 +5,8 @@ import { NewTaskSheet } from "~/components/tasks/NewTaskSheet";
 import { TaskCard } from "~/components/tasks/TaskCard";
 import { Button } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
-import { KIND_LABEL } from "~/components/tasks/KindBadge";
-import { isTaskKind, type TaskKind } from "~/engine/types";
+import { Fab } from "~/components/ui/Fab";
+import { isTaskKind, KIND_LABEL, type TaskKind } from "~/engine/types";
 import { plural } from "~/lib/format";
 import { indicatorSpring, usePressMotion } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
@@ -20,7 +20,6 @@ export function meta({ matches }: Route.MetaArgs) {
 export default function Tasks() {
   const { workspace } = useWorkspace();
   const { submit } = useCommand();
-  const press = usePressMotion();
   const reduced = useReducedMotion();
   // `?new=1` opens the sheet, so a refresh keeps it open.
   const [params, setParams] = useSearchParams();
@@ -80,7 +79,12 @@ export default function Tasks() {
           action={{ label: "New task", onClick: () => setSheet(true) }}
         />
       ) : tasks.length === 0 ? (
-        <p className="py-10 text-center text-muted">No {kindFilter} tasks yet.</p>
+        <EmptyState
+          icon={<ChecklistIcon />}
+          title={`No ${kindFilter} tasks yet`}
+          body={`Create a ${kindFilter} task, or look at every task.`}
+          action={{ label: "Show all tasks", onClick: () => setKindFilter(null) }}
+        />
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence initial={false}>
@@ -92,6 +96,7 @@ export default function Tasks() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: reduced ? 0 : 0.2 }}
+                className="h-full"
               >
                 <TaskCard
                   task={task}
@@ -104,16 +109,10 @@ export default function Tasks() {
         </ul>
       )}
 
-      {/* Mobile: floating action button above the tab bar. */}
-      <motion.button
-        type="button"
-        {...press}
-        aria-label="New task"
-        onClick={() => setSheet(true)}
-        className="fixed bottom-24 right-4 z-40 grid size-14 place-items-center rounded-2xl bg-accent text-white shadow-[0_10px_30px_-8px_var(--accent)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:hidden"
-      >
+      {/* Mobile: floating action button above the tab bar (portalled out of the animated page). */}
+      <Fab label="New task" onClick={() => setSheet(true)}>
         <PlusIcon />
-      </motion.button>
+      </Fab>
 
       <NewTaskSheet open={sheetOpen} onClose={() => setSheet(false)} />
     </div>

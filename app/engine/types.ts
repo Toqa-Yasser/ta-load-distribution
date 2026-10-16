@@ -16,6 +16,9 @@ export type TaskKind = "light" | "heavy";
 /** Light and heavy tasks are shared out independently, each with its own turn ledger. */
 export const TASK_KINDS = ["light", "heavy"] as const satisfies readonly TaskKind[];
 
+/** Display name of each kind; shared by the badge, filters, gauges and calendar pills. */
+export const KIND_LABEL: Record<TaskKind, string> = { light: "Light", heavy: "Heavy" };
+
 export function isTaskKind(value: unknown): value is TaskKind {
   return (TASK_KINDS as readonly unknown[]).includes(value);
 }

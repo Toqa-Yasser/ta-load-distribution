@@ -1,8 +1,7 @@
 import { motion } from "motion/react";
-import type { Occurrence, TA, Task } from "~/engine/types";
+import { KIND_LABEL, type Occurrence, type TA, type Task } from "~/engine/types";
 import { fmtDate } from "~/lib/format";
 import { usePressMotion } from "~/lib/motion";
-import { KIND_LABEL } from "~/components/tasks/KindBadge";
 
 /** Role of a pill while a swap is being picked; null outside swap mode. */
 export type SwapRole = "source" | "target" | "ineligible" | null;

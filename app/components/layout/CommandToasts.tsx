@@ -69,7 +69,8 @@ function CommandWatcher({ fetcherKey, opts, onDone }: { fetcherKey: string; opts
       if (fired.current) return;
       fired.current = true;
       const result = settledResult(data);
-      if (result.ok || !optsRef.current?.inlineError) toast(commandToast(result, undo));
+      const inline = optsRef.current?.inlineError;
+      if (result.ok || !(typeof inline === "function" ? inline() : inline)) toast(commandToast(result, undo));
       optsRef.current?.onSettled?.(result);
       onDone(fetcherKey);
     },

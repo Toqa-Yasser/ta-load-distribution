@@ -1,8 +1,7 @@
 import { INPUT_CLASS } from "~/components/ui/input";
 import { Field } from "~/components/ui/Field";
 import { Segmented } from "~/components/ui/Segmented";
-import { TASK_KINDS, type TaskKind } from "~/engine/types";
-import { KIND_LABEL } from "./KindBadge";
+import { KIND_LABEL, TASK_KINDS, type TaskKind } from "~/engine/types";
 
 type StepNameValue = { kind: TaskKind; title: string; notes: string };
 

@@ -1,13 +1,17 @@
-import { Link, useParams } from "react-router";
+import { useState } from "react";
+import { data, isRouteErrorResponse, Link, useParams, type ShouldRevalidateFunction } from "react-router";
 import type { Route } from "./+types/task-detail";
 import { KindBadge } from "~/components/tasks/KindBadge";
 import { SplitBar } from "~/components/tasks/SplitBar";
 import { Card } from "~/components/ui/Card";
 import { Select } from "~/components/ui/Select";
 import { fmtDateLong, fmtScheduleSummary, plural } from "~/lib/format";
+import { shouldRevalidateRoot } from "~/lib/revalidate";
 import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace, type RootLoaderData } from "~/lib/use-workspace";
+import { getStore } from "~/server/store.server";
+import { loadWorkspace } from "~/server/workspace.server";
 
 export function meta({ matches, params }: Route.MetaArgs) {
   const root = matches.find((m) => m?.id === "root")?.loaderData as RootLoaderData | undefined;
@@ -16,9 +20,19 @@ export function meta({ matches, params }: Route.MetaArgs) {
   return routeMeta(matches, {
     title: `${name} · Tasks`,
     description: `${name} — occurrences and assignments.`,
-    path: `/tasks/${params.taskId ?? ""}`,
+    path: `/tasks/${encodeURIComponent(params.taskId ?? "")}`,
   });
 }
+
+/** Only checks the task exists, so an unknown id is a real 404; the page reads the root data. */
+export async function loader({ params }: Route.LoaderArgs) {
+  const { data: workspace } = await loadWorkspace(getStore());
+  if (!workspace.tasks.some((t) => t.id === params.taskId)) throw data("Not found", { status: 404 });
+  return null;
+}
+
+// Same rules as the root: previews and search-only changes cannot change whether the task exists.
+export const shouldRevalidate: ShouldRevalidateFunction = shouldRevalidateRoot;
 
 function BackLink() {
   return (
@@ -34,24 +48,48 @@ function BackLink() {
   );
 }
 
+function NotFound() {
+  return (
+    <div className="flex flex-col gap-4">
+      <BackLink />
+      <Card className="p-6">
+        <h1 className="text-2xl font-semibold">Task not found</h1>
+        <p className="mt-1 text-muted">It may have been deleted or undone.</p>
+      </Card>
+    </div>
+  );
+}
+
+/** The loader's 404 renders the friendly message in the shell; anything else is rethrown to the root. */
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  if (isRouteErrorResponse(error) && error.status === 404) return <NotFound />;
+  throw error;
+}
+
 export default function TaskDetail() {
   const { taskId } = useParams();
   const { workspace } = useWorkspace();
   const { submit } = useCommand();
+  // occurrence id -> the TA just picked, shown until that command settles (after revalidation).
+  const [picked, setPicked] = useState<ReadonlyMap<string, { taId: string; key: string }>>(new Map());
   const task = workspace.tasks.find((t) => t.id === taskId);
 
-  // Read from the root data rather than a loader; a deleted or undone task lands here too.
-  if (!task) {
-    return (
-      <div className="flex flex-col gap-4">
-        <BackLink />
-        <Card className="p-6">
-          <h1 className="text-2xl font-semibold">Task not found</h1>
-          <p className="mt-1 text-muted">It may have been deleted or undone.</p>
-        </Card>
-      </div>
-    );
-  }
+  // The loader 404s an unknown id; this covers the root data dropping the task (delete, undo)
+  // between the loader's check and this render.
+  if (!task) return <NotFound />;
+
+  const reassign = (occurrenceId: string, taId: string) => {
+    let key = "";
+    const settle = () =>
+      setPicked((m) => {
+        if (m.get(occurrenceId)?.key !== key) return m; // a newer pick for this row is in flight
+        const next = new Map(m);
+        next.delete(occurrenceId);
+        return next;
+      });
+    key = submit({ type: "reassignOccurrence", ref: { taskId: task.id, occurrenceId }, taId }, { onSettled: settle });
+    setPicked((m) => new Map(m).set(occurrenceId, { taId, key }));
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -91,11 +129,10 @@ export default function TaskDetail() {
                   <td className="w-1/2 px-4 py-2">
                     <Select
                       aria-label={`TA for ${label}`}
-                      value={o.taId}
+                      value={picked.get(o.id)?.taId ?? o.taId}
                       onChange={(e) => {
-                        // Re-picking the current TA is a no-op; send nothing.
-                        if (e.target.value !== o.taId)
-                          submit({ type: "reassignOccurrence", ref: { taskId: task.id, occurrenceId: o.id }, taId: e.target.value });
+                        // Re-picking the shown TA is a no-op; send nothing.
+                        if (e.target.value !== (picked.get(o.id)?.taId ?? o.taId)) reassign(o.id, e.target.value);
                       }}
                     >
                       {workspace.tas.map((ta) => (

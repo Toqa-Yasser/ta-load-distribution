@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useState } from "react";
 import { useLocation, useOutlet } from "react-router";
+import { FAB_SLOT_ID } from "~/components/ui/Fab";
 import { APP_ROOT_ID } from "~/components/ui/Sheet";
 import { pageTransition, pageVariants, reducedPageVariants } from "~/lib/motion";
 import { OpenSettingsContext } from "~/lib/settings";
@@ -45,6 +46,9 @@ export function AppShell() {
               {outlet}
             </motion.main>
           </AnimatePresence>
+          {/* Fixed page overlays (Fab) portal here: inside the animated <main> a transform would
+              become their containing block and they would ride the page transition. */}
+          <div id={FAB_SLOT_ID} />
           <NavBar placement="bottom" />
           <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         </div>

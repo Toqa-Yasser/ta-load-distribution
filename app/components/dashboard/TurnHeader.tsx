@@ -1,6 +1,5 @@
 import { motion, useReducedMotion } from "motion/react";
-import { KIND_LABEL } from "~/components/tasks/KindBadge";
-import type { TaskKind } from "~/engine/types";
+import { KIND_LABEL, type TaskKind } from "~/engine/types";
 import { EASE_OUT, useMounted } from "~/lib/motion";
 
 type TurnHeaderProps = { kind: TaskKind; turn: number; usedUnits: number; turnSize: number };

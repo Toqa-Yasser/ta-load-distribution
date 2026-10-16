@@ -12,8 +12,11 @@ export type CommandResult =
 export type SubmitOptions = {
   /** Called once with the result, after the router has revalidated (the fetcher is idle again). */
   onSettled?: (result: CommandResult) => void;
-  /** The caller shows a failure inline, so no error toast. Success still toasts (with Undo). */
-  inlineError?: boolean;
+  /**
+   * The caller shows a failure inline, so no error toast. Success still toasts (with Undo). A
+   * function is asked when the result arrives, e.g. "is the form that shows the error still open?".
+   */
+  inlineError?: boolean | (() => boolean);
 };
 
 /** Every command gets its own fetcher under this prefix; AppShell's <CommandToasts> watches them. */

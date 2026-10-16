@@ -1,10 +1,10 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Sheet } from "~/components/ui/Sheet";
 import type { Command, Schedule, TaskKind, Workspace } from "~/engine/types";
-import { SERVER_ERROR_MESSAGE } from "~/lib/errors";
+import { messageOf } from "~/lib/errors";
 import { useStepFocus } from "~/lib/focus";
 import { EASE_OUT, indicatorSpring, stepSlide } from "~/lib/motion";
 import { useCommand } from "~/lib/use-command";
@@ -39,8 +39,12 @@ function StepDots({ step }: { step: Step }) {
   );
 }
 
-/** The three steps. Lives inside the Sheet, so its state starts fresh each time the sheet opens. */
-function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void; onCancel: () => void }) {
+/**
+ * The three steps. Lives inside the Sheet, so its state starts fresh each time the sheet opens.
+ * Confirm keeps the sheet open until the create command settles: success closes it (the shell
+ * toasts with Undo), a failure is shown here instead of in a toast.
+ */
+function Wizard({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
   const { today, workspace } = useWorkspace();
   const reduced = useReducedMotion();
   const [state, setState] = useState<{ step: Step; kind: TaskKind; title: string; notes: string; schedule: Schedule }>({
@@ -55,6 +59,30 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
   const preview = useFetcher<PreviewResult>();
   // fetcher.data still holds the previous answer while a new preview is in flight.
   const [staleData, setStaleData] = useState<PreviewResult | undefined>(undefined);
+  const { submit } = useCommand();
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  // Closed mid-request: nobody would see an inline error, so the shell toasts it instead.
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+
+  const confirm = () => {
+    setCreating(true);
+    setCreateError(null);
+    submit(command(), {
+      inlineError: () => alive.current,
+      onSettled: (r) => {
+        setCreating(false);
+        if (r.ok) onDone();
+        else setCreateError(r.message);
+      },
+    });
+  };
 
   const { step, kind, title, notes, schedule } = state;
   const command = (): CreateTask => ({
@@ -77,6 +105,7 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
         encType: "application/json",
       });
     }
+    setCreateError(null);
     setDir(next > step ? 1 : -1);
     stepFocus.request();
     setState((s) => ({ ...s, step: next }));
@@ -85,8 +114,7 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
 
   const loading = step === 2 && (preview.state !== "idle" || preview.data === staleData);
   const result = loading ? undefined : preview.data;
-  const error =
-    result === undefined ? null : result.ok === true ? null : typeof result.message === "string" && result.message ? result.message : SERVER_ERROR_MESSAGE;
+  const error = result === undefined || result.ok === true ? null : messageOf(result);
   const previewWs = result?.ok === true ? result.workspace : null;
 
   return (
@@ -129,8 +157,14 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
         </AnimatePresence>
       </div>
 
+      {createError && (
+        <p role="alert" className="text-sm font-medium text-danger-ink">
+          {createError}
+        </p>
+      )}
+
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="ghost" onClick={step === 0 ? onCancel : () => go((step - 1) as Step)}>
+        <Button variant="ghost" disabled={creating} onClick={step === 0 ? onCancel : () => go((step - 1) as Step)}>
           {step === 0 ? "Cancel" : "Back"}
         </Button>
         {step < 2 ? (
@@ -138,7 +172,7 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
             Next
           </Button>
         ) : (
-          <Button disabled={!previewWs} loading={loading} onClick={() => onConfirm(command())}>
+          <Button disabled={!previewWs} loading={loading || creating} onClick={confirm}>
             Confirm
           </Button>
         )}
@@ -149,17 +183,9 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
 
 /** Three-step task creation (name → schedule → preview of who gets each date). */
 export function NewTaskSheet({ open, onClose }: NewTaskSheetProps) {
-  // Held here (not in Wizard) so the result toast still shows after the sheet unmounts its content.
-  const { submit } = useCommand();
   return (
     <Sheet open={open} onClose={onClose} title="New task">
-      <Wizard
-        onCancel={onClose}
-        onConfirm={(cmd) => {
-          submit(cmd);
-          onClose();
-        }}
-      />
+      <Wizard onCancel={onClose} onDone={onClose} />
     </Sheet>
   );
 }

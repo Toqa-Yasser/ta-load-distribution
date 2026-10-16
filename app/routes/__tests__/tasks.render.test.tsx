@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { createRoutesStub } from "react-router";
 import { ToastProvider } from "~/components/ui/Toast";
 import { emptyWorkspace } from "~/engine/empty";
@@ -40,4 +40,26 @@ test("tasks page shows every task and a kind badge without a filter", async () =
   expect(screen.getByText("Lab")).toBeInTheDocument();
   expect(screen.getAllByText("Light", { selector: "[data-badge]" })).toHaveLength(2);
   expect(screen.getAllByText("Heavy", { selector: "[data-badge]" })).toHaveLength(1);
+});
+
+test("an unknown ?kind falls back to every task with All active", async () => {
+  renderAt("/tasks?kind=garbage");
+  expect(await screen.findByText("Quiz")).toBeInTheDocument();
+  expect(screen.getByText("Exam")).toBeInTheDocument();
+  expect(screen.getByText("Lab")).toBeInTheDocument();
+  const chips = screen.getByRole("group", { name: "Filter by kind" });
+  expect(within(chips).getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("a kind with no tasks shows an empty state that clears the filter", async () => {
+  const saved = ws.tasks;
+  ws.tasks = saved.filter((t) => t.kind === "light");
+  try {
+    renderAt("/tasks?kind=heavy");
+    expect(await screen.findByRole("heading", { name: "No heavy tasks yet" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show all tasks" }));
+    expect(await screen.findByText("Quiz")).toBeInTheDocument();
+  } finally {
+    ws.tasks = saved;
+  }
 });

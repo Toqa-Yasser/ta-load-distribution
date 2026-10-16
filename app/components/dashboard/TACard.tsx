@@ -2,8 +2,7 @@ import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { CountUp } from "~/components/ui/CountUp";
 import { Gauge } from "~/components/ui/Gauge";
-import { KIND_LABEL } from "~/components/tasks/KindBadge";
-import { TASK_KINDS, type ISODate, type TA, type TaskKind } from "~/engine/types";
+import { KIND_LABEL, TASK_KINDS, type ISODate, type TA, type TaskKind } from "~/engine/types";
 import { fmtDate, plural } from "~/lib/format";
 
 type TACardProps = {
