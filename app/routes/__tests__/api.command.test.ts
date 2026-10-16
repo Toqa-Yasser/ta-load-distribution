@@ -10,12 +10,25 @@ test("api.command returns 400 with the error message", async () => {
   expect(res.status).toBe(400);
   expect(await res.json()).toMatchObject({ ok: false, message: "Assign sections to at least one TA first." });
 });
-test("api.command returns 500 JSON on unexpected errors", async () => {
-  // A renameTA with no name makes describe() hit `undefined.trim()`: a TypeError, not an EngineError.
-  const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+test("rejects a malformed command with 400", async () => {
+  for (const body of [{}, { command: null }, { command: "addTA" }, { command: { name: "x" } }, { command: { type: 7 } }]) {
+    const res = await post(body);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ ok: false, message: "Invalid command." });
+  }
+  // A known type with malformed fields: describe() hits `undefined.trim()` (a TypeError).
   const res = await post({ command: { type: "renameTA", taId: "nope" } });
+  expect(res.status).toBe(400);
+  expect(await res.json()).toMatchObject({ ok: false, message: "Invalid command." });
+});
+test("api.command returns 500 JSON on unexpected errors", async () => {
+  const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+  const store = await import("~/server/store.server");
+  const get = vi.spyOn(store, "getStore").mockImplementation(() => { throw new Error("db down"); });
+  const res = await post({ command: { type: "addTA", name: "B" } });
   expect(res.status).toBe(500);
   expect(await res.json()).toEqual({ ok: false, message: "Something went wrong on the server. Please try again." });
   expect(spy).toHaveBeenCalled();
+  get.mockRestore();
   spy.mockRestore();
 });

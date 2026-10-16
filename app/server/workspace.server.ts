@@ -4,6 +4,7 @@ import { seededRng } from "~/engine/rng";
 import { EngineError, ValidationError } from "~/engine/types";
 import type { Command, Workspace } from "~/engine/types";
 import { checkHistoryPassword } from "./password.server";
+import { INVALID_COMMAND_MESSAGE } from "./responses.server";
 import type { Store, WorkspaceRow } from "./store";
 
 export const AUTO_SNAPSHOT_KEEP = 300;
@@ -54,12 +55,29 @@ function contextFor(row: WorkspaceRow, cmd: Command, ctx: ReduceContext | undefi
   return ctx ?? { ...defaultContext(), rng: seededRng(commandSeed(row.version, cmd)) };
 }
 
+/**
+ * Commands come from untrusted JSON. A known `type` with malformed fields makes the reducer or
+ * describe() trip over a missing value (e.g. `undefined.trim()`); report that as a bad command.
+ */
+function asCommandError<T>(fn: () => T): T {
+  try {
+    return fn();
+  } catch (e) {
+    if (e instanceof TypeError) throw new ValidationError(INVALID_COMMAND_MESSAGE);
+    throw e;
+  }
+}
+
+export const describeCommand = (cmd: Command, ws: Workspace): string => asCommandError(() => describe(cmd, ws));
+
 export async function applyCommand(store: Store, cmd: Command, ctx?: ReduceContext): Promise<SaveResult> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const old = await loadWorkspace(store);
     // Re-derived per attempt: a conflict retry builds on the newer version.
-    const next = reduce(old.data, cmd, contextFor(old, cmd, ctx));
-    const saved = await commit(store, old, next, describe(cmd, old.data));
+    const next = asCommandError(() => reduce(old.data, cmd, contextFor(old, cmd, ctx)));
+    // Put first, then snapshot (see commit): a crash between the two leaves this one change
+    // without an Undo snapshot, which we accept to avoid orphan snapshots on version conflicts.
+    const saved = await commit(store, old, next, describeCommand(cmd, old.data));
     if (saved) return saved;
   }
   throw conflict();
@@ -67,7 +85,7 @@ export async function applyCommand(store: Store, cmd: Command, ctx?: ReduceConte
 
 export async function previewCommand(store: Store, cmd: Command, ctx?: ReduceContext): Promise<Workspace> {
   const row = await loadWorkspace(store);
-  return reduce(row.data, cmd, contextFor(row, cmd, ctx));
+  return asCommandError(() => reduce(row.data, cmd, contextFor(row, cmd, ctx)));
 }
 
 export async function rollback(store: Store, snapshotId: number): Promise<SaveResult> {
