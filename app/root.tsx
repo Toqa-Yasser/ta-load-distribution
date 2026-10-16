@@ -1,4 +1,3 @@
-import { format } from "date-fns";
 import { MotionConfig } from "motion/react";
 import { isRouteErrorResponse, Links, Meta, Scripts, ScrollRestoration, type ShouldRevalidateFunction } from "react-router";
 
@@ -10,6 +9,7 @@ import { shouldRevalidateRoot } from "~/lib/revalidate";
 import { THEME_INIT_SCRIPT, ThemeProvider } from "~/lib/theme";
 import type { RootLoaderData } from "~/lib/use-workspace";
 import { getStore } from "~/server/store.server";
+import { todayIn } from "~/server/today.server";
 import { loadWorkspace } from "~/server/workspace.server";
 
 export const links: Route.LinksFunction = () => [
@@ -27,7 +27,7 @@ export function meta({}: Route.MetaArgs) {
 
 export async function loader(): Promise<RootLoaderData> {
   const { data, version } = await loadWorkspace(getStore());
-  return { workspace: data, version, today: format(new Date(), "yyyy-MM-dd") };
+  return { workspace: data, version, today: todayIn() };
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = shouldRevalidateRoot;
