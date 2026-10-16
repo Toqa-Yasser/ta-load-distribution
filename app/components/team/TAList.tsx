@@ -6,6 +6,7 @@ import { Field } from "~/components/ui/Field";
 import { INPUT_CLASS } from "~/components/ui/input";
 import type { TA } from "~/engine/types";
 import { plural } from "~/lib/format";
+import { useRetained } from "~/lib/retain";
 import { InlineRename } from "./InlineRename";
 import { TAChip } from "./TAChip";
 
@@ -16,13 +17,17 @@ type TAListProps = {
   onAdd: (name: string) => void;
   onRename: (id: string, name: string) => void;
   onRemove: (id: string) => void;
+  /** A command is in flight: the Add button is disabled so a double submit can't add twice. */
+  pending?: boolean;
 };
 
 /** TA roster: add inline, tap a chip to rename, drag a chip onto a section slot. */
-export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onRemove }: TAListProps) {
+export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onRemove, pending = false }: TAListProps) {
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [removing, setRemoving] = useState<TA | null>(null);
+  // The confirm keeps naming its TA while it animates out.
+  const shown = useRetained(removing);
 
   const add = (e: FormEvent) => {
     e.preventDefault();
@@ -46,7 +51,7 @@ export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onR
             />
           </Field>
         </div>
-        <Button type="submit" disabled={!draft.trim()}>
+        <Button type="submit" disabled={!draft.trim() || pending}>
           Add
         </Button>
       </form>
@@ -92,8 +97,8 @@ export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onR
         open={removing !== null}
         title="Remove TA?"
         body={
-          removing
-            ? `${removing.name} has ${plural(occurrenceCounts[removing.id] ?? 0, "task occurrence", "task occurrences")}; they will be re-distributed to the other TAs.`
+          shown
+            ? `${shown.name} has ${plural(occurrenceCounts[shown.id] ?? 0, "task occurrence", "task occurrences")}; they will be re-distributed to the other TAs.`
             : ""
         }
         confirmLabel="Remove"

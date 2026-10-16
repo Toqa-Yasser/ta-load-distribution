@@ -18,7 +18,7 @@ export function meta({ matches }: Route.MetaArgs) {
 
 export default function Team() {
   const { workspace, capacities, taById } = useWorkspace();
-  const { submit } = useCommand();
+  const { submit, pending } = useCommand();
   const reduced = useReducedMotion();
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -74,6 +74,7 @@ export default function Team() {
               onAdd={(name) => submit({ type: "addTA", name })}
               onRename={(taId, name) => submit({ type: "renameTA", taId, name })}
               onRemove={(taId) => submit({ type: "removeTA", taId })}
+              pending={pending}
             />
           </section>
 
@@ -96,6 +97,7 @@ export default function Team() {
               onRename={(sectionId, name) => submit({ type: "renameSection", sectionId, name })}
               onSetSlot={onSetSlot}
               onRemove={(sectionId) => submit({ type: "removeSection", sectionId })}
+              pending={pending}
             />
           </section>
         </div>

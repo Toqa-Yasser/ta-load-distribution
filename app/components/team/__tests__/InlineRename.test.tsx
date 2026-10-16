@@ -24,3 +24,13 @@ test("Escape cancels without calling onCommit", () => {
   expect(onCancel).toHaveBeenCalledTimes(1);
   expect(onCommit).not.toHaveBeenCalled();
 });
+test("a blank value cancels instead of committing", () => {
+  const onCommit = vi.fn();
+  const onCancel = vi.fn();
+  render(<InlineRename value="Old" label="Rename Old" onCommit={onCommit} onCancel={onCancel} />);
+  const input = screen.getByRole("textbox", { name: "Rename Old" });
+  fireEvent.change(input, { target: { value: "   " } });
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(onCancel).toHaveBeenCalledTimes(1);
+  expect(onCommit).not.toHaveBeenCalled();
+});

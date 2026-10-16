@@ -14,6 +14,7 @@ import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { Field } from "~/components/ui/Field";
 import { INPUT_CLASS } from "~/components/ui/input";
 import type { Section, TA } from "~/engine/types";
+import { useRetained } from "~/lib/retain";
 import { resolveDrop } from "./resolveDrop";
 import { SectionCard } from "./SectionCard";
 import { SlotPicker } from "./SlotPicker";
@@ -27,6 +28,8 @@ type SectionsBoardProps = {
   onRename: (id: string, name: string) => void;
   onSetSlot: SetSlot;
   onRemove: (id: string) => void;
+  /** A command is in flight: the Add button is disabled so a double submit can't add twice. */
+  pending?: boolean;
   /** True when a parent already provides the DndContext (from useSlotDnd); otherwise the board makes its own. */
   withinDnd?: boolean;
 };
@@ -35,7 +38,8 @@ type SectionsBoardProps = {
 export const TEAM_DND_ID = "team-dnd";
 
 const screenReaderInstructions: ScreenReaderInstructions = {
-  draggable: "Drag onto a section slot to assign this TA, or tap a slot to pick a TA from a list.",
+  draggable:
+    "Press Enter to rename this TA. To assign TAs without dragging, activate a section slot to open the slot picker and choose a TA from the list.",
 };
 
 /** Sensors and drop handling shared by the board's own DndContext and the Team page's. */
@@ -67,6 +71,7 @@ export function SectionsBoard({
   onRename,
   onSetSlot,
   onRemove,
+  pending = false,
   withinDnd = false,
 }: SectionsBoardProps) {
   const [draft, setDraft] = useState("");
@@ -74,8 +79,11 @@ export function SectionsBoard({
   const [removing, setRemoving] = useState<Section | null>(null);
   const taById = useMemo(() => new Map(tas.map((t) => [t.id, t])), [tas]);
 
-  const pickSection = picking && sections.find((s) => s.id === picking.sectionId);
-  const currentTaId = pickSection ? pickSection.taIds[picking.slot] : null;
+  // The picker and confirm keep showing their last target while they animate out.
+  const shownPick = useRetained(picking);
+  const shownRemoving = useRetained(removing);
+  const pickSection = shownPick && sections.find((s) => s.id === shownPick.sectionId);
+  const currentTaId = pickSection && shownPick ? pickSection.taIds[shownPick.slot] : null;
 
   const add = (e: FormEvent) => {
     e.preventDefault();
@@ -99,7 +107,7 @@ export function SectionsBoard({
             />
           </Field>
         </div>
-        <Button type="submit" disabled={!draft.trim()}>
+        <Button type="submit" disabled={!draft.trim() || pending}>
           Add
         </Button>
       </form>
@@ -128,8 +136,8 @@ export function SectionsBoard({
       </ul>
 
       <SlotPicker
-        open={pickSection != null}
-        title={pickSection ? `${pickSection.name} · slot ${picking.slot + 1}` : "Pick a TA"}
+        open={picking !== null && pickSection != null}
+        title={pickSection && shownPick ? `${pickSection.name} · slot ${shownPick.slot + 1}` : "Pick a TA"}
         tas={tas}
         currentTaId={currentTaId}
         onPick={(taId) => {
@@ -142,7 +150,7 @@ export function SectionsBoard({
       <ConfirmDialog
         open={removing !== null}
         title="Remove section?"
-        body={removing ? `"${removing.name}" will be removed; the TAs in it lose its capacity.` : ""}
+        body={shownRemoving ? `"${shownRemoving.name}" will be removed; the TAs in it lose its capacity.` : ""}
         confirmLabel="Remove"
         danger
         onConfirm={() => {
