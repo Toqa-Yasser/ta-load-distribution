@@ -5,7 +5,7 @@ import { emptyWorkspace } from "~/engine/empty";
 import { newId } from "~/engine/ids";
 import { seededRng, type Rng } from "~/engine/rng";
 import { generateDates } from "~/engine/schedule";
-import { ValidationError, type Command, type Occurrence, type Task, type Workspace } from "~/engine/types";
+import { ValidationError, type Command, type Occurrence, type OccurrenceRef, type Task, type Workspace } from "~/engine/types";
 
 export interface ReduceContext { rng: Rng; now: () => string; newId: (prefix: string) => string }
 
@@ -38,6 +38,18 @@ function findSection(ws: Workspace, id: string) {
   const section = ws.sections.find((s) => s.id === id);
   if (!section) throw new ValidationError("Unknown section.");
   return section;
+}
+
+function findTask(ws: Workspace, id: string): Task {
+  const task = ws.tasks.find((t) => t.id === id);
+  if (!task) throw new ValidationError("Unknown task.");
+  return task;
+}
+
+function findOccurrence(ws: Workspace, ref: OccurrenceRef): Occurrence {
+  const occ = findTask(ws, ref.taskId).occurrences.find((o) => o.id === ref.occurrenceId);
+  if (!occ) throw new ValidationError("Unknown occurrence.");
+  return occ;
 }
 
 export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspace {
@@ -142,13 +154,105 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
     case "reset":
       return emptyWorkspace();
 
-    case "updateTask":
-    case "deleteTask":
-    case "redistributeTask":
-    case "redistributeAll":
-    case "reassignOccurrence":
-    case "swapOccurrences":
-      throw new ValidationError("Not implemented");
+    case "updateTask": {
+      const task = findTask(ws, cmd.taskId);
+      const title = cmd.title !== undefined ? requireName(cmd.title, "Title") : task.title;
+      const notes = cmd.notes !== undefined ? cmd.notes : task.notes;
+      let next: Task = { ...task, title, ...(notes !== undefined ? { notes } : {}) };
+      let ledger = ws.ledger;
+      if (cmd.schedule) {
+        const dates = generateDates(cmd.schedule, ws.semester);
+        if (dates.length === 0) throw new ValidationError("This schedule has no dates.");
+        const refunded = refund(ws.ledger, task.occurrences);
+        const assigned = assignOccurrences({
+          capacities: capacities(ws),
+          ledger: refunded,
+          occurrences: dates.map((date) => ({ id: ctx.newId("occ"), date })),
+          rng: ctx.rng,
+        });
+        next = { ...next, schedule: cmd.schedule, occurrences: assigned.occurrences };
+        ledger = assigned.ledger;
+      }
+      return { ...ws, tasks: ws.tasks.map((t) => (t.id === task.id ? next : t)), ledger };
+    }
+
+    case "deleteTask": {
+      const task = findTask(ws, cmd.taskId);
+      return { ...ws, tasks: ws.tasks.filter((t) => t.id !== task.id), ledger: refund(ws.ledger, task.occurrences) };
+    }
+
+    case "redistributeTask": {
+      const task = findTask(ws, cmd.taskId);
+      const refunded = refund(ws.ledger, task.occurrences);
+      if (task.occurrences.length === 0) return { ...ws, ledger: refunded };
+      const assigned = assignOccurrences({
+        capacities: capacities(ws),
+        ledger: refunded,
+        occurrences: task.occurrences.map((o) => ({ id: o.id, date: o.date })),
+        rng: ctx.rng,
+      });
+      const byId = new Map(assigned.occurrences.map((o) => [o.id, o]));
+      const next: Task = { ...task, occurrences: task.occurrences.map((o) => byId.get(o.id) ?? o) };
+      return { ...ws, tasks: ws.tasks.map((t) => (t.id === task.id ? next : t)), ledger: assigned.ledger };
+    }
+
+    case "redistributeAll": {
+      const caps = capacities(ws);
+      const order = ws.tasks
+        .map((task, index) => ({ task, index }))
+        .sort((x, y) => (x.task.createdAt < y.task.createdAt ? -1 : x.task.createdAt > y.task.createdAt ? 1 : x.index - y.index));
+      let ledger: Workspace["ledger"] = { turn: 1, used: {} };
+      const redealt = new Map<string, Task>();
+      for (const { task } of order) {
+        if (task.occurrences.length === 0) { redealt.set(task.id, task); continue; }
+        const assigned = assignOccurrences({
+          capacities: caps,
+          ledger,
+          occurrences: task.occurrences.map((o) => ({ id: o.id, date: o.date })),
+          rng: ctx.rng,
+        });
+        const byId = new Map(assigned.occurrences.map((o) => [o.id, o]));
+        redealt.set(task.id, { ...task, occurrences: task.occurrences.map((o) => byId.get(o.id) ?? o) });
+        ledger = assigned.ledger;
+      }
+      return { ...ws, tasks: ws.tasks.map((t) => redealt.get(t.id) ?? t), ledger };
+    }
+
+    case "reassignOccurrence": {
+      const occ = findOccurrence(ws, cmd.ref);
+      findTA(ws, cmd.taId);
+      if (occ.taId === cmd.taId) return ws;
+      const used = { ...ws.ledger.used };
+      if (occ.turn === ws.ledger.turn) used[occ.taId] = Math.max(0, (used[occ.taId] ?? 0) - 1);
+      used[cmd.taId] = (used[cmd.taId] ?? 0) + 1;
+      const moved: Occurrence = { ...occ, taId: cmd.taId, turn: ws.ledger.turn };
+      return {
+        ...ws,
+        tasks: ws.tasks.map((t) =>
+          t.id === cmd.ref.taskId ? { ...t, occurrences: t.occurrences.map((o) => (o.id === occ.id ? moved : o)) } : t,
+        ),
+        ledger: { turn: ws.ledger.turn, used },
+      };
+    }
+
+    case "swapOccurrences": {
+      if (cmd.a.taskId === cmd.b.taskId && cmd.a.occurrenceId === cmd.b.occurrenceId) {
+        throw new ValidationError("Pick two different occurrences to swap.");
+      }
+      const a = findOccurrence(ws, cmd.a);
+      const b = findOccurrence(ws, cmd.b);
+      return {
+        ...ws,
+        tasks: ws.tasks.map((t) => ({
+          ...t,
+          occurrences: t.occurrences.map((o) => {
+            if (t.id === cmd.a.taskId && o.id === a.id) return { ...o, taId: b.taId };
+            if (t.id === cmd.b.taskId && o.id === b.id) return { ...o, taId: a.taId };
+            return o;
+          }),
+        })),
+      };
+    }
   }
 }
 
@@ -160,9 +264,11 @@ function taskTitle(ws: Workspace, id: string): string {
   return ws.tasks.find((t) => t.id === id)?.title ?? "task";
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 function formatDay(date: string): string {
-  const [y, m, d] = date.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  const [, m, d] = date.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${d}`;
 }
 
 export function describe(cmd: Command, ws: Workspace): string {
