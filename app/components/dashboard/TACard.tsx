@@ -28,8 +28,9 @@ export function TACard({ ta, capacity, used, counts, totalOccurrences, nextDates
         </span>
       </div>
 
+      {/* 220px = two 96px gauges + a 24px gap; narrower containers stack them. */}
       <div className="@container">
-        <div className="flex flex-col items-center justify-center gap-4 @[360px]:flex-row @[360px]:gap-6">
+        <div className="flex flex-col items-center justify-center gap-4 @[220px]:flex-row @[220px]:gap-6">
           {TASK_KINDS.map((kind) => (
             <div key={kind} className="flex flex-col items-center gap-1.5">
               <Gauge
@@ -48,12 +49,6 @@ export function TACard({ ta, capacity, used, counts, totalOccurrences, nextDates
       </div>
 
       <dl className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <dt className="text-muted">This turn</dt>
-          <dd className="font-semibold">
-            <CountUp value={used.light + used.heavy} />/<CountUp value={capacity * TASK_KINDS.length} /> units
-          </dd>
-        </div>
         <div>
           <dt className="text-muted">Occurrences</dt>
           <dd className="font-semibold">
