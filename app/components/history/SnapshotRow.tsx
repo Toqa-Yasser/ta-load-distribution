@@ -1,18 +1,23 @@
-import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { format, formatDistance, parseISO } from "date-fns";
 import { motion, useReducedMotion } from "motion/react";
 import { Button } from "~/components/ui/Button";
-import { EASE_OUT, useMounted } from "~/lib/motion";
+import { EASE_OUT } from "~/lib/motion";
 import type { SnapshotMeta } from "~/server/store";
 
-type SnapshotRowProps = { snapshot: SnapshotMeta; latest: boolean; onRollback: () => void };
+type SnapshotRowProps = {
+  snapshot: SnapshotMeta;
+  latest: boolean;
+  /** From the list's ticking clock; null before mount (absolute time shown). */
+  now: number | null;
+  onRollback: () => void;
+};
 
 /**
- * One history entry. The relative time ("5 minutes ago") is client-only: SSR and the first
- * client render show the absolute time, which may differ by timezone, hence
+ * One history entry. The relative time ("5 minutes ago") is client-only and follows the list's
+ * clock (`now`, ticking every 30 s): SSR and the first client render show the absolute time, which may differ by timezone, hence
  * suppressHydrationWarning on that text alone.
  */
-export function SnapshotRow({ snapshot, latest, onRollback }: SnapshotRowProps) {
-  const mounted = useMounted();
+export function SnapshotRow({ snapshot, latest, now, onRollback }: SnapshotRowProps) {
   const reduced = useReducedMotion();
   const created = parseISO(snapshot.createdAt);
   const absolute = format(created, "EEE, MMM d yyyy, HH:mm");
@@ -44,7 +49,7 @@ export function SnapshotRow({ snapshot, latest, onRollback }: SnapshotRowProps) 
           )}
         </div>
         <time dateTime={snapshot.createdAt} title={absolute} className="text-sm text-muted" suppressHydrationWarning>
-          {mounted ? formatDistanceToNow(created, { addSuffix: true }) : absolute}
+          {now === null ? absolute : formatDistance(created, now, { addSuffix: true })}
         </time>
       </div>
       <Button variant="ghost" size="sm" onClick={onRollback}>

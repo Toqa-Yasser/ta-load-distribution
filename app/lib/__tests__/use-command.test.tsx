@@ -5,6 +5,7 @@ import { createRoutesStub, useFetchers } from "react-router";
 import { CommandToasts } from "~/components/layout/CommandToasts";
 import { Toaster } from "~/components/ui/Toast";
 import { ToastProvider } from "~/lib/toast";
+import { UNDO_FETCHER_KEY, useHistory } from "~/lib/use-history";
 import { COMMAND_STALL_MS, CommandWatchContext, useCommand } from "~/lib/use-command";
 
 vi.mock("motion/react", async (orig) => ({
@@ -144,4 +145,32 @@ test("a watched command that never starts is dropped after the stall guard", asy
   } finally {
     vi.useRealTimers();
   }
+});
+
+test("a command toast's Undo rolls back to its snapshot and toasts the rollback with its own Undo", async () => {
+  const history = vi.fn(async ({ request }: { request: Request }) => {
+    const body = await request.json();
+    return { ok: true, version: 3, snapshotId: body.snapshotId + 10 };
+  });
+  function UndoWatcher() {
+    useHistory(UNDO_FETCHER_KEY);
+    return null;
+  }
+  const Stub = createRoutesStub([
+    { path: "/", Component: () => <CommandToasts><UndoWatcher /><Adder /></CommandToasts> },
+    { path: "/api/command", action: async () => ({ ok: true, version: 2, snapshotId: 7, label: 'Added TA "A"' }) },
+    { path: "/api/history", action: history },
+  ]);
+  render(
+    <ToastProvider>
+      <Stub initialEntries={["/"]} />
+      <Toaster />
+    </ToastProvider>,
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "add" }));
+  await screen.findByText('Added TA "A"');
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  expect(await screen.findByText("Rolled back")).toBeInTheDocument();
+  expect(history).toHaveBeenCalledTimes(1);
+  expect(screen.getByText("Rolled back").closest("[role=status]")).toHaveTextContent("Undo");
 });

@@ -1,5 +1,10 @@
 import type { Workspace } from "~/engine/types";
 
+/**
+ * `data` is typed as the current Workspace, but rows and snapshots written before v1.1 hold the
+ * legacy shape (one `ledger`, kindless tasks). Readers must pass stored data through
+ * upgradeWorkspace() (loadWorkspace and rollback do) before treating it as a Workspace.
+ */
 export interface WorkspaceRow { data: Workspace; version: number }
 export interface SnapshotMeta { id: number; name: string | null; label: string; kind: "auto" | "manual"; version: number; createdAt: string }
 export interface Store {

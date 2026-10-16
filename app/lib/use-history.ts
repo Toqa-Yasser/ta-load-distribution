@@ -15,6 +15,16 @@ type HistoryResult =
 /** Fetcher key shared by every toast's Undo button; AppShell watches it for the result toast. */
 export const UNDO_FETCHER_KEY = "undo";
 
+/**
+ * One fetcher per History-page action, so saving a snapshot, rolling back and deleting never
+ * supersede each other's request (and each gets its own toast).
+ */
+export const HISTORY_FETCHER_KEYS = {
+  rollback: "history:rollback",
+  snapshot: "history:snapshot",
+  deleteHistory: "history:delete",
+} as const satisfies Record<HistoryRequest["intent"], string>;
+
 const REQUEST = { method: "post", action: "/api/history", encType: "application/json" } as const;
 
 const SUCCESS: Record<HistoryRequest["intent"], string> = {

@@ -8,7 +8,7 @@ import { Button } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { plural } from "~/lib/format";
 import { routeMeta } from "~/lib/seo";
-import { useHistory } from "~/lib/use-history";
+import { HISTORY_FETCHER_KEYS, useHistory } from "~/lib/use-history";
 import { getStore } from "~/server/store.server";
 import { listSnapshots, loadWorkspace } from "~/server/workspace.server";
 
@@ -27,7 +27,9 @@ const EMPTY_HISTORY: Awaited<ReturnType<typeof loader>> = { snapshots: [], versi
 
 export default function History() {
   const { snapshots, version } = useLoaderData<typeof loader>() ?? EMPTY_HISTORY;
-  const { rollback, saveSnapshot, deleteHistory, pending, error } = useHistory();
+  const { rollback } = useHistory(HISTORY_FETCHER_KEYS.rollback);
+  const { saveSnapshot } = useHistory(HISTORY_FETCHER_KEYS.snapshot);
+  const { deleteHistory, pending, error } = useHistory(HISTORY_FETCHER_KEYS.deleteHistory);
   const [name, setName] = useState("");
   const [deleting, setDeleting] = useState(false);
 

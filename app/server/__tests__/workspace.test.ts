@@ -47,7 +47,14 @@ test("rollback restores a snapshot and records the rollback itself", async () =>
   const [snap] = await store.listSnapshots();
   const r = await rollback(store, snap.id);
   expect(r.workspace.tas).toEqual([]);
-  expect((await store.listSnapshots())[0].label).toBe('Rolled back to "Added TA \"A\""');
+  // An auto snapshot holds the state from just before its change, and the label says so.
+  expect((await store.listSnapshots())[0].label).toBe('Rolled back to before "Added TA \"A\""');
+});
+test("rolling back to a manual snapshot names the snapshot", async () => {
+  const store = new MemoryStore();
+  const id = await saveSnapshot(store, "Before exam");
+  await rollback(store, id);
+  expect((await store.listSnapshots())[0].label).toBe('Rolled back to "Before exam"');
 });
 test("saveSnapshot stores a manual snapshot with the name", async () => {
   const store = new MemoryStore();

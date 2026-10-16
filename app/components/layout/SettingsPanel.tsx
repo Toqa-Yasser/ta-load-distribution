@@ -1,12 +1,12 @@
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { Field } from "~/components/ui/Field";
 import { Sheet } from "~/components/ui/Sheet";
 import type { Semester } from "~/engine/types";
-import { indicatorSpring, usePressMotion } from "~/lib/motion";
+import { indicatorSpring } from "~/lib/motion";
 import { useTheme, type ThemePref } from "~/lib/theme";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
@@ -22,17 +22,22 @@ const THEMES: { value: ThemePref; label: string }[] = [
 /** Slide-over with the semester dates, the theme and the workspace-wide danger actions. */
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { workspace } = useWorkspace();
-  const { submit, pending } = useCommand();
+  const { submit } = useCommand();
   const { pref, setPref } = useTheme();
   const reduced = useReducedMotion();
-  const press = usePressMotion();
+  const themeName = useId();
   const [draft, setDraft] = useState<Semester>(workspace.semester);
+  const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState<"redistribute" | "reset" | null>(null);
 
-  // Start from the saved semester each time the panel opens (and after a save lands).
-  useEffect(() => {
+  // Start from the saved semester each time the panel opens — only then, so data revalidating
+  // while it is open (another tab, an undo) never overwrites what is being typed. Adjusted
+  // during render so the first open frame already shows the saved values.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) setDraft(workspace.semester);
-  }, [open, workspace.semester]);
+  }
 
   const saved = workspace.semester;
   const datesInvalid = Boolean(draft.start && draft.end && draft.end < draft.start);
@@ -41,15 +46,24 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
   const onSave = (e: FormEvent) => {
     e.preventDefault();
-    if (!canSave) return;
-    submit({ type: "setSemester", semester: { ...draft, name: draft.name.trim() } });
+    if (!canSave || saving) return;
+    setSaving(true);
+    submit({ type: "setSemester", semester: { ...draft, name: draft.name.trim() } }, { onSettled: () => setSaving(false) });
   };
 
-  // The confirm stacks on top of the open panel; closing it hands focus back to the danger button
-  // and leaves the panel's scroll lock in place. Never close both at once (see Sheet.test.tsx).
+  // The confirm stacks on top of the open panel. After a danger action the panel closes too, but
+  // one commit later: closing both at once would hand focus back to the danger button (inside the
+  // closing panel) after the panel had handed it to the Settings button (see Sheet.test.tsx).
+  const closeAfterConfirm = useRef(false);
+  useEffect(() => {
+    if (confirm !== null || !closeAfterConfirm.current) return;
+    closeAfterConfirm.current = false;
+    onClose();
+  }, [confirm, onClose]);
   const askDanger = (kind: "redistribute" | "reset") => setConfirm(kind);
   const runDanger = (kind: "redistribute" | "reset") => {
     submit(kind === "reset" ? { type: "reset" } : { type: "redistributeAll" });
+    closeAfterConfirm.current = true;
     setConfirm(null);
   };
 
@@ -89,28 +103,34 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                   />
                 </Field>
               </div>
-              <Button type="submit" className="self-end" disabled={!canSave} loading={pending}>
+              <Button type="submit" className="self-end" disabled={!canSave} loading={saving}>
                 Save semester
               </Button>
             </form>
           </Section>
 
           <Section title="Appearance">
+            {/* Native radios (arrow keys move and select, Tab enters at the checked one), drawn as a
+                segmented control; the input itself is visually hidden inside its label. */}
             <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-2xl border border-line p-1">
               {THEMES.map((t) => {
                 const active = pref === t.value;
                 return (
-                  <motion.button
+                  // A plain label: motion's whileTap would give it a tabIndex, a second tab stop.
+                  <label
                     key={t.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    whileTap={press.whileTap}
-                    onClick={() => setPref(t.value)}
-                    className={`relative isolate min-h-11 rounded-xl text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
+                    className={`relative isolate flex min-h-11 items-center justify-center rounded-xl text-sm font-medium transition-[color,background-color,scale] active:scale-96 motion-reduce:active:scale-100 has-focus-visible:outline-2 has-focus-visible:outline-accent ${
                       active ? "text-ink" : "text-muted hover:bg-ink/5 hover:text-ink"
                     }`}
                   >
+                    <input
+                      type="radio"
+                      name={themeName}
+                      value={t.value}
+                      checked={active}
+                      onChange={() => setPref(t.value)}
+                      className="sr-only"
+                    />
                     {active && (
                       <motion.span
                         layoutId="settings-theme-pill"
@@ -119,7 +139,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                       />
                     )}
                     {t.label}
-                  </motion.button>
+                  </label>
                 );
               })}
             </div>

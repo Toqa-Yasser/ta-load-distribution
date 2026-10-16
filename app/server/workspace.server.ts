@@ -119,8 +119,9 @@ export async function previewCommand(store: Store, cmd: Command, ctx?: ReduceCon
 export async function rollback(store: Store, snapshotId: number): Promise<SaveResult> {
   const snap = await store.getSnapshot(snapshotId);
   if (!snap) throw new EngineError("That snapshot no longer exists.", "NOT_FOUND");
-  const label = `Rolled back to "${snap.name ?? snap.label}"`;
-  // Snapshots taken before v1.1 hold legacy documents.
+  // An auto snapshot is the state from just before its labelled change; a manual one has a name.
+  const label = snap.kind === "auto" ? `Rolled back to before "${snap.label}"` : `Rolled back to "${snap.name ?? snap.label}"`;
+  // Snapshots taken before v1.1 hold legacy documents (typed Workspace, see store.ts).
   const data = upgradeWorkspace(snap.data);
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const old = await loadWorkspace(store);

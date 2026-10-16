@@ -1,10 +1,14 @@
 import { AnimatePresence } from "motion/react";
 import { useState } from "react";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
+import { useNow } from "~/lib/use-now";
 import type { SnapshotMeta } from "~/server/store";
 import { SnapshotRow } from "./SnapshotRow";
 
 type SnapshotListProps = { snapshots: SnapshotMeta[]; currentVersion: number; onRollback: (id: number) => void };
+
+/** How often "5 minutes ago" is refreshed; one clock for the whole list. */
+const RELATIVE_TICK_MS = 30_000;
 
 const UNDO_NOTE = "The current state is saved first, so you can undo this.";
 
@@ -22,6 +26,7 @@ export function SnapshotList({ snapshots, currentVersion, onRollback }: Snapshot
   // The id stays set after closing so the dialog can animate out.
   const [target, setTarget] = useState<{ snapshot: SnapshotMeta; open: boolean } | null>(null);
   const close = () => setTarget((t) => t && { ...t, open: false });
+  const now = useNow(RELATIVE_TICK_MS);
 
   return (
     <>
@@ -32,7 +37,7 @@ export function SnapshotList({ snapshots, currentVersion, onRollback }: Snapshot
         </li>
         <AnimatePresence initial={false}>
           {snapshots.map((s, i) => (
-            <SnapshotRow key={s.id} snapshot={s} latest={i === 0} onRollback={() => setTarget({ snapshot: s, open: true })} />
+            <SnapshotRow key={s.id} snapshot={s} latest={i === 0} now={now} onRollback={() => setTarget({ snapshot: s, open: true })} />
           ))}
         </AnimatePresence>
       </ol>
