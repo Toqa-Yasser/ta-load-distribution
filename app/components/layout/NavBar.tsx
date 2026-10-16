@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { NavLink } from "react-router";
-import { indicatorSpring, usePressMotion } from "~/lib/motion";
+import { indicatorSpring, pressMotion } from "~/lib/motion";
 
 const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
@@ -55,23 +55,24 @@ const NAV_ITEMS: { to: string; label: string; end?: boolean; icon: ReactNode }[]
 ];
 
 /**
- * Primary navigation. `placement="header"` is the inline desktop nav (md and up);
- * `placement="bottom"` is the fixed tab bar shown below md.
+ * Primary navigation. `placement="header"` is the centre pill of the desktop header (md and up;
+ * `className` carries the shared pill styling); `placement="bottom"` is the fixed tab bar below md.
  */
-export function NavBar({ placement }: { placement: "header" | "bottom" }) {
+export function NavBar({ placement, className = "" }: { placement: "header" | "bottom"; className?: string }) {
   const reduced = useReducedMotion();
-  const press = usePressMotion();
+  const press = pressMotion(reduced);
+  // Reduced motion: the active indicator snaps instead of sliding.
   const spring = reduced ? { duration: 0 } : indicatorSpring;
 
   if (placement === "header") {
     return (
-      <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
+      <nav aria-label="Primary" data-pill="pages" className={`hidden gap-0.5 px-0.5 md:flex ${className}`}>
         {NAV_ITEMS.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.end} className="rounded-xl focus-visible:outline-2 focus-visible:outline-accent">
+          <NavLink key={item.to} to={item.to} end={item.end} className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
             {({ isActive }) => (
               <motion.span
                 {...press}
-                className={`relative isolate flex min-h-11 items-center rounded-xl px-4 text-sm font-medium transition-colors ${
+                className={`relative isolate flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors ${
                   isActive ? "text-ink" : "text-muted hover:text-ink"
                 }`}
               >
@@ -79,7 +80,7 @@ export function NavBar({ placement }: { placement: "header" | "bottom" }) {
                   <motion.span
                     layoutId="nav-indicator-header"
                     transition={spring}
-                    className="absolute inset-0 -z-10 rounded-xl border border-line bg-surface shadow-sm"
+                    className="absolute inset-0 -z-10 rounded-full border border-line bg-surface shadow-sm"
                   />
                 )}
                 {item.label}
@@ -102,7 +103,7 @@ export function NavBar({ placement }: { placement: "header" | "bottom" }) {
             <motion.span
               whileTap={press.whileTap}
               className={`relative isolate flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[11px] font-medium transition-colors ${
-                isActive ? "text-accent" : "text-muted"
+                isActive ? "text-accent-ink" : "text-muted"
               }`}
             >
               {isActive && (

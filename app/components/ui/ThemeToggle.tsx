@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { useTheme } from "~/lib/theme";
-import { Button } from "./Button";
+import { IconButton } from "./IconButton";
 
 const RAYS = [0, 45, 90, 135, 180, 225, 270, 315];
 
@@ -20,9 +20,7 @@ export function ThemeToggle() {
   const t = { duration: reduced || !live.current ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] as const };
 
   return (
-    <Button
-      variant="ghost"
-      icon
+    <IconButton
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
       title={dark ? "Light theme" : "Dark theme"}
       onClick={() => setPref(dark ? "light" : "dark")}
@@ -61,6 +59,6 @@ export function ThemeToggle() {
           ))}
         </motion.g>
       </motion.svg>
-    </Button>
+    </IconButton>
   );
 }
