@@ -21,7 +21,7 @@ export function ConfirmDialog({ open, title, body, confirmLabel, danger = false,
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant={danger ? "danger" : "primary"} data-autofocus autoFocus onClick={onConfirm}>
+        <Button variant={danger ? "danger" : "primary"} data-autofocus onClick={onConfirm}>
           {confirmLabel}
         </Button>
       </div>

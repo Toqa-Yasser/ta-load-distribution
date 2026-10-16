@@ -23,11 +23,12 @@ const levelToY = (v: number) => 106 - v * 112;
 /**
  * Circular "liquid" gauge. The surface rises on a spring to `value` and drifts sideways via
  * CSS keyframes (.gauge-wave in app.css, held still under prefers-reduced-motion, where the
- * level also snaps). Values above 1 show the true percentage but fill the vessel to the brim.
+ * level also snaps). `value` is clamped to 0..1 (NaN reads as 0) for both the fill and the text.
  */
 export function Gauge({ value, color, label, size = 112 }: GaugeProps) {
-  const pct = Math.round(value * 100);
-  const target = Math.min(1, Math.max(0, value));
+  // NaN (e.g. a 0/0 load ratio) reads as empty; out-of-range values are clamped.
+  const target = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
+  const pct = Math.round(target * 100);
   const reduced = useReducedMotion();
   const clipId = `gauge-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 

@@ -40,13 +40,14 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Focus in on open, back to the opener on close.
+  // Focus in on open, back to the opener on close. Children mark their initial focus target
+  // with `data-autofocus`, not React's autoFocus: autoFocus fires during commit, before this
+  // effect, so the opener would be recorded as the child itself.
   useEffect(() => {
     if (!open || !mounted) return;
     const opener = document.activeElement as HTMLElement | null;
     const panel = panelRef.current;
-    // Leave focus alone if a child already took it (e.g. an autoFocus confirm button).
-    if (panel && !panel.contains(document.activeElement)) {
+    if (panel && !panel.contains(opener)) {
       (panel.querySelector<HTMLElement>("[data-autofocus]") ?? panel).focus();
     }
     return () => {
