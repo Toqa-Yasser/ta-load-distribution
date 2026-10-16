@@ -19,8 +19,6 @@ export function fmtScheduleSummary(s: Schedule, _semester: Semester): string {
   switch (s.type) {
     case "one-time":
       return `One-time · ${fmtDate(s.date)}`;
-    case "per-semester":
-      return `Per semester · ${fmtDate(s.date)}`;
     case "daily":
     case "weekly":
     case "monthly": {

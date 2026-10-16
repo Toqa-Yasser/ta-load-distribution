@@ -2,9 +2,8 @@ import { generateDates, customDates } from "~/engine/schedule";
 import { TooManyOccurrencesError } from "~/engine/types";
 const sem = { name: "F26", start: "2026-09-01", end: "2026-12-31" };
 
-test("one-time and per-semester yield the single date", () => {
+test("one-time yields the single date", () => {
   expect(generateDates({ type: "one-time", date: "2026-10-05" }, sem)).toEqual(["2026-10-05"]);
-  expect(generateDates({ type: "per-semester", date: "2026-12-20" }, sem)).toEqual(["2026-12-20"]);
 });
 test("weekly with explicit end is inclusive", () => {
   expect(generateDates({ type: "weekly", start: "2026-10-01", end: "2026-10-22" }, sem))

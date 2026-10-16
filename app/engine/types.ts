@@ -5,7 +5,7 @@ export interface TA { id: string; name: string; color: string }
 export interface Section { id: string; name: string; taIds: [string | null, string | null] }
 
 export type Schedule =
-  | { type: "one-time" | "per-semester"; date: ISODate }
+  | { type: "one-time"; date: ISODate }
   | { type: "daily" | "weekly" | "monthly"; start: ISODate; end: ISODate | null }
   | { type: "custom"; start: ISODate; count: number; gapDays: number; dates: ISODate[] };
 

@@ -16,7 +16,6 @@ const TYPES: { type: ScheduleType; label: string }[] = [
   { type: "daily", label: "Daily" },
   { type: "weekly", label: "Weekly" },
   { type: "monthly", label: "Monthly" },
-  { type: "per-semester", label: "Per semester" },
   { type: "custom", label: "Custom" },
 ];
 
@@ -43,7 +42,6 @@ function convert(s: Schedule, type: ScheduleType): Schedule {
   const start = startOf(s);
   switch (type) {
     case "one-time":
-    case "per-semester":
       return { type, date: start };
     case "daily":
     case "weekly":
@@ -117,7 +115,7 @@ export function StepSchedule({ schedule, semester, onChange }: StepScheduleProps
         onChange={(type) => type !== schedule.type && onChange(convert(schedule, type))}
       />
 
-      {(schedule.type === "one-time" || schedule.type === "per-semester") && (
+      {schedule.type === "one-time" && (
         <Field label="Date">
           <input
             type="date"

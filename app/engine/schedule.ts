@@ -11,7 +11,6 @@ function assertWithinLimit(dates: ISODate[]): ISODate[] {
 export function generateDates(schedule: Schedule, semester: Semester): ISODate[] {
   switch (schedule.type) {
     case "one-time":
-    case "per-semester":
       return [schedule.date];
 
     case "custom": {
