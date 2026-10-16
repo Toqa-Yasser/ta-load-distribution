@@ -16,8 +16,8 @@ export function getStore(): Store {
     // Kept on globalThis so Vite dev HMR does not wipe the data.
     return (globalThis.__memStore ??= new MemoryStore());
   }
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error("DATA_STORE=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
+  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) {
+    throw new Error("DATA_STORE=supabase requires SUPABASE_URL and SUPABASE_SECRET_KEY.");
   }
-  return (supabaseStore ??= new SupabaseStore(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY));
+  return (supabaseStore ??= new SupabaseStore(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY));
 }

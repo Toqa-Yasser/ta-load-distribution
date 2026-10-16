@@ -96,7 +96,7 @@ create table snapshots (
   id bigserial primary key, name text, label text not null, kind text check (kind in ('auto','manual')),
   data jsonb not null, version int not null, created_at timestamptz default now());
 ```
-- Server only: `app/server/db.ts` uses `@supabase/supabase-js` with the **service-role key** read
+- Server only: `app/server/db.ts` uses `@supabase/supabase-js` with the **secret key (`sb_secret_…`)** read
   from env — never shipped to the browser. RLS enabled with no anon policies.
 - `applyCommand(command)`: read row → `reduce` → write with `version = v+1 where version = v`;
   on conflict re-read and retry (≤3). Before the write, insert `snapshots(kind='auto', label=describe(cmd), data=OLD)`.
@@ -104,7 +104,7 @@ create table snapshots (
 - `rollback(snapshotId)`: auto-snapshot current, then copy snapshot data into workspace.
 - `reset`: auto-snapshot "Before reset", write empty workspace.
 - `deleteHistory(password)`: compare to `HISTORY_DELETE_PASSWORD` (constant-time); delete all snapshots.
-- Env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `HISTORY_DELETE_PASSWORD` (+ `.env.example`).
+- Env: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `HISTORY_DELETE_PASSWORD` (+ `.env.example`).
 - **Supabase MCP is currently not connected** — ask user to connect it (or paste project URL +
   service key) at the start of implementation; create the project/tables via MCP `apply_migration`
   or hand the SQL to the user.

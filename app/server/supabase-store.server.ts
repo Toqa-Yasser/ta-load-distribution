@@ -13,8 +13,8 @@ function toMeta(r: SnapshotDbRow): SnapshotMeta {
 export class SupabaseStore implements Store {
   private db: SupabaseClient;
 
-  constructor(url: string, serviceKey: string) {
-    this.db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  constructor(url: string, secretKey: string) {
+    this.db = createClient(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
   }
 
   async getWorkspace(): Promise<WorkspaceRow | null> {

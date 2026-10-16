@@ -1,6 +1,6 @@
 export interface Env {
   SUPABASE_URL?: string;
-  SUPABASE_SERVICE_ROLE_KEY?: string;
+  SUPABASE_SECRET_KEY?: string;
   HISTORY_DELETE_PASSWORD?: string;
   DATA_STORE: "supabase" | "memory";
 }
@@ -12,7 +12,7 @@ export function getEnv(): Env {
     explicit === "memory" || explicit === "supabase" ? explicit : SUPABASE_URL ? "supabase" : "memory";
   return {
     SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || undefined,
+    SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY || undefined,
     HISTORY_DELETE_PASSWORD: process.env.HISTORY_DELETE_PASSWORD || undefined,
     DATA_STORE,
   };

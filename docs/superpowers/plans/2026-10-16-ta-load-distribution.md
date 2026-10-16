@@ -15,7 +15,7 @@
 - React Router pinned to **8.4.0** (`react-router`, `@react-router/{dev,node,serve}`) — user decision, accepting that `@vercel/react-router@1.3.7` only declares v7 peers (installed with a peer override; if the Vercel build rejects the preset, fall back to Vercel's zero-config React Router path).
 - Engine code in `app/engine/` is pure: no I/O, no `Date.now()`/`Math.random()` except through the injected `ReduceContext`.
 - Service-role Supabase key is read only in `*.server.ts` files; never imported by client code.
-- Env vars: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `HISTORY_DELETE_PASSWORD`; plus `DATA_STORE=memory` to run without Supabase.
+- Env vars: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `HISTORY_DELETE_PASSWORD`; plus `DATA_STORE=memory` to run without Supabase.
 - Max 500 occurrences per task. Auto snapshots capped at 300; manual snapshots never pruned.
 - Capacity counts a section **+1 for each of its two slots** (a TA in both slots gets +2). Turn resets only when every TA with capacity > 0 has `used ≥ capacity`.
 - All interactive elements: ≥44px touch targets, `whileHover`/`whileTap` feedback, and every animation disabled under `prefers-reduced-motion`.
@@ -564,7 +564,7 @@ test("swapOccurrences trades TAs and leaves the ledger alone", () => {
   export async function deleteHistory(store: Store, password: string, configured: string | undefined): Promise<boolean>  // uses checkHistoryPassword; true if deleted
   ```
 - Produces (`password.server.ts`): `export function checkHistoryPassword(given: string, configured: string | undefined): boolean` — false if `configured` is empty/undefined; constant-time compare via `crypto.timingSafeEqual` on equal-length buffers (length mismatch → false).
-- Produces (`env.server.ts`): `export function getEnv(): { SUPABASE_URL?: string; SUPABASE_SERVICE_ROLE_KEY?: string; HISTORY_DELETE_PASSWORD?: string; DATA_STORE: "supabase" | "memory" }` — `DATA_STORE` defaults to `"memory"` when `SUPABASE_URL` is unset, else `"supabase"`.
+- Produces (`env.server.ts`): `export function getEnv(): { SUPABASE_URL?: string; SUPABASE_SECRET_KEY?: string; HISTORY_DELETE_PASSWORD?: string; DATA_STORE: "supabase" | "memory" }` — `DATA_STORE` defaults to `"memory"` when `SUPABASE_URL` is unset, else `"supabase"`.
 - Produces (`store.server.ts`): `export function getStore(): Store` — module-level singleton (MemoryStore kept on `globalThis.__memStore` so dev HMR keeps data).
 - Produces (`supabase-store.server.ts`): `export class SupabaseStore implements Store { constructor(url: string, serviceKey: string) }` — `putWorkspace`: when `expectedVersion === null` insert `{id:1, data, version:1}` (ignore duplicate → return false); else `update ... .eq("id",1).eq("version", expected).select("version")` → `data.length === 1`. `pruneAutoSnapshots`: select auto ids newest-first, delete those after index `keep`.
 - Migration SQL (exact):
@@ -1024,7 +1024,7 @@ test("renders labels and marks manual snapshots", () => {
 - [ ] **Step 2: Lighthouse** — Run Lighthouse (a11y) on `/` and `/tasks` — Expected: Accessibility ≥ 95. Fix contrast/label issues.
 - [ ] **Step 3: Supabase** — Load `supabase:supabase` and `supabase:supabase-postgres-best-practices` first. Connect the Supabase MCP (or obtain URL + service key from the user); create project; apply `supabase/migrations/0001_init.sql` via `apply_migration`; fill local `.env`; `npm run dev` (without `DATA_STORE=memory`) → add a TA → `select version from workspace` returns 2 and `snapshots` has 1 row.
 - [ ] **Step 4: Build** — Run: `npm run typecheck && npm run build` — Expected: exit 0, `build/` contains Vercel output.
-- [ ] **Step 5: Deploy** — Vercel project linked to the repo; env vars set (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `HISTORY_DELETE_PASSWORD`); deploy; run the spec's end-to-end walkthrough (A/B/C/D scenario, swap, rollback, reset, delete-history) on the deployed URL from a laptop and a phone.
+- [ ] **Step 5: Deploy** — Vercel project linked to the repo; env vars set (`SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `HISTORY_DELETE_PASSWORD`); deploy; run the spec's end-to-end walkthrough (A/B/C/D scenario, swap, rollback, reset, delete-history) on the deployed URL from a laptop and a phone.
 - [ ] **Step 6: README** — replace the template README: what it is, local dev (`DATA_STORE=memory npm run dev`), env vars, Supabase migration, deploy.
 - [ ] **Step 7: Commit** — `git add -A && git commit -m "chore: polish, README, deployment"`.
 
