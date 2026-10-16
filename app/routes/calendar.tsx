@@ -6,11 +6,12 @@ import { OccurrencePopover } from "~/components/calendar/OccurrencePopover";
 import { Button } from "~/components/ui/Button";
 import type { OccurrenceRef, Workspace } from "~/engine/types";
 import { fmtMonth, shiftMonth } from "~/lib/calendar";
+import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Calendar · TA Load Distribution" }];
+export function meta({ matches }: Route.MetaArgs) {
+  return routeMeta(matches, { title: "Calendar", description: "Month view of every assigned occurrence.", path: "/calendar" });
 }
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;

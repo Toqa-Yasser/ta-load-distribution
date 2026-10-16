@@ -8,11 +8,12 @@ import { TAList } from "~/components/team/TAList";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { turnSize } from "~/engine/capacity";
 import { plural } from "~/lib/format";
+import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Team · TA Load Distribution" }];
+export function meta({ matches }: Route.MetaArgs) {
+  return routeMeta(matches, { title: "Team", description: "Teaching assistants and the sections they teach.", path: "/team" });
 }
 
 export default function Team() {

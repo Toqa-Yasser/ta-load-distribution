@@ -9,10 +9,11 @@
   --muted: #6b6672;
   --line: rgba(22, 20, 26, 0.1);
   --accent: #6d5dfc;
-  --accent-2: #ff6b5c; /* decorative coral (rings, dots, brand mark); too light for text */
+  --accent-2: #ff6b5c; /* decorative coral (rings, dots); too light for text */
   --danger: #c93a2c; /* fill behind white text: 5.1:1 */
   --danger-ink: #c93a2c; /* coral text on --bg: 4.6:1 */
   --mint: #2fd3a6;
+  --brand-stroke: #6d5dfc; /* scales mark (BrandMark, public/icon.svg) */
   --light: #0e6650; /* light-task badge text on its 15% tint over --bg: 5.0:1 */
   --heavy: #4f3ee0; /* heavy-task badge text on its 15% tint over --bg: 4.9:1 */
   --shadow: 0 10px 30px -12px rgba(22, 20, 26, 0.18), 0 1px 2px rgba(22, 20, 26, 0.04);
@@ -30,6 +31,7 @@
   --danger-ink: #ff7b6e; /* 7.6:1 on the dark --bg */
   --light: #5fe3bd; /* 8.9:1 on its tint */
   --heavy: #a99fff; /* 6.5:1 on its tint */
+  --brand-stroke: #9a8dff;
   --line: rgba(236, 234, 228, 0.13);
   --shadow: 0 12px 36px -14px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
   --glow: color-mix(in srgb, var(--accent) 6%, transparent);
@@ -95,10 +97,6 @@ h3 {
     border: 1px solid var(--line);
     border-radius: 20px;
     box-shadow: var(--shadow);
-  }
-
-  .brand-mark {
-    background: conic-gradient(from 210deg, var(--accent), var(--accent-2), var(--mint), var(--accent));
   }
 }
 

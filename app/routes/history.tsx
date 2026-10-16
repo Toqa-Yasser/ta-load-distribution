@@ -7,12 +7,13 @@ import { INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { plural } from "~/lib/format";
+import { routeMeta } from "~/lib/seo";
 import { useHistory } from "~/lib/use-history";
 import { getStore } from "~/server/store.server";
 import { listSnapshots, loadWorkspace } from "~/server/workspace.server";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "History · TA Load Distribution" }];
+export function meta({ matches }: Route.MetaArgs) {
+  return routeMeta(matches, { title: "History", description: "Snapshots, rollback and reset.", path: "/history" });
 }
 
 export async function loader() {

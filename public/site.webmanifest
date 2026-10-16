@@ -1,0 +1,12 @@
+{
+  "name": "TA Load Distribution",
+  "short_name": "TA Load",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#f6f3ee",
+  "background_color": "#f6f3ee",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

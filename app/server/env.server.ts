@@ -1,8 +1,12 @@
+import { DEFAULT_APP_URL } from "~/lib/seo";
+
 export interface Env {
   SUPABASE_URL?: string;
   SUPABASE_SECRET_KEY?: string;
   HISTORY_DELETE_PASSWORD?: string;
   DATA_STORE: "supabase" | "memory";
+  /** Public origin used for canonical/Open Graph URLs. Not a secret. */
+  APP_URL: string;
 }
 
 export const MISSING_SUPABASE_MESSAGE = "DATA_STORE=supabase requires SUPABASE_URL and SUPABASE_SECRET_KEY.";
@@ -31,5 +35,6 @@ export function getEnv(): Env {
     SUPABASE_SECRET_KEY,
     HISTORY_DELETE_PASSWORD: process.env.HISTORY_DELETE_PASSWORD || undefined,
     DATA_STORE,
+    APP_URL: (process.env.APP_URL || DEFAULT_APP_URL).replace(/\/+$/, ""),
   };
 }

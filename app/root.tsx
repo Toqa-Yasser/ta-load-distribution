@@ -6,8 +6,10 @@ import "./app.css";
 import { AppShell } from "~/components/layout/AppShell";
 import { ToastProvider } from "~/components/ui/Toast";
 import { shouldRevalidateRoot } from "~/lib/revalidate";
+import { absoluteUrl, DEFAULT_APP_URL, SITE_DESCRIPTION, SITE_NAME } from "~/lib/seo";
 import { THEME_INIT_SCRIPT, ThemeProvider } from "~/lib/theme";
 import type { RootLoaderData } from "~/lib/use-workspace";
+import { getEnv } from "~/server/env.server";
 import { getStore } from "~/server/store.server";
 import { todayIn } from "~/server/today.server";
 import { loadWorkspace } from "~/server/workspace.server";
@@ -19,15 +21,31 @@ export const links: Route.LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Sora:wght@500..800&display=swap",
   },
+  { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
+  { rel: "icon", href: "/favicon.ico", sizes: "32x32" },
+  { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+  { rel: "manifest", href: "/site.webmanifest" },
 ];
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "TA Load Distribution" }];
+// Site-wide tags. Pages re-emit these via routeMeta(), since only the deepest route's meta renders.
+export function meta({ loaderData }: Route.MetaArgs) {
+  const appUrl = loaderData?.appUrl ?? DEFAULT_APP_URL;
+  return [
+    { title: SITE_NAME },
+    { name: "description", content: SITE_DESCRIPTION },
+    { name: "theme-color", media: "(prefers-color-scheme: light)", content: "#f6f3ee" },
+    { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#0e0f14" },
+    { name: "robots", content: "index,follow" },
+    { property: "og:type", content: "website" },
+    { property: "og:site_name", content: SITE_NAME },
+    { property: "og:image", content: absoluteUrl(appUrl, "/og.png") },
+    { name: "twitter:card", content: "summary_large_image" },
+  ];
 }
 
 export async function loader(): Promise<RootLoaderData> {
   const { data, version } = await loadWorkspace(getStore());
-  return { workspace: data, version, today: todayIn() };
+  return { workspace: data, version, today: todayIn(), appUrl: getEnv().APP_URL };
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = shouldRevalidateRoot;

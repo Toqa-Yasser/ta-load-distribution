@@ -3,7 +3,7 @@ import { useRouteLoaderData } from "react-router";
 import { capacities as computeCapacities } from "~/engine/capacity";
 import type { ISODate, TA, Workspace } from "~/engine/types";
 
-export type RootLoaderData = { workspace: Workspace; version: number; today: ISODate };
+export type RootLoaderData = { workspace: Workspace; version: number; today: ISODate; appUrl: string };
 
 export function useWorkspace(): {
   workspace: Workspace;

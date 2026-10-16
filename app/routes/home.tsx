@@ -10,10 +10,11 @@ import { TurnHeader } from "~/components/dashboard/TurnHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { turnSize as computeTurnSize } from "~/engine/capacity";
 import { TASK_KINDS, type TA, type TaskKind } from "~/engine/types";
+import { routeMeta } from "~/lib/seo";
 import { useWorkspace } from "~/lib/use-workspace";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Dashboard · TA Load Distribution" }];
+export function meta({ matches }: Route.MetaArgs) {
+  return routeMeta(matches, { description: "Capacity gauges and upcoming task occurrences for every TA.", path: "/" });
 }
 
 const CARD_STAGGER = 0.05;

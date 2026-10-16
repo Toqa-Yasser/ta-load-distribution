@@ -1,6 +1,6 @@
 import { getEnv } from "~/server/env.server";
 
-const KEYS = ["NODE_ENV", "VERCEL", "DATA_STORE", "SUPABASE_URL", "SUPABASE_SECRET_KEY"] as const;
+const KEYS = ["NODE_ENV", "VERCEL", "DATA_STORE", "SUPABASE_URL", "SUPABASE_SECRET_KEY", "APP_URL"] as const;
 let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
@@ -44,4 +44,11 @@ test("production with an explicit DATA_STORE=memory keeps the memory store", () 
   process.env.NODE_ENV = "production";
   process.env.DATA_STORE = "memory";
   expect(getEnv().DATA_STORE).toBe("memory");
+});
+
+test("APP_URL defaults to the local dev origin and drops a trailing slash", () => {
+  process.env.NODE_ENV = "test";
+  expect(getEnv().APP_URL).toBe("http://localhost:5173");
+  process.env.APP_URL = "https://load.example.edu/";
+  expect(getEnv().APP_URL).toBe("https://load.example.edu");
 });

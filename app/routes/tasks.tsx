@@ -9,11 +9,12 @@ import { KIND_LABEL } from "~/components/tasks/KindBadge";
 import { isTaskKind, type TaskKind } from "~/engine/types";
 import { plural } from "~/lib/format";
 import { indicatorSpring, usePressMotion } from "~/lib/motion";
+import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Tasks · TA Load Distribution" }];
+export function meta({ matches }: Route.MetaArgs) {
+  return routeMeta(matches, { title: "Tasks", description: "Create tasks and preview who gets each occurrence.", path: "/tasks" });
 }
 
 export default function Tasks() {

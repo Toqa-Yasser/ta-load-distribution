@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { BrandMark } from "~/components/ui/BrandMark";
 import { Button } from "~/components/ui/Button";
 import { ThemeToggle } from "~/components/ui/ThemeToggle";
 import { useOpenSettings } from "~/lib/settings";
@@ -10,14 +11,7 @@ export function Header() {
     <header className="sticky top-0 z-30 px-3 pt-3 md:px-6">
       <div className="glass mx-auto flex max-w-6xl items-center gap-3 py-1.5 pl-2 pr-1.5">
         <Link to="/" className="flex min-h-11 items-center gap-2.5 rounded-xl pr-2 focus-visible:outline-2 focus-visible:outline-accent">
-          <span
-            aria-hidden
-            className="brand-mark grid size-9 place-items-center rounded-xl text-white shadow-[0_6px_20px_-8px_var(--accent)]"
-          >
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              <path d="M5 17V11M10 17V7M15 17v-4M20 17V9" />
-            </svg>
-          </span>
+          <BrandMark size={32} className="shrink-0" />
           <span className="font-display text-lg font-semibold tracking-tight">
             Load<span className="text-accent">.</span>
           </span>

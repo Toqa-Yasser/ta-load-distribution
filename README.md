@@ -48,6 +48,7 @@ Nothing is sent to the browser.
 | `HISTORY_DELETE_PASSWORD` | Password required to delete the snapshot history                         |
 | `DATA_STORE`              | Optional: `memory` or `supabase`. Defaults to `supabase` when `SUPABASE_URL` is set, and always in production |
 | `APP_TIMEZONE`            | Optional IANA timezone for "today" (e.g. `Africa/Cairo`, the default)    |
+| `APP_URL`                 | Public origin for canonical and Open Graph URLs (`og:url`, `og:image`). Defaults to `http://localhost:5173`; set it to the production URL on Vercel |
 
 ## Supabase setup
 
@@ -66,6 +67,19 @@ npm run typecheck   # route typegen + tsc
 npm run build
 ```
 
+## Icons and social image
+
+The mark lives in `public/icon.svg` (and as `app/components/ui/BrandMark.tsx` for the header). The raster
+files (`favicon.ico`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `og.png`) are rendered
+from it with headless Chrome, with no extra dependencies:
+
+```sh
+node scripts/icons.mjs   # CHROME_PATH=/path/to/chrome to use a browser other than Google Chrome on macOS
+```
+
+Rerun it after changing the SVG and commit the regenerated files. `og.png` loads Sora from Google Fonts,
+so run it online.
+
 ## Deploying to Vercel
 
 The Vercel preset is already configured in `react-router.config.ts` (`@vercel/react-router`), so no
@@ -73,7 +87,8 @@ The Vercel preset is already configured in `react-router.config.ts` (`@vercel/re
 
 1. Import the repository in Vercel. The framework is detected as React Router.
 2. Under Project → Settings → Environment Variables, set `SUPABASE_URL`, `SUPABASE_SECRET_KEY`
-   and `HISTORY_DELETE_PASSWORD` (optionally `APP_TIMEZONE`).
+   and `HISTORY_DELETE_PASSWORD`, plus `APP_URL` set to the production URL (e.g.
+   `https://your-app.vercel.app`) so link previews and canonical URLs point at it (optionally `APP_TIMEZONE`).
 3. Deploy.
 
 Without `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, a production deploy refuses to start (every

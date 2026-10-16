@@ -5,11 +5,19 @@ import { SplitBar } from "~/components/tasks/SplitBar";
 import { Card } from "~/components/ui/Card";
 import { Select } from "~/components/ui/Select";
 import { fmtDateLong, fmtScheduleSummary, plural } from "~/lib/format";
+import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
-import { useWorkspace } from "~/lib/use-workspace";
+import { useWorkspace, type RootLoaderData } from "~/lib/use-workspace";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Task · TA Load Distribution" }];
+export function meta({ matches, params }: Route.MetaArgs) {
+  const root = matches.find((m) => m?.id === "root")?.loaderData as RootLoaderData | undefined;
+  const task = root?.workspace.tasks.find((t) => t.id === params.taskId);
+  const name = task?.title ?? "Task";
+  return routeMeta(matches, {
+    title: `${name} · Tasks`,
+    description: `${name} — occurrences and assignments.`,
+    path: `/tasks/${params.taskId ?? ""}`,
+  });
 }
 
 function BackLink() {
