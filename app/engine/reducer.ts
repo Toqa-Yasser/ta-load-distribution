@@ -105,6 +105,7 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
 
     case "setSectionSlot": {
       findSection(ws, cmd.sectionId);
+      if (cmd.slot !== 0 && cmd.slot !== 1) throw new ValidationError("Invalid slot.");
       if (cmd.taId !== null) findTA(ws, cmd.taId);
       return {
         ...ws,
@@ -125,9 +126,35 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
     case "setSemester": {
       const { semester } = cmd;
       if (semester.end < semester.start) throw new ValidationError("Semester end must not be before its start.");
-      const dropped: Occurrence[] = ws.tasks.flatMap((t) => t.occurrences.filter((o) => o.date > semester.end));
-      const tasks = ws.tasks.map((t) => ({ ...t, occurrences: t.occurrences.filter((o) => o.date <= semester.end) }));
-      return { ...ws, semester: { ...semester }, tasks, ledger: refund(ws.ledger, dropped) };
+      const prev = ws.semester;
+      // An earlier end truncates; a later start drops what now falls before it. Both are refunded.
+      const startLater = semester.start > prev.start;
+      const keep = (o: Occurrence) => o.date <= semester.end && (!startLater || o.date >= semester.start);
+      const dropped: Occurrence[] = ws.tasks.flatMap((t) => t.occurrences.filter((o) => !keep(o)));
+      let tasks = ws.tasks.map((t) => ({ ...t, occurrences: t.occurrences.filter(keep) }));
+      let ledger = refund(ws.ledger, dropped);
+
+      // A later end extends open-ended recurring tasks: only the new dates are dealt, existing
+      // assignments stay put, and the ledger is threaded through the tasks in order.
+      if (semester.end > prev.end) {
+        const caps = capacities(ws);
+        tasks = tasks.map((t) => {
+          const s = t.schedule;
+          if ((s.type !== "daily" && s.type !== "weekly" && s.type !== "monthly") || s.end !== null) return t;
+          const last = t.occurrences.reduce((max, o) => (o.date > max ? o.date : max), prev.end);
+          const fresh = generateDates(s, semester).filter((d) => d > last && d >= semester.start);
+          if (fresh.length === 0) return t;
+          const assigned = assignOccurrences({
+            capacities: caps,
+            ledger,
+            occurrences: fresh.map((date) => ({ id: ctx.newId("occ"), date })),
+            rng: ctx.rng,
+          });
+          ledger = assigned.ledger;
+          return { ...t, occurrences: [...t.occurrences, ...assigned.occurrences] };
+        });
+      }
+      return { ...ws, semester: { ...semester }, tasks, ledger };
     }
 
     case "createTask": {
@@ -253,6 +280,10 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
         })),
       };
     }
+
+    default:
+      // Commands arrive as JSON from the client; reject anything the union does not cover.
+      throw new ValidationError("Unknown command.");
   }
 }
 

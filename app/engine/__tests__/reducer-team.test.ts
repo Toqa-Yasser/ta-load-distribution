@@ -70,3 +70,12 @@ test("describe produces human labels", () => {
   expect(describeCmd({ type: "removeTA", taId: ws.tas[0].id }, ws)).toBe('Removed TA "Ahmed"');
   expect(describeCmd({ type: "reset" }, ws)).toBe("Reset everything");
 });
+test("an unknown command is rejected", () => {
+  const { ws } = team();
+  expect(() => reduce(ws, { type: "launchRocket" } as unknown as Command, ctx)).toThrow(new ValidationError("Unknown command."));
+});
+test("setSectionSlot rejects a slot other than 0 or 1", () => {
+  const { ws, id } = team();
+  const bad = { type: "setSectionSlot", sectionId: ws.sections[0].id, slot: 2, taId: id("A") } as unknown as Command;
+  expect(() => reduce(ws, bad, ctx)).toThrow(new ValidationError("Invalid slot."));
+});
