@@ -246,8 +246,8 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
         tasks: ws.tasks.map((t) => ({
           ...t,
           occurrences: t.occurrences.map((o) => {
-            if (t.id === cmd.a.taskId && o.id === a.id) return { ...o, taId: b.taId };
-            if (t.id === cmd.b.taskId && o.id === b.id) return { ...o, taId: a.taId };
+            if (t.id === cmd.a.taskId && o.id === a.id) return { ...o, taId: b.taId, turn: b.turn };
+            if (t.id === cmd.b.taskId && o.id === b.id) return { ...o, taId: a.taId, turn: a.turn };
             return o;
           }),
         })),

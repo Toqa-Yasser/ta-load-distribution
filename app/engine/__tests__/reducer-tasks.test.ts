@@ -60,3 +60,18 @@ test("swapOccurrences trades TAs and leaves the ledger alone", () => {
   expect(out.ledger).toEqual(t.ledger);
   expect(() => reduce(t, { type: "swapOccurrences", a: ref(a), b: ref(a) }, ctx)).toThrow(ValidationError);
 });
+test("swapOccurrences trades turns too, so a later refund hits the right TA", () => {
+  const { ws } = team();
+  const t = quiz(ws, 10);                        // first 8 in turn 1, last 2 in turn 2
+  const occs = t.tasks[0].occurrences;
+  const b = occs.find(o => o.turn === 2)!;
+  const a = occs.find(o => o.turn === 1 && o.taId !== b.taId)!;
+  const ref = (o: Occurrence): OccurrenceRef => ({ taskId: t.tasks[0].id, occurrenceId: o.id });
+  const out = reduce(t, { type: "swapOccurrences", a: ref(a), b: ref(b) }, ctx);
+  const find = (id: string) => out.tasks[0].occurrences.find(o => o.id === id)!;
+  expect(find(a.id).turn).toBe(2);
+  expect(find(b.id).turn).toBe(1);
+  const gone = reduce(out, { type: "deleteTask", taskId: t.tasks[0].id }, ctx);
+  expect(gone.ledger.turn).toBe(2);
+  expect(Object.values(gone.ledger.used).every(n => n === 0)).toBe(true);
+});
