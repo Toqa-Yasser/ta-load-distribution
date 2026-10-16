@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import type { Occurrence, TA } from "~/engine/types";
 import { EASE_OUT } from "~/lib/motion";
 
@@ -12,9 +12,11 @@ type SplitBarProps = {
 /**
  * Horizontal stacked bar: one segment per TA, width proportional to how many of the task's
  * occurrences they hold. Widths animate on change; `initial={false}` renders the final width
- * on the server and on hydration (MotionConfig makes it instant under reduced motion).
+ * on the server and on hydration. Width is not a transform, so MotionConfig does not cover it:
+ * under prefers-reduced-motion the width is applied directly as a style, with no tween.
  */
 export function SplitBar({ occurrences, tas, legend = false }: SplitBarProps) {
+  const reduced = useReducedMotion();
   const counts = new Map<string, number>();
   for (const o of occurrences) counts.set(o.taId, (counts.get(o.taId) ?? 0) + 1);
   const total = occurrences.length;
@@ -28,17 +30,21 @@ export function SplitBar({ occurrences, tas, legend = false }: SplitBarProps) {
         aria-label={total === 0 ? "No occurrences" : `Split: ${summary}`}
         className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-ink/5"
       >
-        {parts.map(({ ta, n }) => (
-          <motion.div
-            key={ta.id}
-            title={`${ta.name}: ${n}`}
-            initial={false}
-            animate={{ width: `${(n / total) * 100}%` }}
-            transition={{ duration: 0.4, ease: EASE_OUT }}
-            className="h-full first:rounded-l-full last:rounded-r-full"
-            style={{ background: ta.color }}
-          />
-        ))}
+        {parts.map(({ ta, n }) => {
+          const width = `${(n / total) * 100}%`;
+          return (
+            <motion.div
+              key={ta.id}
+              title={`${ta.name}: ${n}`}
+              initial={false}
+              // Reduced motion: the width is set in the same render (even a 0s tween lands a frame later).
+              animate={reduced ? undefined : { width }}
+              transition={{ duration: 0.4, ease: EASE_OUT }}
+              className="h-full first:rounded-l-full last:rounded-r-full"
+              style={{ background: ta.color, ...(reduced ? { width } : {}) }}
+            />
+          );
+        })}
       </div>
       {legend && parts.length > 0 && (
         <ul aria-hidden className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">

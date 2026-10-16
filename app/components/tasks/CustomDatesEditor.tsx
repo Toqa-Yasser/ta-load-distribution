@@ -1,5 +1,5 @@
 import { addDays, format, parseISO } from "date-fns";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { INPUT_CLASS } from "~/components/team/InlineRename";
 import { Button } from "~/components/ui/Button";
@@ -40,6 +40,7 @@ function IntInput({ value, min, max, onValue }: { value: number; min: number; ma
 
 function DateChip({ date, onEdit, onRemove }: { date: ISODate; onEdit: (next: ISODate) => void; onRemove: () => void }) {
   const press = usePressMotion();
+  const reduced = useReducedMotion();
   const [editing, setEditing] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -66,7 +67,7 @@ function DateChip({ date, onEdit, onRemove }: { date: ISODate; onEdit: (next: IS
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: reduced ? 0 : 0.18 }}
       className="flex items-center rounded-xl border border-line bg-surface"
     >
       {editing ? (

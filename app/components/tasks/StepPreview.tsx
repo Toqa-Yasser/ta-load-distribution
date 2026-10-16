@@ -66,7 +66,7 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
                 key={o.id}
                 initial={reduced ? false : { opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, ease: EASE_OUT, delay: Math.min(i * ROW_STAGGER, MAX_STAGGER) }}
+                transition={reduced ? { duration: 0 } : { duration: 0.25, ease: EASE_OUT, delay: Math.min(i * ROW_STAGGER, MAX_STAGGER) }}
                 className="flex min-h-11 items-center justify-between gap-3 rounded-xl px-3 odd:bg-ink/[0.03]"
               >
                 <span className="tabular-nums">{fmtDate(o.date)}</span>

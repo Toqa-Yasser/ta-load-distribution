@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useSearchParams } from "react-router";
 import type { Route } from "./+types/tasks";
 import { NewTaskSheet } from "~/components/tasks/NewTaskSheet";
@@ -18,6 +18,7 @@ export default function Tasks() {
   const { workspace } = useWorkspace();
   const { submit } = useCommand();
   const press = usePressMotion();
+  const reduced = useReducedMotion();
   // `?new=1` opens the sheet, so a refresh keeps it open.
   const [params, setParams] = useSearchParams();
   const sheetOpen = params.get("new") === "1";
@@ -65,7 +66,7 @@ export default function Tasks() {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: reduced ? 0 : 0.2 }}
               >
                 <TaskCard
                   task={task}

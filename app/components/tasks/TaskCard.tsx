@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Button } from "~/components/ui/Button";
@@ -19,6 +19,7 @@ const MENU_ITEM =
 export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
   const { workspace } = useWorkspace();
   const press = usePressMotion();
+  const reduced = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -75,7 +76,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
                   initial={{ opacity: 0, scale: 0.95, y: -4 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                  transition={{ duration: 0.15, ease: EASE_OUT }}
+                  transition={{ duration: reduced ? 0 : 0.15, ease: EASE_OUT }}
                   className="absolute right-0 top-12 w-44 origin-top-right rounded-xl border border-line bg-bg p-1 shadow-xl"
                 >
                   <motion.button
