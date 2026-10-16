@@ -2,6 +2,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { createRoutesStub } from "react-router";
 import { ThemeProvider } from "~/lib/theme";
+import { CONTENT_COLUMN } from "../column";
 import { Header } from "../Header";
 
 const renderAt = (path: string) => {
@@ -33,11 +34,15 @@ test("aria-current on the active pill link", async () => {
   expect(current.map((a) => a.textContent)).toEqual(["Tasks"]);
 });
 
-test("each pill is centred in its grid column; the pages pill hides below md without fighting its flex display", async () => {
+test("the pill row uses the page content column: brand at the start, pages centred, actions at the end", async () => {
   const { container } = renderAt("/");
   await screen.findByRole("banner");
+  const column = container.querySelector<HTMLElement>("[data-header-column]")!;
+  for (const c of CONTENT_COLUMN.split(" ")) expect(column.className.split(/\s+/)).toContain(c);
   const [brand, pages, actions] = [...container.querySelectorAll<HTMLElement>("[data-pill]")].map((el) => el.className.split(/\s+/));
-  for (const cls of [brand, pages, actions]) expect(cls).toContain("justify-self-center");
+  expect(brand).toContain("justify-self-start");
+  expect(pages).toContain("justify-self-center");
+  expect(actions).toContain("justify-self-end");
   expect(pages).toContain("max-md:hidden");
   expect(pages).not.toContain("hidden");
 });

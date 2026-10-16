@@ -8,6 +8,7 @@ import { OpenSettingsContext } from "~/lib/settings";
 import { UNDO_FETCHER_KEY, useHistory } from "~/lib/use-history";
 import { Background } from "./Background";
 import { CommandToasts } from "./CommandToasts";
+import { CONTENT_COLUMN } from "./column";
 import { Header } from "./Header";
 import { NavBar } from "./NavBar";
 import { SettingsPanel } from "./SettingsPanel";
@@ -41,7 +42,7 @@ export function AppShell() {
               exit="exit"
               transition={reduced ? { duration: 0 } : pageTransition}
               // Clears the fixed header (--header-h) plus a 24px gap.
-              className="mx-auto max-w-6xl px-4 pb-28 pt-[calc(var(--header-h)+1.5rem)] md:px-6 md:pb-12"
+              className={`${CONTENT_COLUMN} pb-28 pt-[calc(var(--header-h)+1.5rem)] md:pb-12`}
             >
               {outlet}
             </motion.main>
