@@ -13,6 +13,7 @@
   --mint: #2fd3a6;
   --shadow: 0 10px 30px -12px rgba(22, 20, 26, 0.18), 0 1px 2px rgba(22, 20, 26, 0.04);
   --blob-opacity: 0.32;
+  --glare: rgba(255, 255, 255, 0.55);
   color-scheme: light;
 }
 
@@ -24,6 +25,7 @@
   --line: rgba(236, 234, 228, 0.1);
   --shadow: 0 12px 36px -14px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
   --blob-opacity: 0.25;
+  --glare: rgba(255, 255, 255, 0.09);
   color-scheme: dark;
 }
 
@@ -127,6 +129,20 @@ h3 {
   100% { transform: translate3d(-12vw, -6vh, 0) scale(1); }
 }
 
+/* ---------- Gauge liquid ---------- */
+/* Wave paths are two periods (200 user units) wide; sliding one period loops seamlessly. */
+.gauge-wave {
+  animation: gauge-drift 5s linear infinite;
+}
+.gauge-wave-back {
+  animation-duration: 8s;
+  animation-direction: reverse;
+}
+@keyframes gauge-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -135,7 +151,8 @@ h3 {
     transition-duration: 0.001ms !important;
   }
   /* A near-zero duration on an infinite animation would strobe; hold the blobs still instead. */
-  .mesh-blob {
+  .mesh-blob,
+  .gauge-wave {
     animation: none !important;
   }
 }
