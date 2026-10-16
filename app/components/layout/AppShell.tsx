@@ -40,8 +40,8 @@ export function AppShell() {
               animate="enter"
               exit="exit"
               transition={reduced ? { duration: 0 } : pageTransition}
-              // pt-21 (84px) = the fixed header's 60px + the old 24px gap below it.
-              className="mx-auto max-w-6xl px-4 pb-28 pt-21 md:px-6 md:pb-12"
+              // Clears the fixed header (--header-h) plus a 24px gap.
+              className="mx-auto max-w-6xl px-4 pb-28 pt-[calc(var(--header-h)+1.5rem)] md:px-6 md:pb-12"
             >
               {outlet}
             </motion.main>

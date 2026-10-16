@@ -7,10 +7,12 @@ import { useScrolled } from "~/lib/use-scrolled";
 import { NavBar } from "./NavBar";
 
 /**
- * Three independent floating pills: brand (left), pages (centre, md and up) and actions (right).
- * The 1fr/auto/1fr grid keeps the centre pill centred in the viewport whatever the outer pills'
- * widths; below md the centre column is empty and the pages live in the bottom tab bar.
- * The header is fixed and 60px tall (12px top gap + 48px pills): AppShell's <main> pads for it.
+ * Three independent floating pills: brand, pages (md and up) and actions, each centred in its
+ * column of a 1fr/auto/1fr grid, so the centre pill stays centred in the viewport whatever the
+ * outer pills' widths and the three read as evenly spread. Below md the centre column is empty
+ * (the pages live in the bottom tab bar) and the two pills sit centred in their halves.
+ * The header is fixed and --header-h tall (12px top gap + 48px pills); AppShell's <main> pads by
+ * the same variable.
  */
 export function Header() {
   const openSettings = useOpenSettings();
@@ -20,8 +22,8 @@ export function Header() {
   }`;
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 pt-3">
-      <div data-pill="brand" className={`${pill} pointer-events-auto justify-self-start pl-1.5 pr-4`}>
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-30 grid h-(--header-h) grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 pt-3">
+      <div data-pill="brand" className={`${pill} pointer-events-auto justify-self-center pl-1.5 pr-4`}>
         <Link
           to="/"
           className="flex min-h-11 items-center gap-2 rounded-full pr-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -31,7 +33,7 @@ export function Header() {
         </Link>
       </div>
       <NavBar placement="header" className={`${pill} pointer-events-auto justify-self-center`} />
-      <div data-pill="actions" className={`${pill} pointer-events-auto col-start-3 justify-self-end gap-0.5 px-0.5`}>
+      <div data-pill="actions" className={`${pill} pointer-events-auto col-start-3 justify-self-center gap-0.5 px-0.5`}>
         <ThemeToggle />
         <IconButton aria-label="Settings" title="Settings" aria-haspopup="dialog" onClick={openSettings}>
           <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { useMounted } from "~/lib/motion";
 
 /**
- * True once the page is scrolled past `threshold` px. Always false on the server and the first
- * client render (gated by useMounted), so markup that depends on it hydrates cleanly.
+ * True once the page is scrolled past `threshold` px. The state starts false and is only set from
+ * the effect, so the server and the hydrating render both see false and markup that depends on it
+ * hydrates cleanly; a page that loads already scrolled flips on the first effect.
  */
 export function useScrolled(threshold = 8): boolean {
-  const mounted = useMounted();
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const update = () => setScrolled(window.scrollY > threshold);
@@ -14,5 +13,5 @@ export function useScrolled(threshold = 8): boolean {
     window.addEventListener("scroll", update, { passive: true });
     return () => window.removeEventListener("scroll", update);
   }, [threshold]);
-  return mounted && scrolled;
+  return scrolled;
 }

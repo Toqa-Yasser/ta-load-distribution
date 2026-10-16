@@ -32,3 +32,17 @@ test("aria-current on the active pill link", async () => {
   const current = within(pages).getAllByRole("link").filter((a) => a.getAttribute("aria-current") === "page");
   expect(current.map((a) => a.textContent)).toEqual(["Tasks"]);
 });
+
+test("each pill is centred in its grid column; the pages pill hides below md without fighting its flex display", async () => {
+  const { container } = renderAt("/");
+  await screen.findByRole("banner");
+  const [brand, pages, actions] = [...container.querySelectorAll<HTMLElement>("[data-pill]")].map((el) => el.className.split(/\s+/));
+  for (const cls of [brand, pages, actions]) expect(cls).toContain("justify-self-center");
+  expect(pages).toContain("max-md:hidden");
+  expect(pages).not.toContain("hidden");
+});
+
+test("the header height comes from the shared --header-h variable", async () => {
+  renderAt("/");
+  expect((await screen.findByRole("banner")).className).toContain("h-(--header-h)");
+});

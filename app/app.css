@@ -22,6 +22,7 @@
   --glow: color-mix(in srgb, var(--accent) 5%, transparent);
   --glare: rgba(255, 255, 255, 0.55);
   --scrim: rgba(16, 14, 20, 0.45); /* modal backdrop: must darken in both themes, so not --ink */
+  --header-h: 3.75rem; /* fixed header: 12px top gap + 48px pills; <main> pads by it */
   color-scheme: light;
 }
 
