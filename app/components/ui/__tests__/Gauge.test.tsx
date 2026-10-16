@@ -15,3 +15,9 @@ test("treats NaN and out-of-range values as clamped", () => {
   rerender(<Gauge value={-0.2} color="#f00" label="A" />);
   expect(screen.getByText("0%")).toBeInTheDocument();
 });
+test("clamps Infinity to 100%", () => {
+  const { rerender } = render(<Gauge value={Infinity} color="#f00" label="A" />);
+  expect(screen.getByText("100%")).toBeInTheDocument();
+  rerender(<Gauge value={-Infinity} color="#f00" label="A" />);
+  expect(screen.getByText("0%")).toBeInTheDocument();
+});

@@ -26,8 +26,8 @@ const levelToY = (v: number) => 106 - v * 112;
  * level also snaps). `value` is clamped to 0..1 (NaN reads as 0) for both the fill and the text.
  */
 export function Gauge({ value, color, label, size = 112 }: GaugeProps) {
-  // NaN (e.g. a 0/0 load ratio) reads as empty; out-of-range values are clamped.
-  const target = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
+  // NaN (e.g. a 0/0 load ratio) reads as empty; everything else, ±Infinity included, is clamped.
+  const target = Number.isNaN(value) ? 0 : Math.min(1, Math.max(0, value));
   const pct = Math.round(target * 100);
   const reduced = useReducedMotion();
   const clipId = `gauge-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
