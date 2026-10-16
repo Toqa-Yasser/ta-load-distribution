@@ -53,7 +53,7 @@ export class SupabaseStore implements Store {
   }
 
   async listSnapshots(): Promise<SnapshotMeta[]> {
-    const { data, error } = await this.db.from("snapshots").select(META_COLUMNS).order("id", { ascending: false });
+    const { data, error } = await this.db.from("snapshots").select(META_COLUMNS).order("id", { ascending: false }).limit(500);
     if (error) throw error;
     return (data as SnapshotDbRow[]).map(toMeta);
   }
@@ -67,7 +67,7 @@ export class SupabaseStore implements Store {
   }
 
   async pruneAutoSnapshots(keep: number): Promise<void> {
-    const { data, error } = await this.db.from("snapshots").select("id").eq("kind", "auto").order("id", { ascending: false });
+    const { data, error } = await this.db.from("snapshots").select("id").eq("kind", "auto").order("id", { ascending: false }).limit(1000);
     if (error) throw error;
     const stale = (data ?? []).slice(keep).map((r) => r.id as number);
     if (stale.length === 0) return;

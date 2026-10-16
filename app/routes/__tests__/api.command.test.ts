@@ -6,7 +6,7 @@ test("applies a command and returns the snapshot id and label", async () => {
   expect(await res.json()).toMatchObject({ ok: true, label: 'Added TA "Ahmed"', snapshotId: expect.any(Number) });
 });
 test("api.command returns 400 with the error message", async () => {
-  const res = await post({ command: { type: "createTask", title: "X", schedule: { type: "one-time", date: "2026-10-01" } } });
+  const res = await post({ command: { type: "createTask", kind: "light", title: "X", schedule: { type: "one-time", date: "2026-10-01" } } });
   expect(res.status).toBe(400);
   expect(await res.json()).toMatchObject({ ok: false, message: "Assign sections to at least one TA first." });
 });
@@ -31,4 +31,12 @@ test("api.command returns 500 JSON on unexpected errors", async () => {
   expect(spy).toHaveBeenCalled();
   get.mockRestore();
   spy.mockRestore();
+});
+test("api.command rejects createTask without a valid kind (400)", async () => {
+  const schedule = { type: "one-time", date: "2026-10-01" };
+  for (const kind of [undefined, null, "medium", 1]) {
+    const res = await post({ command: { type: "createTask", title: "X", schedule, ...(kind === undefined ? {} : { kind }) } });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ ok: false, message: "Invalid command.", code: "BAD_REQUEST" });
+  }
 });

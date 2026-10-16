@@ -7,21 +7,12 @@ export class MemoryStore implements Store {
   private ws: WorkspaceRow | null = null;
   private snaps: StoredSnapshot[] = [];
   private nextId = 1;
-  private inHook = false;
-
-  constructor(private opts: { beforePut?: (store: MemoryStore) => void | Promise<void> } = {}) {}
 
   async getWorkspace(): Promise<WorkspaceRow | null> {
     return this.ws ? structuredClone(this.ws) : null;
   }
 
   async putWorkspace(data: Workspace, expectedVersion: number | null): Promise<boolean> {
-    // The hook is a conflict-injection point for updates: it is skipped for the
-    // initial create and never re-entered when it calls putWorkspace itself.
-    if (this.opts.beforePut && expectedVersion !== null && !this.inHook) {
-      this.inHook = true;
-      try { await this.opts.beforePut(this); } finally { this.inHook = false; }
-    }
     if (expectedVersion === null) {
       if (this.ws) return false;
       this.ws = { data: structuredClone(data), version: 1 };
