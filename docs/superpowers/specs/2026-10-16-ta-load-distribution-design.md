@@ -152,9 +152,10 @@ Global: header with animated nav indicator + theme toggle (sun↔moon morph); to
 
 ### A6. Stack decisions
 
-- **Pin React Router to 7.18.4** (`react-router`, `@react-router/{dev,node,serve}`): the Vercel
-  preset `@vercel/react-router@1.3.7` peers on RR7, and RR8 is RSC-oriented with no Vercel support
-  yet. Project has no app code, so the downgrade is free.
+- **React Router 8.4.0** (`react-router`, `@react-router/{dev,node,serve}`) — the user's decision
+  (2026-10-16), accepting that `@vercel/react-router@1.3.7` declares only v7 peers (vercel/vercel#16730
+  open). Install with a peer override; if Vercel's build rejects the preset, use Vercel's zero-config
+  React Router path instead.
 - Add: `motion`, `@supabase/supabase-js`, `@dnd-kit/core` + `@dnd-kit/utilities`, `@vercel/react-router`,
   `date-fns`, `nanoid`; dev: `vitest`, `@testing-library/react`, `jsdom`.
 - `react-router.config.ts`: `presets: [vercelPreset()]`.

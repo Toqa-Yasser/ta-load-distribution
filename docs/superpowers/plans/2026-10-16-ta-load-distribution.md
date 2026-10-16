@@ -6,13 +6,13 @@
 
 **Architecture:** A pure TypeScript engine (`app/engine/`) owns all domain logic as `reduce(workspace, command) → workspace`. A thin server layer (`app/server/`) loads/saves the single JSON workspace document through a `Store` interface (Supabase in production, in-memory for tests and local dev), auto-snapshotting before every write. React Router v7 framework-mode routes render the five pages from the root loader and submit commands via fetchers to resource routes.
 
-**Tech Stack:** React 19, React Router 7.18 (framework mode, SSR), Vite 8, Tailwind CSS 4, `motion` 14, `@dnd-kit/core`, `date-fns` 4, `@supabase/supabase-js` 2, Vitest 5 + Testing Library, `@vercel/react-router` preset.
+**Tech Stack:** React 19, React Router 8.4 (framework mode, SSR), Vite 8, Tailwind CSS 4, `motion` 14, `@dnd-kit/core`, `date-fns` 4, `@supabase/supabase-js` 2, Vitest 5 + Testing Library, `@vercel/react-router` preset.
 
 **Spec:** `docs/superpowers/specs/2026-10-16-ta-load-distribution-design.md`
 
 ## Global Constraints
 
-- React Router pinned to **7.18.4** (`react-router`, `@react-router/{dev,node,serve}`); Vercel preset `@vercel/react-router@1.3.7`.
+- React Router pinned to **8.4.0** (`react-router`, `@react-router/{dev,node,serve}`) — user decision, accepting that `@vercel/react-router@1.3.7` only declares v7 peers (installed with a peer override; if the Vercel build rejects the preset, fall back to Vercel's zero-config React Router path).
 - Engine code in `app/engine/` is pure: no I/O, no `Date.now()`/`Math.random()` except through the injected `ReduceContext`.
 - Service-role Supabase key is read only in `*.server.ts` files; never imported by client code.
 - Env vars: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `HISTORY_DELETE_PASSWORD`; plus `DATA_STORE=memory` to run without Supabase.
