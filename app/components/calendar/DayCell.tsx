@@ -28,7 +28,7 @@ function visibility(i: number): string {
 }
 
 const MORE =
-  "min-h-9 w-full rounded-lg px-1.5 text-left text-xs font-medium text-muted transition-colors hover:bg-ink/5 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent pointer-coarse:min-h-11";
+  "min-h-11 w-full rounded-lg px-1.5 text-left text-xs font-medium text-muted transition-colors hover:bg-ink/5 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent";
 
 const same = (a: OccurrenceRef | null, b: OccurrenceRef) =>
   a !== null && a.taskId === b.taskId && a.occurrenceId === b.occurrenceId;

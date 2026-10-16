@@ -25,3 +25,12 @@ test("shiftMonth crosses year boundaries and fmtMonth names the month", () => {
   expect(shiftMonth("2026-01", -1)).toBe("2025-12");
   expect(fmtMonth("2026-10")).toBe("October 2026");
 });
+
+test("monthCells spills into neighbouring years", () => {
+  const dec = monthCells("2026-12");
+  expect(dec.at(-1)).toEqual({ date: "2027-01-10", inMonth: false });
+  expect(dec.filter((c) => c.date.startsWith("2027-01")).every((c) => !c.inMonth)).toBe(true);
+  const jan = monthCells("2026-01");
+  expect(jan[0]).toEqual({ date: "2025-12-29", inMonth: false });
+  expect(jan.filter((c) => c.inMonth)).toHaveLength(31);
+});
