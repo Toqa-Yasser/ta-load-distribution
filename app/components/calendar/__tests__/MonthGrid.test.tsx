@@ -2,12 +2,32 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MonthGrid } from "~/components/calendar/MonthGrid";
 
+const taById = new Map([
+  ["A", { id: "A", name: "Ahmed", color: "#f00" }],
+  ["B", { id: "B", name: "Bassem", color: "#0f0" }],
+]);
+
 test("clicking a pill while in swap mode selects the target", () => {
   const onSelect = vi.fn();
-  const tasks = [{ id: "t", title: "Quiz", createdAt: "", schedule: { type: "one-time", date: "x" }, occurrences: [
+  const tasks = [{ id: "t", title: "Quiz", kind: "light", createdAt: "", schedule: { type: "one-time", date: "x" }, occurrences: [
     { id: "1", date: "2026-10-05", taId: "A", turn: 1 }, { id: "2", date: "2026-10-06", taId: "A", turn: 1 }] }];
-  render(<MonthGrid yearMonth="2026-10" tasks={tasks as any} taById={new Map([["A", { id: "A", name: "Ahmed", color: "#f00" }]])}
+  render(<MonthGrid yearMonth="2026-10" tasks={tasks as any} taById={taById}
     selected={null} swapSource={{ taskId: "t", occurrenceId: "1" }} onSelect={onSelect} />);
-  fireEvent.click(screen.getByRole("button", { name: /Quiz.*Oct 6/i }));
+  fireEvent.click(screen.getByRole("button", { name: "Quiz · Oct 6 · Ahmed · Light" }));
   expect(onSelect).toHaveBeenCalledWith({ taskId: "t", occurrenceId: "2" });
+});
+
+test("MonthGrid dims other-kind pills in swap mode", () => {
+  const tasks = [
+    { id: "t", title: "Quiz", kind: "light", createdAt: "", schedule: { type: "one-time", date: "x" }, occurrences: [
+      { id: "1", date: "2026-10-05", taId: "A", turn: 1 }, { id: "2", date: "2026-10-06", taId: "B", turn: 1 }] },
+    { id: "h", title: "Exam", kind: "heavy", createdAt: "", schedule: { type: "one-time", date: "x" }, occurrences: [
+      { id: "3", date: "2026-10-07", taId: "B", turn: 1 }] },
+  ];
+  render(<MonthGrid yearMonth="2026-10" tasks={tasks as any} taById={taById}
+    selected={null} swapSource={{ taskId: "t", occurrenceId: "1" }} onSelect={() => {}} />);
+  const sameKind = screen.getByRole("button", { name: /^Quiz · Oct 6/ });
+  const otherKind = screen.getByRole("button", { name: /^Exam · Oct 7 · Bassem · Heavy/ });
+  expect(sameKind.className.split(/\s+/)).not.toContain("opacity-40");
+  expect(otherKind.className.split(/\s+/)).toContain("opacity-40");
 });

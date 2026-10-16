@@ -50,13 +50,15 @@ export default function Calendar() {
     }
     const a = lookup(workspace, swapSource);
     const b = lookup(workspace, ref);
-    // Same occurrence or same TA: nothing would change, so send nothing.
-    if (sameRef(swapSource, ref) || !a || !b || a.occ.taId === b.occ.taId) return;
+    // Same occurrence or same TA: nothing would change, so send nothing. Other-kind pills are
+    // dimmed and the engine refuses cross-kind swaps, so ignore those too.
+    if (sameRef(swapSource, ref) || !a || !b || a.occ.taId === b.occ.taId || a.task.kind !== b.task.kind) return;
     submit({ type: "swapOccurrences", a: swapSource, b: ref });
     setSwapSource(null);
   };
 
   const current = popover && lookup(workspace, popover.ref);
+  const swapping = swapSource && lookup(workspace, swapSource);
   const closePopover = () => setPopover((p) => p && { ...p, open: false });
 
   return (
@@ -94,7 +96,7 @@ export default function Calendar() {
 
       {swapSource && (
         <div role="status" className="glass flex items-center justify-between gap-3 py-1 pl-4 pr-1 text-sm">
-          <span>Pick an occurrence to swap with</span>
+          <span>{swapping ? `Pick another ${swapping.task.kind} occurrence to swap with` : "Pick an occurrence to swap with"}</span>
           <Button variant="ghost" size="sm" onClick={() => setSwapSource(null)}>
             Cancel
           </Button>

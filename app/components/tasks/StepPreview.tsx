@@ -5,6 +5,7 @@ import { capacities } from "~/engine/capacity";
 import type { Workspace } from "~/engine/types";
 import { fmtDate, plural } from "~/lib/format";
 import { EASE_OUT } from "~/lib/motion";
+import { KindBadge } from "./KindBadge";
 
 type StepPreviewProps = {
   /** The workspace as it would be after creating the task (the new task is the last one). */
@@ -23,14 +24,17 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
   const view = useMemo(() => {
     if (!preview) return null;
     const task = preview.tasks[preview.tasks.length - 1];
+    // Each kind is dealt from its own ledger, so the gauges show the one this task draws on.
+    const kind = task?.kind ?? "light";
+    const ledger = preview.ledgers[kind];
     const caps = capacities(preview);
     const taById = new Map(preview.tas.map((t) => [t.id, t]));
     const gauges = preview.tas.map((ta) => {
       const capacity = caps[ta.id] ?? 0;
-      const used = preview.ledger.used[ta.id] ?? 0;
+      const used = ledger?.used[ta.id] ?? 0;
       return { ta, capacity, used, value: capacity === 0 ? 0 : used / capacity };
     });
-    return { occurrences: task?.occurrences ?? [], taById, gauges };
+    return { kind, occurrences: task?.occurrences ?? [], taById, gauges };
   }, [preview]);
 
   if (error) {
@@ -55,7 +59,10 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
     <div className="flex flex-col gap-5 md:flex-row">
       <section aria-label="Occurrences" className="min-w-0 flex-1">
         <div className="mb-2 flex items-baseline justify-between gap-3">
-          <h3 className="truncate font-semibold">{taskTitle}</h3>
+          <div className="flex min-w-0 items-center gap-2">
+            <h3 className="truncate font-semibold">{taskTitle}</h3>
+            <KindBadge kind={view.kind} size="sm" />
+          </div>
           <p className="shrink-0 text-sm text-muted">{plural(view.occurrences.length, "occurrence", "occurrences")}</p>
         </div>
         <ul className="flex flex-col gap-1">
@@ -82,7 +89,7 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
 
       <section aria-labelledby="preview-after" className="md:w-44 md:shrink-0">
         <h3 id="preview-after" className="mb-3 text-sm font-semibold text-muted">
-          After this task
+          After this {view.kind} task
         </h3>
         <div className="grid grid-cols-3 gap-3 md:grid-cols-2">
           {view.gauges.map(({ ta, capacity, used, value }) => (

@@ -7,7 +7,7 @@ import type { Task } from "~/engine/types";
 
 vi.mock("~/lib/use-workspace", () => ({ useWorkspace: () => ({ workspace: emptyWorkspace() }) }));
 
-const task: Task = { id: "t", title: "Quiz", createdAt: "", schedule: { type: "one-time", date: "2026-10-20" }, occurrences: [] };
+const task: Task = { id: "t", title: "Quiz", kind: "light", createdAt: "", schedule: { type: "one-time", date: "2026-10-20" }, occurrences: [] };
 
 test("Redistribute asks for confirmation before dealing the task out again", () => {
   const onRedistribute = vi.fn();

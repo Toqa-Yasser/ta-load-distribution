@@ -1,11 +1,12 @@
 import { addDays, format, parseISO } from "date-fns";
 import { motion, useReducedMotion } from "motion/react";
-import type { ISODate, TA, Task } from "~/engine/types";
+import { KindBadge } from "~/components/tasks/KindBadge";
+import type { ISODate, TA, Task, TaskKind } from "~/engine/types";
 import { EASE_OUT } from "~/lib/motion";
 import { fmtDate } from "~/lib/format";
 
 type TimelineProps = { tasks: Task[]; taById: Map<string, TA>; today: ISODate; days?: number };
-type Row = { key: string; title: string; ta: TA | undefined };
+type Row = { key: string; title: string; kind: TaskKind; ta: TA | undefined };
 
 const STAGGER = 0.05;
 const MAX_DELAY = 0.4;
@@ -24,7 +25,7 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
       // ISO yyyy-MM-dd strings compare chronologically.
       if (o.date < today || o.date >= end) continue;
       const rows = byDate.get(o.date) ?? [];
-      rows.push({ key: `${task.id}:${o.id}`, title: task.title, ta: taById.get(o.taId) });
+      rows.push({ key: `${task.id}:${o.id}`, title: task.title, kind: task.kind, ta: taById.get(o.taId) });
       byDate.set(o.date, rows);
     }
   }
@@ -59,7 +60,10 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
               <ul className="mt-2 flex flex-col gap-1.5">
                 {rows.map((r) => (
                   <li key={r.key} className="flex items-center gap-3 text-sm">
-                    <span className="min-w-0 flex-1 truncate">{r.title}</span>
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <span className="min-w-0 truncate">{r.title}</span>
+                      <KindBadge kind={r.kind} size="sm" />
+                    </span>
                     {r.ta && (
                       <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-ink/5 px-2 py-0.5 text-xs font-medium">
                         <span aria-hidden className="size-2 rounded-full" style={{ background: r.ta.color }} />

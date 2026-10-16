@@ -27,7 +27,9 @@ export default function Home() {
   // The TA stays set after closing so the sheet can animate out with its content.
   const [swap, setSwap] = useState<{ ta: TA; open: boolean } | null>(null);
 
-  const { tas, ledger } = workspace;
+  const { tas } = workspace;
+  // Per-kind gauges and turn headers land with the dashboard rework; until then this shows light.
+  const ledger = workspace.ledgers.light;
   const stats = useMemo(() => taStats(workspace, today), [workspace, today]);
   const turnSize = useMemo(() => computeTurnSize(workspace), [workspace]);
   const usedUnits = tas.reduce((sum, ta) => sum + (ledger.used[ta.id] ?? 0), 0);

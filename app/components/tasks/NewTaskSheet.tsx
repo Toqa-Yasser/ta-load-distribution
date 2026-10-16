@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Sheet } from "~/components/ui/Sheet";
-import type { Command, Schedule, Workspace } from "~/engine/types";
+import type { Command, Schedule, TaskKind, Workspace } from "~/engine/types";
 import { SERVER_ERROR_MESSAGE } from "~/lib/errors";
 import { useStepFocus } from "~/lib/focus";
 import { EASE_OUT, indicatorSpring, stepSlide } from "~/lib/motion";
@@ -43,8 +43,9 @@ function StepDots({ step }: { step: Step }) {
 function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void; onCancel: () => void }) {
   const { today, workspace } = useWorkspace();
   const reduced = useReducedMotion();
-  const [state, setState] = useState<{ step: Step; title: string; notes: string; schedule: Schedule }>({
+  const [state, setState] = useState<{ step: Step; kind: TaskKind; title: string; notes: string; schedule: Schedule }>({
     step: 0,
+    kind: "light",
     title: "",
     notes: "",
     schedule: { type: "weekly", start: today, end: null },
@@ -55,9 +56,10 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
   // fetcher.data still holds the previous answer while a new preview is in flight.
   const [staleData, setStaleData] = useState<PreviewResult | undefined>(undefined);
 
-  const { step, title, notes, schedule } = state;
+  const { step, kind, title, notes, schedule } = state;
   const command = (): CreateTask => ({
     type: "createTask",
+    kind,
     title: title.trim(),
     ...(notes.trim() ? { notes: notes.trim() } : {}),
     schedule,
@@ -108,6 +110,7 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
           >
             {step === 0 && (
               <StepName
+                kind={kind}
                 title={title}
                 notes={notes}
                 onChange={(v) => setState((s) => ({ ...s, ...v }))}

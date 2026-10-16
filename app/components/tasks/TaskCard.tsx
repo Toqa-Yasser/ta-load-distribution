@@ -8,6 +8,7 @@ import type { Task } from "~/engine/types";
 import { fmtScheduleSummary, plural } from "~/lib/format";
 import { EASE_OUT, usePressMotion } from "~/lib/motion";
 import { useWorkspace } from "~/lib/use-workspace";
+import { KindBadge } from "./KindBadge";
 import { SplitBar } from "./SplitBar";
 
 type TaskCardProps = { task: Task; onRedistribute: () => void; onDelete: () => void };
@@ -52,7 +53,10 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
             >
               {task.title}
             </Link>
-            <p className="truncate text-sm text-muted">{fmtScheduleSummary(task.schedule, workspace.semester)}</p>
+            <div className="mt-1 flex min-w-0 items-center gap-2">
+              <KindBadge kind={task.kind} size="sm" />
+              <p className="truncate text-sm text-muted">{fmtScheduleSummary(task.schedule, workspace.semester)}</p>
+            </div>
           </div>
           <div ref={menuRef} className="relative z-10">
             <Button

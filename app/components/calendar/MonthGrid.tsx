@@ -35,10 +35,13 @@ export function MonthGrid({ yearMonth, tasks, taById, selected, swapSource, onSe
 
   const byDate = useMemo(() => occurrencesByDate(tasks), [tasks]);
   const cells = useMemo(() => monthCells(yearMonth), [yearMonth]);
-  const swapTaId = useMemo(() => {
-    if (!swapSource) return null;
+  const { swapTaId, swapKind } = useMemo(() => {
+    if (!swapSource) return { swapTaId: null, swapKind: null };
     const task = tasks.find((t) => t.id === swapSource.taskId);
-    return task?.occurrences.find((o) => o.id === swapSource.occurrenceId)?.taId ?? null;
+    return {
+      swapTaId: task?.occurrences.find((o) => o.id === swapSource.occurrenceId)?.taId ?? null,
+      swapKind: task?.kind ?? null,
+    };
   }, [tasks, swapSource]);
 
   return (
@@ -77,6 +80,7 @@ export function MonthGrid({ yearMonth, tasks, taById, selected, swapSource, onSe
                 selected={selected}
                 swapSource={swapSource}
                 swapTaId={swapTaId}
+                swapKind={swapKind}
                 onSelect={onSelect}
               />
             ))}

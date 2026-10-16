@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ISODate, OccurrenceRef, TA } from "~/engine/types";
+import type { ISODate, OccurrenceRef, TA, TaskKind } from "~/engine/types";
 import type { DayEntry } from "~/lib/calendar";
 import { fmtDate } from "~/lib/format";
 import { OccurrencePill, type SwapRole } from "./OccurrencePill";
@@ -14,6 +14,8 @@ type DayCellProps = {
   swapSource: OccurrenceRef | null;
   /** TA of the swap source; pills with the same TA cannot be swapped with it. */
   swapTaId: string | null;
+  /** Kind of the swap source; only tasks of the same kind can be swapped with it. */
+  swapKind: TaskKind | null;
   onSelect: (ref: OccurrenceRef) => void;
 };
 
@@ -33,16 +35,16 @@ const MORE =
 const same = (a: OccurrenceRef | null, b: OccurrenceRef) =>
   a !== null && a.taskId === b.taskId && a.occurrenceId === b.occurrenceId;
 
-export function DayCell({ date, inMonth, isToday, entries, taById, selected, swapSource, swapTaId, onSelect }: DayCellProps) {
+export function DayCell({ date, inMonth, isToday, entries, taById, selected, swapSource, swapTaId, swapKind, onSelect }: DayCellProps) {
   const [expanded, setExpanded] = useState(false);
   const day = Number(date.slice(8));
   const hiddenMobile = entries.length - MOBILE_MAX;
   const hiddenDesktop = entries.length - DESKTOP_MAX;
 
-  const roleOf = (ref: OccurrenceRef, taId: string): SwapRole => {
+  const roleOf = (ref: OccurrenceRef, taId: string, kind: TaskKind): SwapRole => {
     if (!swapSource) return null;
     if (same(swapSource, ref)) return "source";
-    return taId === swapTaId ? "ineligible" : "target";
+    return taId === swapTaId || kind !== swapKind ? "ineligible" : "target";
   };
 
   return (
@@ -68,7 +70,7 @@ export function DayCell({ date, inMonth, isToday, entries, taById, selected, swa
                 occ={occ}
                 ta={taById.get(occ.taId)}
                 selected={same(selected, ref)}
-                swapRole={roleOf(ref, occ.taId)}
+                swapRole={roleOf(ref, occ.taId, task.kind)}
                 onClick={() => onSelect(ref)}
               />
             </li>

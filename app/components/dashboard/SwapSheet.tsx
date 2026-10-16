@@ -8,6 +8,7 @@ import { fmtDateLong } from "~/lib/format";
 import { EASE_OUT, stepSlide, usePressMotion } from "~/lib/motion";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
+import { KindBadge } from "~/components/tasks/KindBadge";
 
 type SwapSheetProps = { open: boolean; onClose: () => void; ta: TA };
 type Group = { task: Task; occurrences: Occurrence[] };
@@ -38,7 +39,10 @@ function OccurrenceList({
     <div className="flex flex-col gap-4">
       {groups.map(({ task, occurrences }, gi) => (
         <section key={task.id} aria-label={task.title}>
-          <h3 className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">{task.title}</h3>
+          <div className="flex items-center gap-2 px-3 pb-1">
+            <h3 className="min-w-0 truncate text-xs font-semibold uppercase tracking-wide text-muted">{task.title}</h3>
+            <KindBadge kind={task.kind} size="sm" />
+          </div>
           <ul>
             {occurrences.map((o, oi) => {
               const owner = taById.get(o.taId);
@@ -81,10 +85,14 @@ function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: OccurrenceRe
   const stepFocus = useStepFocus();
 
   const mine = groupByTask(workspace.tasks, (o) => o.taId === ta.id);
-  const others = groupByTask(workspace.tasks, (o) => o.taId !== ta.id);
   const step = first === null ? 0 : 1;
   const firstTask = first && workspace.tasks.find((t) => t.id === first.taskId);
   const firstOcc = firstTask?.occurrences.find((o) => o.id === first?.occurrenceId);
+  // Only tasks of the same kind can be swapped (each kind keeps its own ledger).
+  const others = groupByTask(
+    workspace.tasks.filter((t) => t.kind === firstTask?.kind),
+    (o) => o.taId !== ta.id,
+  );
 
   const pickFirst = (ref: OccurrenceRef) => {
     setDir(1);
@@ -130,7 +138,7 @@ function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: OccurrenceRe
             {first === null ? (
               <OccurrenceList groups={mine} taById={taById} showOwner={false} onPick={pickFirst} />
             ) : others.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted">No other TA has a date to trade.</p>
+              <p className="py-6 text-center text-sm text-muted">No other TA has a {firstTask?.kind} date to trade.</p>
             ) : (
               <OccurrenceList groups={others} taById={taById} showOwner onPick={(b) => onSwap(first, b)} />
             )}

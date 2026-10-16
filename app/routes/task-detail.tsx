@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router";
 import type { Route } from "./+types/task-detail";
+import { KindBadge } from "~/components/tasks/KindBadge";
 import { SplitBar } from "~/components/tasks/SplitBar";
 import { Card } from "~/components/ui/Card";
 import { Select } from "~/components/ui/Select";
@@ -49,7 +50,10 @@ export default function TaskDetail() {
       <BackLink />
       <header className="flex flex-col gap-3">
         <div>
-          <h1 className="text-3xl font-semibold md:text-4xl">{task.title}</h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="min-w-0 break-words text-3xl font-semibold md:text-4xl">{task.title}</h1>
+            <KindBadge kind={task.kind} />
+          </div>
           <p className="mt-1 text-muted">
             {fmtScheduleSummary(task.schedule, workspace.semester)} · {plural(task.occurrences.length, "occurrence", "occurrences")}
           </p>

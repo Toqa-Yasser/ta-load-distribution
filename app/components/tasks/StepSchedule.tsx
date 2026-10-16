@@ -1,10 +1,9 @@
-import { motion, useReducedMotion } from "motion/react";
 import { INPUT_CLASS } from "~/components/ui/input";
 import { Field } from "~/components/ui/Field";
+import { Segmented } from "~/components/ui/Segmented";
 import { generateDates } from "~/engine/schedule";
 import { TooManyOccurrencesError, type ISODate, type Schedule, type Semester } from "~/engine/types";
 import { plural } from "~/lib/format";
-import { indicatorSpring, usePressMotion } from "~/lib/motion";
 import { CustomDatesEditor } from "./CustomDatesEditor";
 
 type StepScheduleProps = { schedule: Schedule; semester: Semester; onChange: (next: Schedule) => void };
@@ -50,54 +49,6 @@ function convert(s: Schedule, type: ScheduleType): Schedule {
     case "custom":
       return { type, start, count: 5, gapDays: 7, dates: [] };
   }
-}
-
-function Segmented<T extends string>({
-  options,
-  value,
-  onChange,
-  layoutId,
-  label,
-  className,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (v: T) => void;
-  layoutId: string;
-  label: string;
-  className: string;
-}) {
-  const reduced = useReducedMotion();
-  const press = usePressMotion();
-  return (
-    <div role="radiogroup" aria-label={label} className={`grid gap-1 rounded-2xl border border-line bg-ink/[0.03] p-1 ${className}`}>
-      {options.map((o) => {
-        const active = o.value === value;
-        return (
-          <motion.button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            {...press}
-            onClick={() => onChange(o.value)}
-            className={`relative isolate min-h-11 rounded-xl px-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
-              active ? "text-ink" : "text-muted hover:text-ink"
-            }`}
-          >
-            {active && (
-              <motion.span
-                layoutId={layoutId}
-                transition={reduced ? { duration: 0 } : indicatorSpring}
-                className="absolute inset-0 -z-10 rounded-xl border border-line bg-surface shadow-sm"
-              />
-            )}
-            {o.label}
-          </motion.button>
-        );
-      })}
-    </div>
-  );
 }
 
 /** Step 2 of New task: pick a schedule type and its dates; shows a live occurrence count. */
