@@ -9,7 +9,7 @@ import { Timeline } from "~/components/dashboard/Timeline";
 import { TurnHeader } from "~/components/dashboard/TurnHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { turnSize as computeTurnSize } from "~/engine/capacity";
-import type { TA } from "~/engine/types";
+import { TASK_KINDS, type TA, type TaskKind } from "~/engine/types";
 import { useWorkspace } from "~/lib/use-workspace";
 
 export function meta({}: Route.MetaArgs) {
@@ -28,17 +28,27 @@ export default function Home() {
   const [swap, setSwap] = useState<{ ta: TA; open: boolean } | null>(null);
 
   const { tas } = workspace;
-  // Per-kind gauges and turn headers land with the dashboard rework; until then this shows light.
-  const ledger = workspace.ledgers.light;
   const stats = useMemo(() => taStats(workspace, today), [workspace, today]);
   const turnSize = useMemo(() => computeTurnSize(workspace), [workspace]);
-  const usedUnits = tas.reduce((sum, ta) => sum + (ledger.used[ta.id] ?? 0), 0);
+  const usedUnits = (kind: TaskKind) => tas.reduce((sum, ta) => sum + (workspace.ledgers[kind].used[ta.id] ?? 0), 0);
 
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold md:text-4xl">Dashboard</h1>
-        {tas.length > 0 && <TurnHeader turn={ledger.turn} usedUnits={usedUnits} turnSize={turnSize} />}
+        {tas.length > 0 && (
+          <div className="flex flex-col gap-3 md:flex-row md:gap-8">
+            {(turnSize === 0 ? TASK_KINDS.slice(0, 1) : TASK_KINDS).map((kind) => (
+              <TurnHeader
+                key={kind}
+                kind={kind}
+                turn={workspace.ledgers[kind].turn}
+                usedUnits={usedUnits(kind)}
+                turnSize={turnSize}
+              />
+            ))}
+          </div>
+        )}
       </header>
 
       {tas.length === 0 ? (
@@ -61,7 +71,8 @@ export default function Home() {
                 <TACard
                   ta={ta}
                   capacity={capacities[ta.id] ?? 0}
-                  used={ledger.used[ta.id] ?? 0}
+                  used={stats[ta.id]?.used ?? { light: 0, heavy: 0 }}
+                  counts={stats[ta.id]?.counts ?? { light: 0, heavy: 0 }}
                   totalOccurrences={stats[ta.id]?.totalOccurrences ?? 0}
                   nextDates={stats[ta.id]?.nextDates ?? []}
                   onSwap={() => setSwap({ ta, open: true })}

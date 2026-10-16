@@ -2,20 +2,22 @@ import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { CountUp } from "~/components/ui/CountUp";
 import { Gauge } from "~/components/ui/Gauge";
-import type { ISODate, TA } from "~/engine/types";
+import { KIND_LABEL } from "~/components/tasks/KindBadge";
+import { TASK_KINDS, type ISODate, type TA, type TaskKind } from "~/engine/types";
 import { fmtDate, plural } from "~/lib/format";
 
 type TACardProps = {
   ta: TA;
   capacity: number;
-  used: number;
+  used: Record<TaskKind, number>;
+  counts: Record<TaskKind, number>;
   totalOccurrences: number;
   nextDates: ISODate[];
   onSwap: () => void;
 };
 
 /** One TA's share of the current turn: a liquid gauge of used/capacity, totals and next dates. */
-export function TACard({ ta, capacity, used, totalOccurrences, nextDates, onSwap }: TACardProps) {
+export function TACard({ ta, capacity, used, counts, totalOccurrences, nextDates, onSwap }: TACardProps) {
   return (
     <Card interactive className="flex h-full flex-col gap-4 p-4">
       <div className="flex items-center gap-2">
@@ -26,21 +28,39 @@ export function TACard({ ta, capacity, used, totalOccurrences, nextDates, onSwap
         </span>
       </div>
 
-      <div className="flex justify-center">
-        <Gauge value={capacity ? Math.min(used, capacity) / capacity : 0} color={ta.color} label={ta.name} hideLabel />
+      <div className="@container">
+        <div className="flex flex-col items-center justify-center gap-4 @[360px]:flex-row @[360px]:gap-6">
+          {TASK_KINDS.map((kind) => (
+            <div key={kind} className="flex flex-col items-center gap-1.5">
+              <Gauge
+                value={capacity ? Math.min(used[kind], capacity) / capacity : 0}
+                color={ta.color}
+                label={`${ta.name} ${kind}`}
+                size={96}
+                hideLabel
+              />
+              <span className={`text-xs font-semibold ${kind === "light" ? "text-light" : "text-heavy"}`}>
+                {KIND_LABEL[kind]}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <dl className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <dt className="text-muted">This turn</dt>
           <dd className="font-semibold">
-            <CountUp value={used} />/<CountUp value={capacity} /> units
+            <CountUp value={used.light + used.heavy} />/<CountUp value={capacity * TASK_KINDS.length} /> units
           </dd>
         </div>
         <div>
           <dt className="text-muted">Occurrences</dt>
           <dd className="font-semibold">
             <CountUp value={totalOccurrences} />
+          </dd>
+          <dd className="text-xs text-muted">
+            {counts.light} light · {counts.heavy} heavy
           </dd>
         </div>
         <div className="col-span-2">
