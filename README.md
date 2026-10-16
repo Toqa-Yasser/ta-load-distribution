@@ -1,87 +1,79 @@
-# Welcome to React Router!
+# TA Load Distribution
 
-A modern, production-ready template for building full-stack React applications using React Router.
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+A small web app for sharing recurring course tasks (quiz grading, proctoring, office hours…) fairly
+among teaching assistants. You set up the TAs and the sections they cover, create tasks with a
+schedule, and the app deals every dated occurrence out so the load follows how many sections each TA
+covers. Every change is snapshotted, so you can undo or roll back.
 
 ## Features
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- **Dashboard**: the current turn, a liquid gauge per TA (used / capacity), upcoming dates, and a
+  two-step swap of one TA's date with another's.
+- **Team**: add, rename and remove TAs; create sections and drag (or tap) TAs into each section's two slots.
+- **Tasks**: three-step creation (name → schedule → preview of who gets each date) with one-time, daily,
+  weekly, monthly, per-semester or custom schedules; redistribute or delete a task; a task detail page.
+- **Calendar**: month grid of every occurrence; reassign a date to another TA or swap two dates.
+- **History**: a snapshot per change, with rollback, toast Undo, and a password-protected "delete history".
+- **Settings**: semester dates, light/dark/system theme, "redistribute everything" and "reset everything".
+- Mobile-first: bottom tabs, draggable bottom sheets, ≥44px targets, and every animation turned off
+  under `prefers-reduced-motion`.
 
-## Getting Started
+## The distribution rule
 
-### Installation
+Each TA's **capacity** is the number of section slots they hold, and a **turn** is the sum of all
+capacities. Occurrences are dealt in date order, one unit each. Every occurrence goes to the TA with
+the **highest remaining fraction** of their capacity in this turn (`(capacity - used) / capacity`).
+**Ties are broken at random**. When everyone is full, the turn ends and all usage **resets** for the next
+turn. So a TA with two sections gets twice as many dates as a TA with one, and nobody falls behind.
 
-Install the dependencies:
+## Local development
 
-```bash
+```sh
 npm install
+DATA_STORE=memory npm run dev   # in-memory store, no Supabase needed
 ```
 
-### Development
+Open http://localhost:5173. The memory store lasts as long as the dev server. Without
+`DATA_STORE=memory`, the app uses Supabase when `SUPABASE_URL` is set (see below).
 
-Start the development server with HMR:
+## Environment variables
 
-```bash
-npm run dev
-```
+Copy `.env.example` to `.env`. Everything is read on the server only (`app/server/*.server.ts`).
+Nothing is sent to the browser.
 
-Your application will be available at `http://localhost:5173`.
+| Variable                  | Purpose                                                                  |
+| ------------------------- | ------------------------------------------------------------------------ |
+| `SUPABASE_URL`            | Project URL, e.g. `https://xxxx.supabase.co`                             |
+| `SUPABASE_SECRET_KEY`     | Supabase **secret** key (`sb_secret_…`): server-only, never commit it    |
+| `HISTORY_DELETE_PASSWORD` | Password required to delete the snapshot history                         |
+| `DATA_STORE`              | Optional: `memory` or `supabase`. Defaults to `supabase` when `SUPABASE_URL` is set |
 
-## Building for Production
+## Supabase setup
 
-Create a production build:
+1. Create a Supabase project.
+2. Apply the schema in `supabase/migrations/0001_init.sql`. Paste it into the SQL editor, or run
+   `supabase db push` with the Supabase CLI linked to the project.
+3. Put the project URL and a secret key (Settings → API Keys) in `.env`.
 
-```bash
+The schema holds a single versioned `workspace` row (optimistic concurrency) and a `snapshots` table for history.
+
+## Tests and checks
+
+```sh
+npm test            # Vitest: engine, server, components
+npm run typecheck   # route typegen + tsc
 npm run build
 ```
 
-## Deployment
+## Deploying to Vercel
 
-### Docker Deployment
+The Vercel preset is already configured in `react-router.config.ts` (`@vercel/react-router`), so no
+`vercel.json` is needed.
 
-To build and run using Docker:
+1. Import the repository in Vercel. The framework is detected as React Router.
+2. Under Project → Settings → Environment Variables, set `SUPABASE_URL`, `SUPABASE_SECRET_KEY`
+   and `HISTORY_DELETE_PASSWORD`.
+3. Deploy.
 
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+`.npmrc` sets `legacy-peer-deps=true`. The Vercel preset's peer range doesn't list React Router 8
+yet, and this lets `npm install` succeed both locally and on Vercel. Keep the file.
