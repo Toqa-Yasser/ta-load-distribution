@@ -20,8 +20,12 @@ export async function loader() {
   return { snapshots: await listSnapshots(store), version: (await loadWorkspace(store)).version };
 }
 
+// While AppShell animates this page out, the router has already left the route and its loader
+// data is undefined; render the empty state for those few frames instead of crashing.
+const EMPTY_HISTORY: Awaited<ReturnType<typeof loader>> = { snapshots: [], version: 0 };
+
 export default function History() {
-  const { snapshots, version } = useLoaderData<typeof loader>();
+  const { snapshots, version } = useLoaderData<typeof loader>() ?? EMPTY_HISTORY;
   const { rollback, saveSnapshot, deleteHistory, pending, error } = useHistory();
   const [name, setName] = useState("");
   const [deleting, setDeleting] = useState(false);

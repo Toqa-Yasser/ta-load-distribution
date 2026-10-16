@@ -12,6 +12,8 @@ import { SettingsPanel } from "./SettingsPanel";
 export function AppShell() {
   const { pathname } = useLocation();
   // Capture the outlet element so the exiting page keeps rendering its own route during the exit animation.
+  // By then the router has left that route, so its own useLoaderData() is undefined: any route that
+  // reads its own loader data must fall back (see EMPTY_HISTORY in routes/history.tsx). Root data is safe.
   const outlet = useOutlet();
   const reduced = useReducedMotion();
   const [settingsOpen, setSettingsOpen] = useState(false);
