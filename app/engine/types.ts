@@ -11,13 +11,30 @@ export type Schedule =
 
 export interface Occurrence { id: string; date: ISODate; taId: string; turn: number }
 
-export interface Task { id: string; title: string; notes?: string; createdAt: string; schedule: Schedule; occurrences: Occurrence[] }
+export type TaskKind = "light" | "heavy";
+
+/** Light and heavy tasks are shared out independently, each with its own turn ledger. */
+export const TASK_KINDS = ["light", "heavy"] as const satisfies readonly TaskKind[];
+
+export function isTaskKind(value: unknown): value is TaskKind {
+  return (TASK_KINDS as readonly unknown[]).includes(value);
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  kind: TaskKind;
+  notes?: string;
+  createdAt: string;
+  schedule: Schedule;
+  occurrences: Occurrence[];
+}
 
 export interface Ledger { turn: number; used: Record<string, number> }
 
 export interface Semester { name: string; start: ISODate; end: ISODate }
 
-export interface Workspace { semester: Semester; tas: TA[]; sections: Section[]; tasks: Task[]; ledger: Ledger }
+export interface Workspace { semester: Semester; tas: TA[]; sections: Section[]; tasks: Task[]; ledgers: Record<TaskKind, Ledger> }
 
 export type OccurrenceRef = { taskId: string; occurrenceId: string };
 
@@ -30,8 +47,9 @@ export type Command =
   | { type: "setSectionSlot"; sectionId: string; slot: 0 | 1; taId: string | null }
   | { type: "removeSection"; sectionId: string }
   | { type: "setSemester"; semester: Semester }
-  | { type: "createTask"; title: string; notes?: string; schedule: Schedule }
-  | { type: "updateTask"; taskId: string; title?: string; notes?: string; schedule?: Schedule }
+  | { type: "createTask"; kind: TaskKind; title: string; notes?: string; schedule: Schedule }
+  /** `notes: null` clears the notes; omitting it keeps them. The kind cannot be changed. */
+  | { type: "updateTask"; taskId: string; title?: string; notes?: string | null; schedule?: Schedule }
   | { type: "deleteTask"; taskId: string }
   | { type: "redistributeTask"; taskId: string }
   | { type: "redistributeAll" }

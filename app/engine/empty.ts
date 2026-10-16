@@ -6,6 +6,6 @@ export function emptyWorkspace(): Workspace {
     tas: [],
     sections: [],
     tasks: [],
-    ledger: { turn: 1, used: {} },
+    ledgers: { light: { turn: 1, used: {} }, heavy: { turn: 1, used: {} } },
   };
 }
