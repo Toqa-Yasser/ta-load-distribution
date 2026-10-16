@@ -6,13 +6,21 @@ import { SnapshotRow } from "./SnapshotRow";
 
 type SnapshotListProps = { snapshots: SnapshotMeta[]; currentVersion: number; onRollback: (id: number) => void };
 
+const UNDO_NOTE = "The current state is saved first, so you can undo this.";
+
+function rollbackBody(s: SnapshotMeta): string {
+  return s.kind === "auto"
+    ? `Restores the state from just before "${s.label}". ${UNDO_NOTE}`
+    : `Restores the snapshot "${s.name ?? s.label}". ${UNDO_NOTE}`;
+}
+
 /**
  * Snapshots newest first, under a "Now" marker for the current version. The newest snapshot
  * holds the state just before the current version, so it is tagged "Latest change".
  */
 export function SnapshotList({ snapshots, currentVersion, onRollback }: SnapshotListProps) {
   // The id stays set after closing so the dialog can animate out.
-  const [target, setTarget] = useState<{ id: number; open: boolean } | null>(null);
+  const [target, setTarget] = useState<{ snapshot: SnapshotMeta; open: boolean } | null>(null);
   const close = () => setTarget((t) => t && { ...t, open: false });
 
   return (
@@ -24,17 +32,17 @@ export function SnapshotList({ snapshots, currentVersion, onRollback }: Snapshot
         </li>
         <AnimatePresence initial={false}>
           {snapshots.map((s, i) => (
-            <SnapshotRow key={s.id} snapshot={s} latest={i === 0} onRollback={() => setTarget({ id: s.id, open: true })} />
+            <SnapshotRow key={s.id} snapshot={s} latest={i === 0} onRollback={() => setTarget({ snapshot: s, open: true })} />
           ))}
         </AnimatePresence>
       </ol>
       <ConfirmDialog
         open={target?.open ?? false}
         title="Roll back?"
-        body="Roll back to this snapshot? The current state is saved first, so you can undo this."
+        body={target ? rollbackBody(target.snapshot) : ""}
         confirmLabel="Roll back"
         onConfirm={() => {
-          if (target) onRollback(target.id);
+          if (target) onRollback(target.snapshot.id);
           close();
         }}
         onClose={close}

@@ -141,7 +141,7 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             exit={{ opacity: 0 }}
             transition={fade}
             onClick={onClose}
-            className="absolute inset-0 bg-ink/25 backdrop-blur-sm"
+            className="absolute inset-0 bg-scrim backdrop-blur-sm"
           />
           <motion.div
             ref={panelRef}

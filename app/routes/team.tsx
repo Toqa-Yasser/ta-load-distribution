@@ -54,7 +54,7 @@ export default function Team() {
           </p>
         </header>
 
-        <div className="grid items-start gap-6 md:grid-cols-[320px_1fr]">
+        <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[320px_minmax(0,1fr)]">
           <section aria-labelledby="team-tas" className="glass flex flex-col gap-2 p-4">
             <h2 id="team-tas" className="text-lg font-semibold">
               TAs

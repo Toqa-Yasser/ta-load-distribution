@@ -28,7 +28,11 @@ export function SnapshotRow({ snapshot, latest, onRollback }: SnapshotRowProps) 
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1 py-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium">{snapshot.label}</span>
+          {/* An auto snapshot holds the state from just before its labelled change. */}
+          <span className="min-w-0 font-medium wrap-anywhere">
+            {snapshot.kind === "auto" && <span className="text-muted">Before: </span>}
+            {snapshot.label}
+          </span>
           {snapshot.kind === "manual" && snapshot.name && (
             <span className="rounded-full bg-accent/12 px-2 py-0.5 text-xs font-semibold text-accent">
               <span className="sr-only">Manual snapshot: </span>

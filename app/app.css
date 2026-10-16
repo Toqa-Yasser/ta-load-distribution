@@ -16,6 +16,7 @@
   --shadow: 0 10px 30px -12px rgba(22, 20, 26, 0.18), 0 1px 2px rgba(22, 20, 26, 0.04);
   --glow: color-mix(in srgb, var(--accent) 5%, transparent);
   --glare: rgba(255, 255, 255, 0.55);
+  --scrim: rgba(16, 14, 20, 0.45); /* modal backdrop: must darken in both themes, so not --ink */
   color-scheme: light;
 }
 
@@ -29,6 +30,7 @@
   --shadow: 0 12px 36px -14px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
   --glow: color-mix(in srgb, var(--accent) 6%, transparent);
   --glare: rgba(255, 255, 255, 0.09);
+  --scrim: rgba(0, 0, 0, 0.6);
   color-scheme: dark;
 }
 
@@ -43,6 +45,7 @@
   --color-danger: var(--danger);
   --color-danger-ink: var(--danger-ink);
   --color-mint: var(--mint);
+  --color-scrim: var(--scrim);
   --font-display: "Sora", ui-sans-serif, sans-serif;
   --font-sans: "Inter", ui-sans-serif, sans-serif;
 }
