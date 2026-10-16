@@ -67,7 +67,7 @@ export function NavBar({ placement }: { placement: "header" | "bottom" }) {
     return (
       <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
         {NAV_ITEMS.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.end} className="rounded-xl focus-visible:outline-2 focus-visible:outline-accent">
+          <NavLink key={item.to} to={item.to} end={item.end} prefetch="render" className="rounded-xl focus-visible:outline-2 focus-visible:outline-accent">
             {({ isActive }) => (
               <motion.span
                 {...press}
@@ -97,7 +97,7 @@ export function NavBar({ placement }: { placement: "header" | "bottom" }) {
       className="glass fixed inset-x-3 bottom-3 z-40 flex justify-around px-1 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] md:hidden"
     >
       {NAV_ITEMS.map((item) => (
-        <NavLink key={item.to} to={item.to} end={item.end} className="flex-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-accent">
+        <NavLink key={item.to} to={item.to} end={item.end} prefetch="render" className="flex-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-accent">
           {({ isActive }) => (
             <motion.span
               whileTap={press.whileTap}
