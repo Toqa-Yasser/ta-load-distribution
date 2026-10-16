@@ -28,8 +28,9 @@ export function Toaster() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.96 }}
             transition={{ duration: reduced ? 0 : 0.28, ease: EASE_OUT }}
-            onMouseEnter={() => hold(t.id, "hover")}
-            onMouseLeave={() => release(t.id, "hover")}
+            // Mouse only: a touch fires pointerenter but often no pointerleave, which would pin the toast.
+            onPointerEnter={(e) => e.pointerType === "mouse" && hold(t.id, "hover")}
+            onPointerLeave={(e) => e.pointerType === "mouse" && release(t.id, "hover")}
             onFocus={() => hold(t.id, "focus")}
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget as Node | null)) release(t.id, "focus");

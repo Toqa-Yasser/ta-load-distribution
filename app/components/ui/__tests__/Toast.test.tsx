@@ -29,7 +29,7 @@ const setup = () => {
 const advance = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
 
 test("auto-dismisses after 6s", () => {
-  const toast = setup();
+  setup();
   advance(5900);
   expect(screen.getByText("Saved")).toBeInTheDocument();
   advance(200);
@@ -38,10 +38,10 @@ test("auto-dismisses after 6s", () => {
 test("hover pauses the timer and leaving resumes the remaining time", () => {
   const toast = setup();
   advance(2000);
-  fireEvent.mouseEnter(toast);
+  fireEvent.pointerEnter(toast, { pointerType: "mouse" });
   advance(10_000);
   expect(screen.getByText("Saved")).toBeInTheDocument();
-  fireEvent.mouseLeave(toast);
+  fireEvent.pointerLeave(toast, { pointerType: "mouse" });
   advance(3900);
   expect(screen.getByText("Saved")).toBeInTheDocument();
   advance(200);
@@ -49,12 +49,27 @@ test("hover pauses the timer and leaving resumes the remaining time", () => {
 });
 test("focus inside pauses until focus leaves, even if the pointer left first", () => {
   const toast = setup();
-  fireEvent.mouseEnter(toast);
+  fireEvent.pointerEnter(toast, { pointerType: "mouse" });
   fireEvent.focus(screen.getByRole("button", { name: "Undo" }));
-  fireEvent.mouseLeave(toast);
+  fireEvent.pointerLeave(toast, { pointerType: "mouse" });
   advance(10_000);
   expect(screen.getByText("Saved")).toBeInTheDocument();
   fireEvent.blur(screen.getByRole("button", { name: "Undo" }));
   advance(6100);
   expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+});
+test("a touch over the toast does not pause the timer", () => {
+  const toast = setup();
+  fireEvent.pointerEnter(toast, { pointerType: "touch" });
+  advance(6100);
+  expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+});
+test("timers of toasts dropped from the stack or dismissed are cleared", () => {
+  render(<ToastProvider><Pusher /><Toaster /></ToastProvider>);
+  const push = screen.getByRole("button", { name: "push" });
+  for (let i = 0; i < 4; i++) fireEvent.click(push);
+  expect(screen.getAllByText("Saved")).toHaveLength(3);
+  expect(vi.getTimerCount()).toBe(3);
+  fireEvent.click(screen.getAllByRole("button", { name: "Dismiss" })[0]);
+  expect(vi.getTimerCount()).toBe(2);
 });

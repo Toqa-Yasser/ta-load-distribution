@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useFetcher, useFetchers } from "react-router";
 import { useToast } from "~/lib/toast";
-import { CommandWatchContext, commandToast, isCommandKey, type CommandResult } from "~/lib/use-command";
+import {
+  COMMAND_STALL_MS,
+  CommandWatchContext,
+  commandToast,
+  isCommandKey,
+  settledResult,
+  type SubmitOptions,
+} from "~/lib/use-command";
 import { useUndo } from "~/lib/use-history";
 
 /**
@@ -11,15 +18,15 @@ import { useUndo } from "~/lib/use-history";
  * lets the router drop the finished fetcher.
  */
 export function CommandToasts({ children }: { children: ReactNode }) {
-  // key -> toast override (undefined: the server's label)
-  const [watched, setWatched] = useState<ReadonlyMap<string, string | undefined>>(new Map());
+  // key -> the submitter's options (undefined for keys discovered through useFetchers)
+  const [watched, setWatched] = useState<ReadonlyMap<string, SubmitOptions | undefined>>(new Map());
   // Keys already toasted. A key leaves the set once its fetcher is gone from the router too.
   const handled = useRef(new Set<string>());
   const fetchers = useFetchers();
 
-  const watch = useCallback((key: string, toast?: string) => {
+  const watch = useCallback((key: string, opts?: SubmitOptions) => {
     if (handled.current.has(key)) return;
-    setWatched((m) => (m.has(key) ? m : new Map(m).set(key, toast)));
+    setWatched((m) => (m.has(key) && (m.get(key) || !opts) ? m : new Map(m).set(key, opts)));
   }, []);
 
   useEffect(() => {
@@ -40,29 +47,47 @@ export function CommandToasts({ children }: { children: ReactNode }) {
   return (
     <CommandWatchContext.Provider value={watch}>
       {children}
-      {[...watched].map(([key, toast]) => (
-        <CommandWatcher key={key} fetcherKey={key} toast={toast} onDone={done} />
+      {[...watched].map(([key, opts]) => (
+        <CommandWatcher key={key} fetcherKey={key} opts={opts} onDone={done} />
       ))}
     </CommandWatchContext.Provider>
   );
 }
 
-function CommandWatcher({ fetcherKey, toast: override, onDone }: { fetcherKey: string; toast?: string; onDone(key: string): void }) {
-  const fetcher = useFetcher<CommandResult>({ key: fetcherKey });
+function CommandWatcher({ fetcherKey, opts, onDone }: { fetcherKey: string; opts?: SubmitOptions; onDone(key: string): void }) {
+  const fetcher = useFetcher({ key: fetcherKey });
   const toast = useToast();
   const undo = useUndo();
   const fired = useRef(false);
   const busy = useRef(false);
   if (fetcher.state !== "idle") busy.current = true;
+  const optsRef = useRef(opts);
+  optsRef.current = opts;
 
+  const settle = useCallback(
+    (data: unknown) => {
+      if (fired.current) return;
+      fired.current = true;
+      const result = settledResult(data);
+      if (result.ok || !optsRef.current?.inlineError) toast(commandToast(result, undo));
+      optsRef.current?.onSettled?.(result);
+      onDone(fetcherKey);
+    },
+    [fetcherKey, toast, undo, onDone],
+  );
+
+  // Idle with no data and never seen busy: normally the submission hasn't started yet, but a
+  // fetcher that finished (or was dropped) before this watcher mounted looks the same. Give it
+  // COMMAND_STALL_MS to start before settling it as a failure, so the submitter never hangs.
+  const waiting = fetcher.state === "idle" && fetcher.data === undefined && !busy.current;
   useEffect(() => {
-    if (fired.current || fetcher.state !== "idle") return;
-    // Idle with no data before the request started: still waiting for the submission.
-    if (fetcher.data === undefined && !busy.current) return;
-    fired.current = true;
-    toast(commandToast(fetcher.data, undo, override));
-    onDone(fetcherKey);
-  }, [fetcher.state, fetcher.data, fetcherKey, override, toast, undo, onDone]);
+    if (fired.current) return;
+    if (waiting) {
+      const t = setTimeout(() => settle(undefined), COMMAND_STALL_MS);
+      return () => clearTimeout(t);
+    }
+    if (fetcher.state === "idle") settle(fetcher.data);
+  }, [waiting, fetcher.state, fetcher.data, settle]);
 
   return null;
 }

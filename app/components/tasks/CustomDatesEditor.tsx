@@ -1,7 +1,7 @@
 import { addDays, format, parseISO } from "date-fns";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { INPUT_CLASS } from "~/components/ui/input";
+import { FIELD_FOCUS, INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
 import { customDates } from "~/engine/schedule";
@@ -78,7 +78,7 @@ function DateChip({ date, onEdit, onRemove }: { date: ISODate; onEdit: (next: IS
           defaultValue={date}
           onKeyDown={onKeyDown}
           onBlur={(e) => commit(e.currentTarget.value)}
-          className="min-h-11 rounded-l-xl bg-transparent px-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent"
+          className={`min-h-11 rounded-l-xl bg-transparent px-2 text-sm text-ink ${FIELD_FOCUS}`}
         />
       ) : (
         <motion.button
@@ -96,7 +96,7 @@ function DateChip({ date, onEdit, onRemove }: { date: ISODate; onEdit: (next: IS
         whileTap={press.whileTap}
         aria-label={`Remove ${fmtDate(date)}`}
         onClick={onRemove}
-        className="grid size-11 place-items-center rounded-r-xl text-muted hover:bg-ink/5 hover:text-accent-2 focus-visible:outline-2 focus-visible:outline-accent"
+        className="grid size-11 place-items-center rounded-r-xl text-muted hover:bg-ink/5 hover:text-danger-ink focus-visible:outline-2 focus-visible:outline-accent"
       >
         <svg aria-hidden viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
           <path d="M6 6l12 12M18 6L6 18" />

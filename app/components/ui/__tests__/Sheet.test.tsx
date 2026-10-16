@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
-import { Sheet } from "~/components/ui/Sheet";
+import { INSTANT_DRAG, Sheet } from "~/components/ui/Sheet";
 test("closes on Escape", () => {
   const onClose = vi.fn();
   render(<Sheet open onClose={onClose} title="Hi"><p>body</p></Sheet>);
@@ -85,4 +85,19 @@ test("focus escaping to the body is pulled back into the panel", async () => {
   inside.blur();
   expect(document.activeElement).toBe(document.body);
   await waitFor(() => expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true));
+});
+test("focus escaping from a lower stacked sheet is recovered into the topmost sheet", async () => {
+  render(
+    <>
+      <Sheet open onClose={() => {}} title="Lower"><button type="button">lower</button></Sheet>
+      <Sheet open onClose={() => {}} title="Upper"><button type="button">upper</button></Sheet>
+    </>,
+  );
+  const lower = screen.getByRole("button", { name: "lower" });
+  lower.focus();
+  lower.blur();
+  await waitFor(() => expect(screen.getByRole("dialog", { name: "Upper" }).contains(document.activeElement)).toBe(true));
+});
+test("reduced motion: the drag release jumps back without a spring", () => {
+  expect(INSTANT_DRAG).toEqual({ type: false });
 });

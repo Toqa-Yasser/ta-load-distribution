@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useContext, useState } from "react";
 import { createRoutesStub, useFetchers } from "react-router";
 import { CommandToasts } from "~/components/layout/CommandToasts";
 import { Toaster } from "~/components/ui/Toast";
 import { ToastProvider } from "~/lib/toast";
-import { useCommand } from "~/lib/use-command";
+import { COMMAND_STALL_MS, CommandWatchContext, useCommand } from "~/lib/use-command";
 
 vi.mock("motion/react", async (orig) => ({
   ...(await orig<typeof import("motion/react")>()),
@@ -65,4 +65,83 @@ test("useCommand submits with a unique fetcher key and the shell toasts once per
   expect(screen.getAllByText('Added TA "A"')).toHaveLength(2);
   expect(action).toHaveBeenCalledTimes(2);
   expect(keys.size).toBe(2);
+});
+
+function Settler({ onSettled, inlineError }: { onSettled: (r: unknown) => void; inlineError?: boolean }) {
+  const { submit } = useCommand();
+  const [key, setKey] = useState("");
+  return (
+    <>
+      <button type="button" onClick={() => setKey(submit({ type: "addTA", name: "A" }, { onSettled, inlineError }))}>
+        go
+      </button>
+      <output>{key}</output>
+    </>
+  );
+}
+
+function renderSettler(action: () => Promise<unknown>, onSettled: (r: unknown) => void, inlineError?: boolean) {
+  const Stub = createRoutesStub([
+    { path: "/", Component: () => <CommandToasts><Settler onSettled={onSettled} inlineError={inlineError} /></CommandToasts> },
+    { path: "/api/command", action },
+  ]);
+  render(
+    <ToastProvider>
+      <Stub initialEntries={["/"]} />
+      <Toaster />
+    </ToastProvider>,
+  );
+}
+
+test("submit returns the fetcher key and onSettled gets the result once", async () => {
+  const onSettled = vi.fn();
+  renderSettler(async () => ({ ok: true, version: 2, snapshotId: 1, label: 'Added TA "A"' }), onSettled);
+  fireEvent.click(await screen.findByRole("button", { name: "go" }));
+  expect(document.querySelector("output")!.textContent).toMatch(/^cmd:/);
+  expect(await screen.findByText('Added TA "A"')).toBeInTheDocument();
+  await act(() => new Promise((r) => setTimeout(r, 50)));
+  expect(onSettled).toHaveBeenCalledTimes(1);
+  expect(onSettled).toHaveBeenCalledWith(expect.objectContaining({ ok: true, label: 'Added TA "A"' }));
+});
+
+test("inlineError: a failure reaches onSettled without an error toast", async () => {
+  const onSettled = vi.fn();
+  renderSettler(async () => Response.json({ ok: false, message: "Nope." }, { status: 400 }), onSettled, true);
+  fireEvent.click(await screen.findByRole("button", { name: "go" }));
+  await waitFor(() => expect(onSettled).toHaveBeenCalledWith({ ok: false, message: "Nope." }));
+  expect(screen.queryByText("Nope.")).not.toBeInTheDocument();
+});
+
+test.each([
+  ["a 400", async () => Response.json({ ok: false, message: "Unknown TA." }, { status: 400 }), "Unknown TA."],
+  ["a 500", async () => Response.json({ ok: false, message: "Something went wrong on the server. Please try again." }, { status: 500 }), "Something went wrong on the server. Please try again."],
+])("%s result toasts exactly once", async (_, action, message) => {
+  renderSettler(action, () => {});
+  fireEvent.click(await screen.findByRole("button", { name: "go" }));
+  expect(await screen.findByText(message)).toBeInTheDocument();
+  await act(() => new Promise((r) => setTimeout(r, 80)));
+  expect(screen.getAllByText(message)).toHaveLength(1);
+});
+
+test("a watched command that never starts is dropped after the stall guard", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    const onSettled = vi.fn();
+    function Announcer() {
+      const watch = useContext(CommandWatchContext)!;
+      return <button type="button" onClick={() => watch("cmd:ghost", { onSettled })}>ghost</button>;
+    }
+    const Stub = createRoutesStub([{ path: "/", Component: () => <CommandToasts><Announcer /></CommandToasts> }]);
+    render(
+      <ToastProvider>
+        <Stub initialEntries={["/"]} />
+        <Toaster />
+      </ToastProvider>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "ghost" }));
+    await act(async () => void vi.advanceTimersByTime(COMMAND_STALL_MS + 50));
+    expect(onSettled).toHaveBeenCalledWith(expect.objectContaining({ ok: false }));
+  } finally {
+    vi.useRealTimers();
+  }
 });

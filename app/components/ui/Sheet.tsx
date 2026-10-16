@@ -17,11 +17,13 @@ const DESKTOP_QUERY = "(min-width: 48rem)"; // Tailwind `md`
 const DISMISS_OFFSET = 120;
 const DISMISS_VELOCITY = 600;
 /** `type: false` makes motion jump straight to the target, so the release snaps back without a spring. */
-const INSTANT_DRAG = { type: false } as unknown as InertiaOptions;
+export const INSTANT_DRAG = { type: false } as unknown as InertiaOptions;
 
 /** Id of the shell element that is made `inert` while any sheet is open (sheets portal outside it). */
 export const APP_ROOT_ID = "app-root";
 let openSheets = 0;
+/** Panels of the open sheets, oldest first; focus that escapes is recovered into the last one. */
+const sheetStack: HTMLElement[] = [];
 
 function holdAppRootInert(): () => void {
   openSheets += 1;
@@ -63,8 +65,6 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
   const drag = useDragControls();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
-  const openRef = useRef(open);
-  openRef.current = open;
 
   // Declared before the focus effect: cleanups run in order, and the opener must not be inert
   // when focus is handed back to it.
@@ -85,6 +85,17 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
     }
     return () => {
       if (opener && opener.isConnected) opener.focus();
+    };
+  }, [open, mounted]);
+
+  // Register on the stack while open, so focus recovery targets the topmost sheet.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!open || !mounted || !panel) return;
+    sheetStack.push(panel);
+    return () => {
+      const i = sheetStack.lastIndexOf(panel);
+      if (i >= 0) sheetStack.splice(i, 1);
     };
   }, [open, mounted]);
 
@@ -123,14 +134,15 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
   };
 
   // Focus that leaves for nowhere (a click on the backdrop, the focused control unmounting)
-  // lands on <body>, outside the trap; put it back on the panel. Checked after the event so
-  // a move to another element (a stacked sheet, the opener on close) is left alone.
+  // lands on <body>, outside the trap; put it back on the topmost open sheet (which may be a
+  // sheet stacked over this one). Checked after the event so a move to another element (a
+  // stacked sheet, the opener on close) is left alone.
   const onBlur = (e: FocusEvent<HTMLDivElement>) => {
     if (e.relatedTarget) return;
     setTimeout(() => {
-      const panel = panelRef.current;
+      const top = sheetStack[sheetStack.length - 1];
       const active = document.activeElement;
-      if (openRef.current && panel?.isConnected && (active === null || active === document.body)) panel.focus();
+      if (top?.isConnected && (active === null || active === document.body)) top.focus();
     }, 0);
   };
 
@@ -179,7 +191,8 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             exit={{ opacity: 0 }}
             transition={fade}
             onClick={onClose}
-            className="absolute inset-0 bg-scrim backdrop-blur-sm"
+            // Clicking the scrim closes the sheet, so it gets the pointer.
+            className="absolute inset-0 cursor-pointer bg-scrim backdrop-blur-sm"
           />
           <motion.div
             ref={panelRef}

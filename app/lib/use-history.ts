@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useFetcher, useSubmit } from "react-router";
 import { useToast } from "~/lib/toast";
-import { SERVER_ERROR_MESSAGE } from "~/lib/errors";
+import { messageOf } from "~/lib/errors";
 
 type HistoryRequest =
   | { intent: "rollback"; snapshotId: number }
@@ -22,9 +22,6 @@ const SUCCESS: Record<HistoryRequest["intent"], string> = {
   snapshot: "Snapshot saved",
   deleteHistory: "History deleted",
 };
-
-const messageOf = (data: HistoryResult | undefined) =>
-  data && data.ok === false && typeof data.message === "string" && data.message ? data.message : SERVER_ERROR_MESSAGE;
 
 /**
  * Undo for a command's toast. Uses useSubmit with a fetcher key (not a component's own

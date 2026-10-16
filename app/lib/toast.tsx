@@ -13,6 +13,7 @@ export type ToastHold = "hover" | "focus";
 type Timer = { handle?: ReturnType<typeof setTimeout>; deadline: number; remaining: number; holds: Set<ToastHold> };
 
 const TOAST_MS = 6000;
+const MAX_TOASTS = 3;
 
 type ToastQueue = {
   items: ToastItem[];
@@ -42,12 +43,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
   const timers = useRef(new Map<number, Timer>());
+  // Ids on screen, oldest first; mirrors `items` so a dropped toast's timer can be cleared.
+  const order = useRef<number[]>([]);
 
-  const dismiss = useCallback((id: number) => {
+  const clearTimer = useCallback((id: number) => {
     clearTimeout(timers.current.get(id)?.handle);
     timers.current.delete(id);
-    setItems((xs) => xs.filter((x) => x.id !== id));
   }, []);
+
+  const dismiss = useCallback(
+    (id: number) => {
+      clearTimer(id);
+      order.current = order.current.filter((x) => x !== id);
+      setItems((xs) => xs.filter((x) => x.id !== id));
+    },
+    [clearTimer],
+  );
 
   const run = useCallback(
     (id: number, timer: Timer) => {
@@ -60,13 +71,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const push = useCallback(
     (t: ToastInput) => {
       const id = nextId.current++;
-      // Keep the stack short: newest three.
-      setItems((xs) => [...xs.slice(-2), { ...t, id }]);
+      // Keep the stack short: newest three. Dropped toasts take their timers with them.
+      order.current = [...order.current, id];
+      while (order.current.length > MAX_TOASTS) clearTimer(order.current.shift()!);
+      setItems((xs) => [...xs.slice(1 - MAX_TOASTS), { ...t, id }]);
       const timer: Timer = { deadline: 0, remaining: TOAST_MS, holds: new Set() };
       timers.current.set(id, timer);
       run(id, timer);
     },
-    [run],
+    [run, clearTimer],
   );
 
   // WCAG 2.2.1: the countdown (and with it the Undo) waits while the toast is hovered or focused.
