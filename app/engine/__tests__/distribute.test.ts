@@ -50,3 +50,44 @@ test("refund only returns units from the current turn and floors at 0", () => {
   ]);
   expect(out).toEqual({ turn: 2, used: { A: 0, B: 0 } });
 });
+test.each([1, 2, 3, 4, 5])("reference scenario holds for seed %i", (seed) => {
+  const ten = assignOccurrences({ capacities: caps, ledger: { turn: 1, used: {} }, occurrences: occ(10), rng: seededRng(seed) });
+  expect(count(ten.occurrences.slice(0, 8))).toEqual({ A: 1, B: 2, C: 2, D: 3 });
+  expect(ten.ledger.turn).toBe(2);
+  expect(Object.values(ten.ledger.used).sort()).toEqual([1, 1]);
+
+  const four = assignOccurrences({ capacities: caps, ledger: { turn: 2, used: { A: 1, B: 1 } }, occurrences: occ(4, 11), rng: seededRng(seed + 100) });
+  const c = count(four.occurrences);
+  expect(c.A).toBeUndefined();
+  expect(c.D).toBe(2);
+  expect(c.C).toBeGreaterThanOrEqual(1);
+  expect((c.B ?? 0) + (c.C ?? 0)).toBe(2);
+});
+test("a ledger already over a shrunken capacity is treated as exhausted", () => {
+  // A had capacity 3 when it used 3; it now has 1. B is the only one with room this turn.
+  const r = assignOccurrences({ capacities: { A: 1, B: 1 }, ledger: { turn: 1, used: { A: 3 } }, occurrences: occ(3), rng: seededRng(1) });
+  expect(r.occurrences.map(o => [o.taId, o.turn])).toEqual([["B", 1], [expect.any(String), 2], [expect.any(String), 2]]);
+  expect(count(r.occurrences.slice(1))).toEqual({ A: 1, B: 1 });
+  expect(r.ledger).toEqual({ turn: 2, used: { A: 1, B: 1 } });
+});
+test("stale ledger ids are ignored", () => {
+  const r = assignOccurrences({ capacities: { A: 1 }, ledger: { turn: 1, used: { GONE: 5 } }, occurrences: occ(1), rng: seededRng(1) });
+  expect(r.occurrences[0]).toMatchObject({ taId: "A", turn: 1 });
+});
+test("unsorted input is assigned in date order", () => {
+  const input = occ(10).reverse();
+  const r = assignOccurrences({ capacities: caps, ledger: { turn: 1, used: {} }, occurrences: input, rng: seededRng(1) });
+  expect(r.occurrences.map(o => o.date)).toEqual([...input].map(o => o.date).sort());
+  expect(r.occurrences.map(o => o.turn)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 2, 2]);
+});
+test("input arrays and capacities are not mutated", () => {
+  const input = occ(5).reverse();
+  const snapshot = JSON.stringify(input);
+  const capsCopy = { ...caps };
+  const ledger = { turn: 1, used: { A: 1 } };
+  assignOccurrences({ capacities: caps, ledger, occurrences: input, rng: seededRng(1) });
+  refund(ledger, [{ id: "x", date: "2026-10-01", taId: "A", turn: 1 }]);
+  expect(JSON.stringify(input)).toBe(snapshot);
+  expect(caps).toEqual(capsCopy);
+  expect(ledger).toEqual({ turn: 1, used: { A: 1 } });
+});

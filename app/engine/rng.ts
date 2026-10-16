@@ -14,5 +14,6 @@ export function seededRng(seed: number): Rng {
 }
 
 export function pick<T>(items: T[], rng: Rng): T {
+  if (items.length === 0) throw new RangeError("pick() needs at least one item.");
   return items[Math.floor(rng() * items.length)];
 }

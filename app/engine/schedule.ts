@@ -42,11 +42,19 @@ export function generateDates(schedule: Schedule, semester: Semester): ISODate[]
   }
 }
 
+function clampInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
+/** `count` is clamped to 1..500 and `gapDays` to at least 1. */
 export function customDates(start: ISODate, count: number, gapDays: number): ISODate[] {
+  const n = clampInt(count, 1, MAX_OCCURRENCES);
+  const gap = clampInt(gapDays, 1, Number.MAX_SAFE_INTEGER);
   const origin = parseISO(start);
   const out: ISODate[] = [];
-  for (let i = 0; i < count; i++) {
-    out.push(format(addDays(origin, i * gapDays), "yyyy-MM-dd"));
+  for (let i = 0; i < n; i++) {
+    out.push(format(addDays(origin, i * gap), "yyyy-MM-dd"));
   }
   return out;
 }

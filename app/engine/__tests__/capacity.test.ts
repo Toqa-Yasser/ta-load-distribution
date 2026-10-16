@@ -18,3 +18,8 @@ test("remainingFraction", () => {
   expect(remainingFraction(3, 1)).toBeCloseTo(2 / 3);
   expect(remainingFraction(0, 0)).toBe(-Infinity);
 });
+test("capacity ignores slot ids that no longer match a TA", () => {
+  const dangling = { ...ws, sections: [...ws.sections, { id: "s4", name: "S4", taIds: ["GONE", "A"] as [string, string] }] };
+  expect(capacities(dangling)).toEqual({ A: 2, B: 3, Z: 0 });
+  expect("GONE" in capacities(dangling)).toBe(false);
+});
