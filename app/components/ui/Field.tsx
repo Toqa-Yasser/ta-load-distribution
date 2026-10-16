@@ -6,7 +6,9 @@ type FieldProps = { label: string; hint?: string; error?: string; children: Reac
 /**
  * Label + optional hint/error around a single form control. The control is wired up by
  * cloning: it gets an id (unless it has one), aria-describedby for the hint/error and
- * aria-invalid when there is an error.
+ * aria-invalid when there is an error. The error lives in an aria-live region that is always
+ * rendered (visually hidden while empty) so screen readers announce an error as it appears;
+ * a region inserted together with its text is often missed.
  */
 export function Field({ label, hint, error, children }: FieldProps) {
   const autoId = useId();
@@ -27,11 +29,9 @@ export function Field({ label, hint, error, children }: FieldProps) {
           {hint}
         </p>
       )}
-      {error && (
-        <p id={errorId} aria-live="polite" className="text-xs font-medium text-danger-ink">
-          {error}
-        </p>
-      )}
+      <p id={errorId} aria-live="polite" className={error ? "text-xs font-medium text-danger-ink" : "sr-only"}>
+        {error}
+      </p>
     </div>
   );
 }

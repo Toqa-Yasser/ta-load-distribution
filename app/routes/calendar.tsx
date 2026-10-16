@@ -117,7 +117,6 @@ export default function Calendar() {
       {popover && current && (
         <OccurrencePopover
           open={popover.open}
-          ref={popover.ref}
           task={current.task}
           occ={current.occ}
           tas={workspace.tas}

@@ -1,5 +1,5 @@
 import { useReducedMotion, type TargetAndTransition, type Transition, type Variants } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 /** Springy ease used for page and toast entrances. */
 export const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -61,4 +61,15 @@ export function useMounted(): boolean {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   return mounted;
+}
+
+const noSubscribe = () => () => {};
+
+/**
+ * False on the server and while hydrating, true for anything rendered on the client after
+ * hydration (including components that mount later). Unlike useMounted it is already true on a
+ * late-mounting component's first render, so it can choose an entrance animation's `initial`.
+ */
+export function useHydrated(): boolean {
+  return useSyncExternalStore(noSubscribe, () => true, () => false);
 }

@@ -1,5 +1,5 @@
-import { AnimatePresence, motion, useDragControls, useReducedMotion, type PanInfo } from "motion/react";
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { AnimatePresence, motion, useDragControls, useReducedMotion, type InertiaOptions, type PanInfo } from "motion/react";
+import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
 import { EASE_OUT, usePressMotion } from "~/lib/motion";
@@ -16,6 +16,21 @@ type SheetProps = {
 const DESKTOP_QUERY = "(min-width: 48rem)"; // Tailwind `md`
 const DISMISS_OFFSET = 120;
 const DISMISS_VELOCITY = 600;
+/** `type: false` makes motion jump straight to the target, so the release snaps back without a spring. */
+const INSTANT_DRAG = { type: false } as unknown as InertiaOptions;
+
+/** Id of the shell element that is made `inert` while any sheet is open (sheets portal outside it). */
+export const APP_ROOT_ID = "app-root";
+let openSheets = 0;
+
+function holdAppRootInert(): () => void {
+  openSheets += 1;
+  document.getElementById(APP_ROOT_ID)?.setAttribute("inert", "");
+  return () => {
+    openSheets -= 1;
+    if (openSheets === 0) document.getElementById(APP_ROOT_ID)?.removeAttribute("inert");
+  };
+}
 
 function useIsDesktop(): boolean {
   const [desktop, setDesktop] = useState(false);
@@ -35,7 +50,9 @@ function useIsDesktop(): boolean {
  * `side="right"`, a right-hand slide-over) from `md` up.
  * Portalled to <body> after mount (renders nothing on the server). Escape, backdrop click,
  * the close button and (on mobile) a downward drag/fling all call onClose. While open, focus
- * is moved inside and trapped, body scroll is locked; focus returns to the opener on close.
+ * is moved inside and trapped (and pulled back if it escapes to <body>), body scroll is locked,
+ * and the app root is `inert` (counted, so stacked sheets release it only when the last closes);
+ * focus returns to the opener on close.
  */
 export function Sheet({ open, onClose, title, side = "center", children }: SheetProps) {
   const [mounted, setMounted] = useState(false);
@@ -46,6 +63,15 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
   const drag = useDragControls();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
+
+  // Declared before the focus effect: cleanups run in order, and the opener must not be inert
+  // when focus is handed back to it.
+  useEffect(() => {
+    if (!open) return;
+    return holdAppRootInert();
+  }, [open]);
 
   // Focus in on open, back to the opener on close. Children mark their initial focus target
   // with `data-autofocus`, not React's autoFocus: autoFocus fires during commit, before this
@@ -94,6 +120,18 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
       e.preventDefault();
       first.focus();
     }
+  };
+
+  // Focus that leaves for nowhere (a click on the backdrop, the focused control unmounting)
+  // lands on <body>, outside the trap; put it back on the panel. Checked after the event so
+  // a move to another element (a stacked sheet, the opener on close) is left alone.
+  const onBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (e.relatedTarget) return;
+    setTimeout(() => {
+      const panel = panelRef.current;
+      const active = document.activeElement;
+      if (openRef.current && panel?.isConnected && (active === null || active === document.body)) panel.focus();
+    }, 0);
   };
 
   const onDragEnd = (_: unknown, info: PanInfo) => {
@@ -150,12 +188,14 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             aria-labelledby={titleId}
             tabIndex={-1}
             onKeyDown={onKeyDown}
+            onBlur={onBlur}
             {...panelMotion}
             drag={desktop ? false : "y"}
             dragListener={false}
             dragControls={drag}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.8 }}
+            dragTransition={reduced ? INSTANT_DRAG : undefined}
             onDragEnd={onDragEnd}
             className={`glass relative flex max-h-[90dvh] w-full flex-col rounded-b-none pb-[env(safe-area-inset-bottom)] outline-none md:rounded-[20px] md:pb-0 ${
               side === "right" ? "md:max-h-none md:max-w-md" : "md:max-w-lg"

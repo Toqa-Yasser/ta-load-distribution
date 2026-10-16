@@ -3,13 +3,12 @@ import { Link } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Select } from "~/components/ui/Select";
 import { Sheet } from "~/components/ui/Sheet";
-import type { Occurrence, OccurrenceRef, TA, Task } from "~/engine/types";
+import type { Occurrence, TA, Task } from "~/engine/types";
 import { fmtDateLong } from "~/lib/format";
 
 type OccurrencePopoverProps = {
   /** False animates the sheet out; the caller keeps the occurrence until then. */
   open: boolean;
-  ref: OccurrenceRef;
   task: Task;
   occ: Occurrence;
   tas: TA[];
@@ -23,8 +22,7 @@ const LINK =
 
 /**
  * Sheet for one occurrence (bottom sheet on mobile, dialog on desktop): reassign it to
- * another TA, start a swap, or open its task. `ref` identifies the occurrence for callers;
- * the handlers are already bound to it.
+ * another TA, start a swap, or open its task. The handlers are already bound to the occurrence.
  */
 export function OccurrencePopover({ open, task, occ, tas, onReassign, onStartSwap, onClose }: OccurrencePopoverProps) {
   const selectId = useId();

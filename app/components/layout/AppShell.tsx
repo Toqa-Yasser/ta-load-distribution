@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useState } from "react";
 import { useLocation, useOutlet } from "react-router";
+import { APP_ROOT_ID } from "~/components/ui/Sheet";
 import { pageTransition, pageVariants, reducedPageVariants } from "~/lib/motion";
 import { OpenSettingsContext } from "~/lib/settings";
 import { UNDO_FETCHER_KEY, useHistory } from "~/lib/use-history";
@@ -26,7 +27,8 @@ export function AppShell() {
     <OpenSettingsContext.Provider value={openSettings}>
       {/* Toasts each command's result, so a toast survives the page that submitted it. */}
       <CommandToasts>
-        <div className="relative min-h-dvh">
+        {/* Made inert while a Sheet is open; sheets portal to <body>, outside it. */}
+        <div id={APP_ROOT_ID} className="relative min-h-dvh">
           <Background />
           <Header />
           <AnimatePresence mode="wait" initial={false}>

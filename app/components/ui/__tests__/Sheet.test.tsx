@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { Sheet } from "~/components/ui/Sheet";
 test("closes on Escape", () => {
@@ -48,4 +48,41 @@ test("a ConfirmDialog stacked on an open Sheet restores focus and scroll lock in
   rerender(ui(false, false));
   expect(document.activeElement).toBe(opener);
   expect(document.body.style.overflow).toBe("");
+});
+
+const appRoot = () => document.getElementById("app-root")!;
+const withRoot = (children: React.ReactNode) => <div id="app-root">{children}</div>;
+
+test("marks the app root inert while open and clears it after close", () => {
+  const { rerender } = render(withRoot(<Sheet open={false} onClose={() => {}} title="Hi"><p>body</p></Sheet>));
+  expect(appRoot()).not.toHaveAttribute("inert");
+  rerender(withRoot(<Sheet open onClose={() => {}} title="Hi"><p>body</p></Sheet>));
+  expect(appRoot()).toHaveAttribute("inert");
+  expect(appRoot().contains(screen.getByRole("dialog"))).toBe(false);
+  rerender(withRoot(<Sheet open={false} onClose={() => {}} title="Hi"><p>body</p></Sheet>));
+  expect(appRoot()).not.toHaveAttribute("inert");
+});
+test("two stacked sheets: the app root stays inert until both are closed", () => {
+  const ui = (a: boolean, b: boolean) =>
+    withRoot(
+      <>
+        <Sheet open={a} onClose={() => {}} title="A"><p>a</p></Sheet>
+        <Sheet open={b} onClose={() => {}} title="B"><p>b</p></Sheet>
+      </>,
+    );
+  const { rerender } = render(ui(true, false));
+  rerender(ui(true, true));
+  expect(appRoot()).toHaveAttribute("inert");
+  rerender(ui(false, true));
+  expect(appRoot()).toHaveAttribute("inert");
+  rerender(ui(false, false));
+  expect(appRoot()).not.toHaveAttribute("inert");
+});
+test("focus escaping to the body is pulled back into the panel", async () => {
+  render(<Sheet open onClose={() => {}} title="Hi"><button type="button">inside</button></Sheet>);
+  const inside = screen.getByRole("button", { name: "inside" });
+  inside.focus();
+  inside.blur();
+  expect(document.activeElement).toBe(document.body);
+  await waitFor(() => expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true));
 });
