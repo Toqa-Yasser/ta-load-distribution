@@ -1,7 +1,7 @@
 import { MemoryStore } from "~/server/memory-store";
-import { applyCommand, loadWorkspace, previewCommand, rollback, saveSnapshot, deleteHistory, AUTO_SNAPSHOT_KEEP } from "~/server/workspace.server";
+import { applyCommand, commandSeed, loadWorkspace, previewCommand, rollback, saveSnapshot, deleteHistory, AUTO_SNAPSHOT_KEEP } from "~/server/workspace.server";
 import { testContext } from "~/engine/reducer";
-import { EngineError } from "~/engine/types";
+import { EngineError, type Command } from "~/engine/types";
 
 test("loadWorkspace creates an empty workspace at version 1", async () => {
   const store = new MemoryStore();
@@ -68,4 +68,32 @@ test("deleteHistory requires the configured password", async () => {
   expect(await store.listSnapshots()).toHaveLength(1);
   expect(await deleteHistory(store, "secret", "secret")).toBe(true);
   expect(await store.listSnapshots()).toHaveLength(0);
+});
+
+test("preview and apply assign the same TAs for the same version and command", async () => {
+  const store = new MemoryStore();
+  for (const name of ["A", "B", "C", "D"]) await applyCommand(store, { type: "addTA", name });
+  for (const name of ["S1", "S2", "S3", "S4"]) await applyCommand(store, { type: "addSection", name });
+  const { data } = await loadWorkspace(store);
+  const ta = Object.fromEntries(data.tas.map((t) => [t.name, t.id]));
+  const layout: [number, string, string][] = [[0, "A", "B"], [1, "B", "C"], [2, "C", "D"], [3, "D", "D"]];
+  for (const [i, x, y] of layout) {
+    await applyCommand(store, { type: "setSectionSlot", sectionId: data.sections[i].id, slot: 0, taId: ta[x] });
+    await applyCommand(store, { type: "setSectionSlot", sectionId: data.sections[i].id, slot: 1, taId: ta[y] });
+  }
+  // Several commands so a Math.random-based context would almost surely diverge somewhere.
+  for (const start of ["2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20"]) {
+    const cmd: Command = { type: "createTask", title: `Task ${start}`, schedule: { type: "weekly", start, end: "2026-12-31" } };
+    const previewed = await previewCommand(store, cmd);
+    const applied = (await applyCommand(store, cmd)).workspace;
+    const taIds = (ws: typeof previewed) => ws.tasks[ws.tasks.length - 1].occurrences.map((o) => o.taId);
+    expect(taIds(applied)).toEqual(taIds(previewed));
+  }
+});
+test("commandSeed is stable for the same version and command and differs otherwise", () => {
+  const a: Command = { type: "addTA", name: "A" };
+  const b: Command = { type: "addTA", name: "B" };
+  expect(commandSeed(5, a)).toBe(commandSeed(5, a));
+  expect(commandSeed(5, a)).not.toBe(commandSeed(5, b));
+  expect(commandSeed(5, a)).not.toBe(commandSeed(6, a));
 });

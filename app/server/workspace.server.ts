@@ -1,5 +1,6 @@
 import { emptyWorkspace } from "~/engine/empty";
-import { defaultContext, describe, reduce } from "~/engine/reducer";
+import { defaultContext, describe, reduce, type ReduceContext } from "~/engine/reducer";
+import { seededRng } from "~/engine/rng";
 import { EngineError, ValidationError } from "~/engine/types";
 import type { Command, Workspace } from "~/engine/types";
 import { checkHistoryPassword } from "./password.server";
@@ -34,19 +35,39 @@ async function commit(store: Store, old: WorkspaceRow, next: Workspace, label: s
   return { workspace: next, version: old.version + 1, snapshotId };
 }
 
-export async function applyCommand(store: Store, cmd: Command, ctx = defaultContext()): Promise<SaveResult> {
+/** FNV-1a (32-bit) over `${version}:${JSON.stringify(cmd)}`. */
+export function commandSeed(version: number, cmd: Command): number {
+  const text = `${version}:${JSON.stringify(cmd)}`;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * The RNG is derived from the document version and the command, so a preview and the
+ * commit that follows it (at the same version) deal identical TAs. An explicit ctx (tests) wins.
+ */
+function contextFor(row: WorkspaceRow, cmd: Command, ctx: ReduceContext | undefined): ReduceContext {
+  return ctx ?? { ...defaultContext(), rng: seededRng(commandSeed(row.version, cmd)) };
+}
+
+export async function applyCommand(store: Store, cmd: Command, ctx?: ReduceContext): Promise<SaveResult> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const old = await loadWorkspace(store);
-    const next = reduce(old.data, cmd, ctx);
+    // Re-derived per attempt: a conflict retry builds on the newer version.
+    const next = reduce(old.data, cmd, contextFor(old, cmd, ctx));
     const saved = await commit(store, old, next, describe(cmd, old.data));
     if (saved) return saved;
   }
   throw conflict();
 }
 
-export async function previewCommand(store: Store, cmd: Command, ctx = defaultContext()): Promise<Workspace> {
-  const { data } = await loadWorkspace(store);
-  return reduce(data, cmd, ctx);
+export async function previewCommand(store: Store, cmd: Command, ctx?: ReduceContext): Promise<Workspace> {
+  const row = await loadWorkspace(store);
+  return reduce(row.data, cmd, contextFor(row, cmd, ctx));
 }
 
 export async function rollback(store: Store, snapshotId: number): Promise<SaveResult> {
