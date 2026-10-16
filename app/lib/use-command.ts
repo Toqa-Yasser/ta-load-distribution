@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
-import { useFetcher, useSubmit } from "react-router";
+import { useFetcher } from "react-router";
 import { useToast } from "~/components/ui/Toast";
 import type { Command } from "~/engine/types";
 import { SERVER_ERROR_MESSAGE } from "~/lib/errors";
+import { useUndo } from "~/lib/use-history";
 
 type CommandResult =
   | { ok: true; version: number; snapshotId: number; label: string }
@@ -10,7 +11,7 @@ type CommandResult =
 
 export function useCommand(): { submit(cmd: Command, opts?: { toast?: string }): void; pending: boolean } {
   const fetcher = useFetcher<CommandResult>();
-  const submitForm = useSubmit();
+  const undo = useUndo();
   const toast = useToast();
   const toastOverride = useRef<string | undefined>(undefined);
   const handled = useRef<CommandResult | undefined>(undefined);
@@ -24,22 +25,15 @@ export function useCommand(): { submit(cmd: Command, opts?: { toast?: string }):
       toast({
         message: toastOverride.current ?? data.label,
         tone: "success",
-        action: {
-          label: "Undo",
-          // useSubmit (not this hook's fetcher) so Undo still works after the caller unmounts.
-          onClick: () =>
-            submitForm(
-              { intent: "rollback", snapshotId },
-              { method: "post", action: "/api/history", encType: "application/json", navigate: false, fetcherKey: "undo" },
-            ),
-        },
+        // The result toast ("Rolled back" or the error) comes from AppShell's undo watcher.
+        action: { label: "Undo", onClick: () => undo(snapshotId) },
       });
     } else {
       // Anything that is not a well-formed success is an error, even a malformed body.
       const message = data && typeof data.message === "string" && data.message ? data.message : SERVER_ERROR_MESSAGE;
       toast({ message, tone: "error" });
     }
-  }, [fetcher.state, fetcher.data, toast, submitForm]);
+  }, [fetcher.state, fetcher.data, toast, undo]);
 
   return {
     submit(cmd, opts) {

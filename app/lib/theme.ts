@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type ThemePref = "light" | "dark" | "system";
 
@@ -34,7 +34,19 @@ function apply(theme: "light" | "dark") {
   document.documentElement.dataset.theme = theme;
 }
 
-export function useTheme(): { pref: ThemePref; resolved: "light" | "dark"; setPref(p: ThemePref): void } {
+export type ThemeState = { pref: ThemePref; resolved: "light" | "dark"; setPref(p: ThemePref): void };
+
+const ThemeContext = createContext<ThemeState | null>(null);
+
+/** Read the shared theme state; every consumer (header toggle, settings) stays in sync. */
+export function useTheme(): ThemeState {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used inside <ThemeProvider>.");
+  return ctx;
+}
+
+/** Owns the theme preference for the whole app; mount once at the root. */
+export function ThemeProvider({ children }: { children: ReactNode }) {
   // The server cannot know the preference, so the first client render matches the
   // server ("system"/"light"); the init script has already painted the real theme
   // and this effect only syncs React state to it, without touching the DOM.
@@ -71,5 +83,7 @@ export function useTheme(): { pref: ThemePref; resolved: "light" | "dark"; setPr
     setResolved(next);
   }, []);
 
-  return { pref, resolved, setPref };
+  const value = useMemo(() => ({ pref, resolved, setPref }), [pref, resolved, setPref]);
+  // createElement keeps this module .ts (it also holds the inline init script).
+  return createElement(ThemeContext.Provider, { value }, children);
 }

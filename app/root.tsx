@@ -6,7 +6,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { AppShell } from "~/components/layout/AppShell";
 import { ToastProvider } from "~/components/ui/Toast";
-import { THEME_INIT_SCRIPT } from "~/lib/theme";
+import { THEME_INIT_SCRIPT, ThemeProvider } from "~/lib/theme";
 import type { RootLoaderData } from "~/lib/use-workspace";
 import { getStore } from "~/server/store.server";
 import { loadWorkspace } from "~/server/workspace.server";
@@ -55,9 +55,11 @@ export default function App() {
     // reducedMotion="user" disables transform/layout animations (hover lift, tap scale,
     // layoutId indicators, page slides) for prefers-reduced-motion users across the app.
     <MotionConfig reducedMotion="user">
-      <ToastProvider>
-        <AppShell />
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <AppShell />
+        </ToastProvider>
+      </ThemeProvider>
     </MotionConfig>
   );
 }

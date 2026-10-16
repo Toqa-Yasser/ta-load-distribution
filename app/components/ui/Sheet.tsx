@@ -3,7 +3,14 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode 
 import { createPortal } from "react-dom";
 import { EASE_OUT, usePressMotion } from "~/lib/motion";
 
-type SheetProps = { open: boolean; onClose: () => void; title: string; children: ReactNode };
+type SheetProps = {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  /** Desktop placement: a centred dialog (default) or a full-height slide-over from the right. */
+  side?: "center" | "right";
+  children: ReactNode;
+};
 
 const DESKTOP_QUERY = "(min-width: 48rem)"; // Tailwind `md`
 const DISMISS_OFFSET = 120;
@@ -25,12 +32,13 @@ function useIsDesktop(): boolean {
 }
 
 /**
- * Modal surface: a draggable bottom sheet below `md`, a centred dialog from `md` up.
+ * Modal surface: a draggable bottom sheet below `md`, a centred dialog (or, with
+ * `side="right"`, a right-hand slide-over) from `md` up.
  * Portalled to <body> after mount (renders nothing on the server). Escape, backdrop click,
  * the close button and (on mobile) a downward drag/fling all call onClose. While open, focus
  * is moved inside and trapped, body scroll is locked; focus returns to the opener on close.
  */
-export function Sheet({ open, onClose, title, children }: SheetProps) {
+export function Sheet({ open, onClose, title, side = "center", children }: SheetProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const desktop = useIsDesktop();
@@ -96,7 +104,15 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
   if (!mounted) return null;
 
   const fade = { duration: reduced ? 0 : 0.2 };
-  const panelMotion = desktop
+  const right = desktop && side === "right";
+  const panelMotion = right
+    ? {
+        initial: { x: "110%" },
+        animate: { x: 0 },
+        exit: { x: "110%" },
+        transition: reduced ? { duration: 0 } : { type: "spring" as const, stiffness: 420, damping: 42 },
+      }
+    : desktop
     ? {
         initial: { opacity: 0, scale: 0.96, y: 8 },
         animate: { opacity: 1, scale: 1, y: 0 },
@@ -113,7 +129,12 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div key="sheet" className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
+        <div
+          key="sheet"
+          className={`fixed inset-0 z-50 flex items-end justify-center ${
+            side === "right" ? "md:items-stretch md:justify-end md:p-3" : "md:items-center md:p-6"
+          }`}
+        >
           <motion.div
             aria-hidden
             initial={{ opacity: 0 }}
@@ -137,7 +158,9 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.8 }}
             onDragEnd={onDragEnd}
-            className="glass relative flex max-h-[90dvh] w-full flex-col rounded-b-none pb-[env(safe-area-inset-bottom)] outline-none md:max-w-lg md:rounded-[20px] md:pb-0"
+            className={`glass relative flex max-h-[90dvh] w-full flex-col rounded-b-none pb-[env(safe-area-inset-bottom)] outline-none md:rounded-[20px] md:pb-0 ${
+              side === "right" ? "md:max-h-none md:max-w-md" : "md:max-w-lg"
+            }`}
           >
             {!desktop && (
               <div

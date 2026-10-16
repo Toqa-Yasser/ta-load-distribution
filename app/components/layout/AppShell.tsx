@@ -1,34 +1,45 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useCallback, useState } from "react";
 import { useLocation, useOutlet } from "react-router";
 import { pageTransition, pageVariants, reducedPageVariants } from "~/lib/motion";
+import { OpenSettingsContext } from "~/lib/settings";
+import { UNDO_FETCHER_KEY, useHistory } from "~/lib/use-history";
 import { Background } from "./Background";
 import { Header } from "./Header";
 import { NavBar } from "./NavBar";
+import { SettingsPanel } from "./SettingsPanel";
 
 export function AppShell() {
   const { pathname } = useLocation();
   // Capture the outlet element so the exiting page keeps rendering its own route during the exit animation.
   const outlet = useOutlet();
   const reduced = useReducedMotion();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const openSettings = useCallback(() => setSettingsOpen(true), []);
+  // Toasts the result of every toast's Undo; mounted here so it outlives the page that showed it.
+  useHistory(UNDO_FETCHER_KEY);
 
   return (
-    <div className="relative min-h-dvh">
-      <Background />
-      <Header />
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.main
-          key={pathname}
-          variants={reduced ? reducedPageVariants : pageVariants}
-          initial="initial"
-          animate="enter"
-          exit="exit"
-          transition={reduced ? { duration: 0 } : pageTransition}
-          className="mx-auto max-w-6xl px-4 pb-28 pt-6 md:px-6 md:pb-12"
-        >
-          {outlet}
-        </motion.main>
-      </AnimatePresence>
-      <NavBar placement="bottom" />
-    </div>
+    <OpenSettingsContext.Provider value={openSettings}>
+      <div className="relative min-h-dvh">
+        <Background />
+        <Header />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.main
+            key={pathname}
+            variants={reduced ? reducedPageVariants : pageVariants}
+            initial="initial"
+            animate="enter"
+            exit="exit"
+            transition={reduced ? { duration: 0 } : pageTransition}
+            className="mx-auto max-w-6xl px-4 pb-28 pt-6 md:px-6 md:pb-12"
+          >
+            {outlet}
+          </motion.main>
+        </AnimatePresence>
+        <NavBar placement="bottom" />
+        <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      </div>
+    </OpenSettingsContext.Provider>
   );
 }
