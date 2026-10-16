@@ -1,4 +1,5 @@
 import { useReducedMotion, type TargetAndTransition, type Transition, type Variants } from "motion/react";
+import { useEffect, useState } from "react";
 
 /** Springy ease used for page and toast entrances. */
 export const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -34,4 +35,14 @@ const STILL: TargetAndTransition = {};
  */
 export function usePressMotion(): { whileHover: TargetAndTransition; whileTap: TargetAndTransition } {
   return useReducedMotion() ? { whileHover: STILL, whileTap: STILL } : { whileHover: hoverLift, whileTap: tapPress };
+}
+
+/**
+ * False during SSR and the first client render, true after mount. Gate render output that
+ * depends on client-only state (e.g. useReducedMotion) so hydration matches the server.
+ */
+export function useMounted(): boolean {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
 }

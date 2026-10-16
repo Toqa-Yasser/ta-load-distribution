@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 import type { Occurrence, TA } from "~/engine/types";
-import { EASE_OUT } from "~/lib/motion";
+import { EASE_OUT, useMounted } from "~/lib/motion";
 
 type SplitBarProps = {
   occurrences: Occurrence[];
@@ -13,10 +13,13 @@ type SplitBarProps = {
  * Horizontal stacked bar: one segment per TA, width proportional to how many of the task's
  * occurrences they hold. Widths animate on change; `initial={false}` renders the final width
  * on the server and on hydration. Width is not a transform, so MotionConfig does not cover it:
- * under prefers-reduced-motion the width is applied directly as a style, with no tween.
+ * under prefers-reduced-motion (once mounted, so hydration matches SSR) the width is applied
+ * directly as a style, with no tween.
  */
 export function SplitBar({ occurrences, tas, legend = false }: SplitBarProps) {
-  const reduced = useReducedMotion();
+  // The server can't know the preference, so the first client render must match it (animate path).
+  const reducedMotion = useReducedMotion();
+  const reduced = useMounted() && reducedMotion;
   const counts = new Map<string, number>();
   for (const o of occurrences) counts.set(o.taId, (counts.get(o.taId) ?? 0) + 1);
   const total = occurrences.length;
@@ -32,16 +35,22 @@ export function SplitBar({ occurrences, tas, legend = false }: SplitBarProps) {
       >
         {parts.map(({ ta, n }) => {
           const width = `${(n / total) * 100}%`;
-          return (
+          const common = {
+            title: `${ta.name}: ${n}`,
+            className: "h-full first:rounded-l-full last:rounded-r-full",
+          };
+          // Reduced motion: a plain element whose width is set in the same render (even a 0s tween
+          // lands a frame later). Switching element type also drops any width motion already held.
+          return reduced ? (
+            <div key={ta.id} {...common} style={{ background: ta.color, width }} />
+          ) : (
             <motion.div
               key={ta.id}
-              title={`${ta.name}: ${n}`}
+              {...common}
               initial={false}
-              // Reduced motion: the width is set in the same render (even a 0s tween lands a frame later).
-              animate={reduced ? undefined : { width }}
+              animate={{ width }}
               transition={{ duration: 0.4, ease: EASE_OUT }}
-              className="h-full first:rounded-l-full last:rounded-r-full"
-              style={{ background: ta.color, ...(reduced ? { width } : {}) }}
+              style={{ background: ta.color }}
             />
           );
         })}
