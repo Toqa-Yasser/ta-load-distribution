@@ -129,6 +129,15 @@ h3 {
   100% { transform: translate3d(-12vw, -6vh, 0) scale(1); }
 }
 
+/* ---------- Calendar swap targets ---------- */
+@theme {
+  --animate-swap-pulse: swap-pulse 1.4s ease-in-out infinite;
+  @keyframes swap-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+    50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 0%, transparent); }
+  }
+}
+
 /* ---------- Gauge liquid ---------- */
 /* Wave paths are two periods (200 user units) wide; sliding one period loops seamlessly. */
 .gauge-wave {
@@ -152,7 +161,8 @@ h3 {
   }
   /* A near-zero duration on an infinite animation would strobe; hold the blobs still instead. */
   .mesh-blob,
-  .gauge-wave {
+  .gauge-wave,
+  .animate-swap-pulse {
     animation: none !important;
   }
 }
