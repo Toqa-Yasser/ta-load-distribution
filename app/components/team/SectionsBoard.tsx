@@ -13,6 +13,8 @@ import { Button } from "~/components/ui/Button";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { Field } from "~/components/ui/Field";
 import type { Section, TA } from "~/engine/types";
+import { INPUT_CLASS } from "./InlineRename";
+import { resolveDrop } from "./resolveDrop";
 import { SectionCard } from "./SectionCard";
 import { SlotPicker } from "./SlotPicker";
 
@@ -37,27 +39,20 @@ const screenReaderInstructions: ScreenReaderInstructions = {
 };
 
 /** Sensors and drop handling shared by the board's own DndContext and the Team page's. */
-export function useSlotDnd(onSetSlot: SetSlot) {
+export function useSlotDnd(sections: Section[], onSetSlot: SetSlot) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
   );
   const onDragEnd = (e: DragEndEvent) => {
-    if (!e.over) return;
-    const overId = String(e.over.id);
-    const sep = overId.lastIndexOf(":");
-    const slot = Number(overId.slice(sep + 1));
-    if (sep < 0 || (slot !== 0 && slot !== 1)) return;
-    onSetSlot(overId.slice(0, sep), slot, String(e.active.id));
+    const target = e.over && resolveDrop(String(e.over.id), String(e.active.id), sections);
+    if (target) onSetSlot(target.sectionId, target.slot, target.taId);
   };
   return { sensors, onDragEnd, accessibility: { screenReaderInstructions } };
 }
 
-const INPUT =
-  "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-ink transition-colors hover:border-ink/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-
-function OwnDnd({ onSetSlot, children }: { onSetSlot: SetSlot; children: ReactNode }) {
-  const dnd = useSlotDnd(onSetSlot);
+function OwnDnd({ sections, onSetSlot, children }: { sections: Section[]; onSetSlot: SetSlot; children: ReactNode }) {
+  const dnd = useSlotDnd(sections, onSetSlot);
   return (
     <DndContext id={TEAM_DND_ID} sensors={dnd.sensors} onDragEnd={dnd.onDragEnd} accessibility={dnd.accessibility}>
       {children}
@@ -100,7 +95,7 @@ export function SectionsBoard({
               onChange={(e) => setDraft(e.target.value)}
               placeholder="e.g. Section 1"
               autoComplete="off"
-              className={INPUT}
+              className={INPUT_CLASS}
             />
           </Field>
         </div>
@@ -138,7 +133,8 @@ export function SectionsBoard({
         tas={tas}
         currentTaId={currentTaId}
         onPick={(taId) => {
-          if (picking) onSetSlot(picking.sectionId, picking.slot, taId);
+          // Picking the TA already in the slot is a no-op: no command, no snapshot, no toast.
+          if (picking && taId !== currentTaId) onSetSlot(picking.sectionId, picking.slot, taId);
           setPicking(null);
         }}
         onClose={() => setPicking(null)}
@@ -158,5 +154,5 @@ export function SectionsBoard({
     </div>
   );
 
-  return withinDnd ? board : <OwnDnd onSetSlot={onSetSlot}>{board}</OwnDnd>;
+  return withinDnd ? board : <OwnDnd sections={sections} onSetSlot={onSetSlot}>{board}</OwnDnd>;
 }

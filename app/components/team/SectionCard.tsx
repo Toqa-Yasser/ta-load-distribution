@@ -1,10 +1,11 @@
 import { useDndContext, useDroppable } from "@dnd-kit/core";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useState } from "react";
 import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import type { Section, TA } from "~/engine/types";
 import { usePressMotion } from "~/lib/motion";
+import { InlineRename } from "./InlineRename";
 
 type SectionCardProps = {
   section: Section;
@@ -15,9 +16,6 @@ type SectionCardProps = {
 };
 
 export const slotId = (sectionId: string, slot: 0 | 1) => `${sectionId}:${slot}`;
-
-const INPUT =
-  "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 function Slot({ section, slot, ta, onTap }: { section: Section; slot: 0 | 1; ta: TA | undefined; onTap: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: slotId(section.id, slot) });
@@ -58,47 +56,25 @@ function Slot({ section, slot, ta, onTap }: { section: Section; slot: 0 | 1; ta:
 /** One section: an inline-renamable name, two droppable TA slots and a remove action. */
 export function SectionCard({ section, taById, onRename, onRemove, onSlotTap }: SectionCardProps) {
   const [editing, setEditing] = useState(false);
-  const done = useRef(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (editing) inputRef.current?.select();
-  }, [editing]);
-
-  const finish = (value: string | null) => {
-    if (done.current) return;
-    done.current = true;
-    setEditing(false);
-    const name = value?.trim();
-    if (name && name !== section.name) onRename(name);
-  };
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") finish(e.currentTarget.value);
-    else if (e.key === "Escape") {
-      e.stopPropagation();
-      finish(null);
-    }
-  };
 
   return (
     <Card className="flex flex-col gap-3 p-4">
       <div className="flex items-center gap-2">
         {editing ? (
-          <input
-            ref={inputRef}
-            defaultValue={section.name}
-            aria-label={`Rename ${section.name}`}
-            onKeyDown={onKeyDown}
-            onBlur={(e) => finish(e.currentTarget.value)}
-            className={INPUT}
+          <InlineRename
+            value={section.name}
+            label={`Rename ${section.name}`}
+            onCommit={(name) => {
+              setEditing(false);
+              onRename(name);
+            }}
+            onCancel={() => setEditing(false)}
           />
         ) : (
           <button
             type="button"
             title="Rename"
-            onClick={() => {
-              done.current = false;
-              setEditing(true);
-            }}
+            onClick={() => setEditing(true)}
             className="min-h-11 min-w-0 flex-1 truncate rounded-xl px-2 text-left font-display text-lg font-semibold transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent"
           >
             {section.name}

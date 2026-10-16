@@ -31,7 +31,7 @@ export default function Team() {
 
   const onSetSlot = (sectionId: string, slot: 0 | 1, taId: string | null) =>
     submit({ type: "setSectionSlot", sectionId, slot, taId });
-  const dnd = useSlotDnd(onSetSlot);
+  const dnd = useSlotDnd(workspace.sections, onSetSlot);
   const activeTa = activeId ? taById.get(activeId) : undefined;
 
   return (

@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Button } from "~/components/ui/Button";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { Field } from "~/components/ui/Field";
 import type { TA } from "~/engine/types";
+import { INPUT_CLASS, InlineRename } from "./InlineRename";
 import { TAChip } from "./TAChip";
 
 type TAListProps = {
@@ -14,34 +15,6 @@ type TAListProps = {
   onRename: (id: string, name: string) => void;
   onRemove: (id: string) => void;
 };
-
-const INPUT =
-  "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-ink transition-colors hover:border-ink/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-
-function RenameInput({ ta, onDone }: { ta: TA; onDone: (name: string | null) => void }) {
-  const ref = useRef<HTMLInputElement>(null);
-  const done = useRef(false);
-  useEffect(() => ref.current?.select(), []);
-  const finish = (value: string | null) => {
-    if (done.current) return;
-    done.current = true;
-    onDone(value);
-  };
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") finish(e.currentTarget.value);
-    else if (e.key === "Escape") finish(null);
-  };
-  return (
-    <input
-      ref={ref}
-      defaultValue={ta.name}
-      aria-label={`Rename ${ta.name}`}
-      onKeyDown={onKeyDown}
-      onBlur={(e) => finish(e.currentTarget.value)}
-      className={INPUT}
-    />
-  );
-}
 
 /** TA roster: add inline, tap a chip to rename, drag a chip onto a section slot. */
 export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onRemove }: TAListProps) {
@@ -67,7 +40,7 @@ export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onR
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Name"
               autoComplete="off"
-              className={INPUT}
+              className={INPUT_CLASS}
             />
           </Field>
         </div>
@@ -90,13 +63,14 @@ export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onR
             >
               <div className="min-w-0 flex-1">
                 {editingId === ta.id ? (
-                  <RenameInput
-                    ta={ta}
-                    onDone={(value) => {
+                  <InlineRename
+                    value={ta.name}
+                    label={`Rename ${ta.name}`}
+                    onCommit={(name) => {
                       setEditingId(null);
-                      const name = value?.trim();
-                      if (name && name !== ta.name) onRename(ta.id, name);
+                      onRename(ta.id, name);
                     }}
+                    onCancel={() => setEditingId(null)}
                   />
                 ) : (
                   <TAChip ta={ta} capacity={capacities[ta.id] ?? 0} onClick={() => setEditingId(ta.id)} />
