@@ -1,4 +1,4 @@
-import { INPUT_CLASS } from "~/components/team/InlineRename";
+import { INPUT_CLASS } from "~/components/ui/input";
 import { Field } from "~/components/ui/Field";
 
 type StepNameProps = {

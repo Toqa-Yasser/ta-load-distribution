@@ -3,7 +3,7 @@ import { useLoaderData } from "react-router";
 import type { Route } from "./+types/history";
 import { PasswordDialog } from "~/components/history/PasswordDialog";
 import { SnapshotList } from "~/components/history/SnapshotList";
-import { INPUT_CLASS } from "~/components/team/InlineRename";
+import { INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { plural } from "~/lib/format";

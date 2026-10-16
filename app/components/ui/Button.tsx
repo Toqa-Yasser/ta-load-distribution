@@ -9,7 +9,7 @@ const VARIANTS: Record<Variant, string> = {
   primary:
     "bg-accent text-white shadow-[0_8px_24px_-10px_var(--accent)] hover:brightness-110 disabled:opacity-50",
   ghost: "text-ink hover:bg-ink/5 disabled:opacity-40",
-  danger: "bg-accent-2 text-white hover:brightness-110 disabled:opacity-50",
+  danger: "bg-danger text-white hover:brightness-110 disabled:opacity-50",
 };
 
 // Both sizes keep the 44px minimum touch target; "sm" only tightens padding and type.

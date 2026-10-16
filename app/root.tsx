@@ -1,11 +1,12 @@
 import { format } from "date-fns";
 import { MotionConfig } from "motion/react";
-import { isRouteErrorResponse, Links, Meta, Scripts, ScrollRestoration } from "react-router";
+import { isRouteErrorResponse, Links, Meta, Scripts, ScrollRestoration, type ShouldRevalidateFunction } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import { AppShell } from "~/components/layout/AppShell";
 import { ToastProvider } from "~/components/ui/Toast";
+import { shouldRevalidateRoot } from "~/lib/revalidate";
 import { THEME_INIT_SCRIPT, ThemeProvider } from "~/lib/theme";
 import type { RootLoaderData } from "~/lib/use-workspace";
 import { getStore } from "~/server/store.server";
@@ -28,6 +29,8 @@ export async function loader(): Promise<RootLoaderData> {
   const { data, version } = await loadWorkspace(getStore());
   return { workspace: data, version, today: format(new Date(), "yyyy-MM-dd") };
 }
+
+export const shouldRevalidate: ShouldRevalidateFunction = shouldRevalidateRoot;
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (

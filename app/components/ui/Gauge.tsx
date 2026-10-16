@@ -1,7 +1,14 @@
 import { motion, useReducedMotion, useSpring, useTransform } from "motion/react";
 import { useEffect, useId } from "react";
 
-type GaugeProps = { value: number /* 0..1 */; color: string; label: string; size?: number };
+type GaugeProps = {
+  value: number /* 0..1 */;
+  color: string;
+  label: string;
+  size?: number;
+  /** Drop the visible caption (e.g. when a heading nearby already names it); the accessible name stays. */
+  hideLabel?: boolean;
+};
 
 // SVG user space is 100×100; the vessel is a circle of radius 48 centred at (50, 50).
 const WAVE_PERIOD = 100;
@@ -25,7 +32,7 @@ const levelToY = (v: number) => 106 - v * 112;
  * CSS keyframes (.gauge-wave in app.css, held still under prefers-reduced-motion, where the
  * level also snaps). `value` is clamped to 0..1 (NaN reads as 0) for both the fill and the text.
  */
-export function Gauge({ value, color, label, size = 112 }: GaugeProps) {
+export function Gauge({ value, color, label, size = 112, hideLabel = false }: GaugeProps) {
   // NaN (e.g. a 0/0 load ratio) reads as empty; everything else, ±Infinity included, is clamped.
   const target = Number.isNaN(value) ? 0 : Math.min(1, Math.max(0, value));
   const pct = Math.round(target * 100);
@@ -62,9 +69,11 @@ export function Gauge({ value, color, label, size = 112 }: GaugeProps) {
           {pct}%
         </span>
       </div>
-      <span aria-hidden className="max-w-full truncate text-sm text-muted">
-        {label}
-      </span>
+      {!hideLabel && (
+        <span aria-hidden className="max-w-full truncate text-sm text-muted">
+          {label}
+        </span>
+      )}
     </div>
   );
 }

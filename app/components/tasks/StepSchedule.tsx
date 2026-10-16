@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "motion/react";
-import { INPUT_CLASS } from "~/components/team/InlineRename";
+import { INPUT_CLASS } from "~/components/ui/input";
 import { Field } from "~/components/ui/Field";
 import { generateDates } from "~/engine/schedule";
 import { TooManyOccurrencesError, type ISODate, type Schedule, type Semester } from "~/engine/types";
@@ -175,7 +175,7 @@ export function StepSchedule({ schedule, semester, onChange }: StepScheduleProps
         />
       )}
 
-      <p aria-live="polite" className={`text-sm font-medium ${error ? "text-accent-2" : "text-muted"}`}>
+      <p aria-live="polite" className={`text-sm font-medium ${error ? "text-danger-ink" : "text-muted"}`}>
         {error ?? plural(count, "occurrence", "occurrences")}
       </p>
     </div>

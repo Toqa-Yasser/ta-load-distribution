@@ -21,3 +21,9 @@ test("clamps Infinity to 100%", () => {
   rerender(<Gauge value={-Infinity} color="#f00" label="A" />);
   expect(screen.getByText("0%")).toBeInTheDocument();
 });
+test("hideLabel drops the visible caption but keeps the accessible name", () => {
+  render(<Gauge value={2 / 3} color="#f00" label="Dina" hideLabel />);
+  expect(screen.getByLabelText("Dina: 67% used")).toBeInTheDocument();
+  expect(screen.getByText("67%")).toBeInTheDocument();
+  expect(screen.queryByText("Dina")).not.toBeInTheDocument();
+});

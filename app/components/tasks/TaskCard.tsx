@@ -21,7 +21,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
   const press = usePressMotion();
   const reduced = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState<"redistribute" | "delete" | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close the menu on an outside press or Escape.
@@ -86,7 +86,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
                     className={MENU_ITEM}
                     onClick={() => {
                       setMenuOpen(false);
-                      onRedistribute();
+                      setConfirming("redistribute");
                     }}
                   >
                     Redistribute
@@ -95,10 +95,10 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
                     type="button"
                     role="menuitem"
                     whileTap={press.whileTap}
-                    className={`${MENU_ITEM} text-accent-2`}
+                    className={`${MENU_ITEM} text-danger-ink`}
                     onClick={() => {
                       setMenuOpen(false);
-                      setConfirming(true);
+                      setConfirming("delete");
                     }}
                   >
                     Delete
@@ -115,16 +115,27 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
         </div>
 
         <ConfirmDialog
-          open={confirming}
+          open={confirming === "redistribute"}
+          title="Redistribute task?"
+          body="Deal this task out again? Its current assignments will change."
+          confirmLabel="Redistribute"
+          onConfirm={() => {
+            setConfirming(null);
+            onRedistribute();
+          }}
+          onClose={() => setConfirming(null)}
+        />
+        <ConfirmDialog
+          open={confirming === "delete"}
           title="Delete task?"
           body={`"${task.title}" and its ${plural(task.occurrences.length, "occurrence", "occurrences")} will be removed.`}
           confirmLabel="Delete"
           danger
           onConfirm={() => {
-            setConfirming(false);
+            setConfirming(null);
             onDelete();
           }}
-          onClose={() => setConfirming(false)}
+          onClose={() => setConfirming(null)}
         />
       </Card>
     </div>

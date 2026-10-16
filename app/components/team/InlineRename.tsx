@@ -1,8 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
-
-/** Shared text-input look for the Team page (44px tall). */
-export const INPUT_CLASS =
-  "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-ink transition-colors hover:border-ink/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { INPUT_CLASS } from "~/components/ui/input";
 
 type InlineRenameProps = {
   value: string;

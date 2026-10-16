@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/Button";
 import { Sheet } from "~/components/ui/Sheet";
 import type { Command, Schedule, Workspace } from "~/engine/types";
 import { SERVER_ERROR_MESSAGE } from "~/lib/errors";
+import { useStepFocus } from "~/lib/focus";
 import { EASE_OUT, indicatorSpring, stepSlide } from "~/lib/motion";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
@@ -49,6 +50,7 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
     schedule: { type: "weekly", start: today, end: null },
   });
   const [dir, setDir] = useState(1);
+  const stepFocus = useStepFocus();
   const preview = useFetcher<PreviewResult>();
   // fetcher.data still holds the previous answer while a new preview is in flight.
   const [staleData, setStaleData] = useState<PreviewResult | undefined>(undefined);
@@ -74,6 +76,7 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
       });
     }
     setDir(next > step ? 1 : -1);
+    stepFocus.request();
     setState((s) => ({ ...s, step: next }));
   };
   const next = () => valid && step < 2 && go((step + 1) as Step);
@@ -95,6 +98,7 @@ function Wizard({ onConfirm, onCancel }: { onConfirm: (cmd: CreateTask) => void;
         <AnimatePresence mode="wait" initial={false} custom={dir}>
           <motion.div
             key={step}
+            ref={stepFocus.ref}
             custom={dir}
             variants={reduced ? undefined : stepSlide}
             initial="enter"

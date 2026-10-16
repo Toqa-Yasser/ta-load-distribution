@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { INPUT_CLASS } from "~/components/team/InlineRename";
+import { INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
 import { Sheet } from "~/components/ui/Sheet";

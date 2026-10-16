@@ -27,7 +27,7 @@ export function TACard({ ta, capacity, used, totalOccurrences, nextDates, onSwap
       </div>
 
       <div className="flex justify-center">
-        <Gauge value={capacity ? Math.min(used, capacity) / capacity : 0} color={ta.color} label={ta.name} />
+        <Gauge value={capacity ? Math.min(used, capacity) / capacity : 0} color={ta.color} label={ta.name} hideLabel />
       </div>
 
       <dl className="grid grid-cols-2 gap-3 text-sm">

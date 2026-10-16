@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { INPUT_CLASS } from "~/components/team/InlineRename";
+import { INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { Field } from "~/components/ui/Field";
@@ -45,11 +45,9 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     submit({ type: "setSemester", semester: { ...draft, name: draft.name.trim() } });
   };
 
-  // The panel closes before the confirm opens, so focus returns cleanly to the header button.
-  const askDanger = (kind: "redistribute" | "reset") => {
-    onClose();
-    setConfirm(kind);
-  };
+  // The confirm stacks on top of the open panel; closing it hands focus back to the danger button
+  // and leaves the panel's scroll lock in place. Never close both at once (see Sheet.test.tsx).
+  const askDanger = (kind: "redistribute" | "reset") => setConfirm(kind);
   const runDanger = (kind: "redistribute" | "reset") => {
     submit(kind === "reset" ? { type: "reset" } : { type: "redistributeAll" });
     setConfirm(null);

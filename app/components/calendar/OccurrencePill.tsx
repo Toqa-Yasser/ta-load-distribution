@@ -46,7 +46,7 @@ export function OccurrencePill({ task, occ, ta, selected, swapRole, onClick }: O
       {swapRole === "source" && (
         <span
           aria-hidden
-          className="hidden shrink-0 rounded bg-accent-2 px-1 text-[10px] font-semibold uppercase leading-4 text-white sm:inline"
+          className="hidden shrink-0 rounded bg-danger px-1 text-[10px] font-semibold uppercase leading-4 text-white sm:inline"
         >
           swap
         </span>

@@ -14,7 +14,7 @@ export function Field({ label, hint, error, children }: FieldProps) {
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
   const describedBy =
-    [children.props["aria-describedby"], hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
+    [children.props["aria-describedby"], hint && !error && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -28,7 +28,7 @@ export function Field({ label, hint, error, children }: FieldProps) {
         </p>
       )}
       {error && (
-        <p id={errorId} aria-live="polite" className="text-xs font-medium text-accent-2">
+        <p id={errorId} aria-live="polite" className="text-xs font-medium text-danger-ink">
           {error}
         </p>
       )}

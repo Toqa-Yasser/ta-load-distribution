@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useDragControls, useReducedMotion, type PanInfo } from "motion/react";
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { FOCUSABLE } from "~/lib/focus";
 import { EASE_OUT, usePressMotion } from "~/lib/motion";
 
 type SheetProps = {
@@ -15,8 +16,6 @@ type SheetProps = {
 const DESKTOP_QUERY = "(min-width: 48rem)"; // Tailwind `md`
 const DISMISS_OFFSET = 120;
 const DISMISS_VELOCITY = 600;
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function useIsDesktop(): boolean {
   const [desktop, setDesktop] = useState(false);

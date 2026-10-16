@@ -44,7 +44,7 @@ function DraggableChip({ ta, capacity, onClick }: Omit<TAChipProps, "draggable">
       whileTap={press.whileTap}
       onClick={onClick}
       // The DragOverlay follows the pointer; the source stays put (dimmed) so the list doesn't jump.
-      className={`${CHIP} cursor-grab touch-manipulation transition-[opacity,box-shadow] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:cursor-grabbing ${
+      className={`${CHIP} cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] transition-[opacity,box-shadow] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:cursor-grabbing ${
         isDragging ? "opacity-40" : ""
       }`}
     >

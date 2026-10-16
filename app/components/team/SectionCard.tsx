@@ -23,6 +23,7 @@ function Slot({ section, slot, ta, onTap }: { section: Section; slot: 0 | 1; ta:
   const reduced = useReducedMotion();
   const press = usePressMotion();
   const n = slot + 1;
+  const emptyText = dragging ? "Drop here" : "Tap or drop a TA";
   return (
     <motion.button
       ref={setNodeRef}
@@ -30,7 +31,8 @@ function Slot({ section, slot, ta, onTap }: { section: Section; slot: 0 | 1; ta:
       {...press}
       animate={{ scale: isOver && !reduced ? 1.04 : 1 }}
       onClick={onTap}
-      aria-label={ta ? `Slot ${n} of ${section.name}: ${ta.name}` : `Empty slot ${n} of ${section.name}`}
+      // The accessible name contains the visible text (WCAG 2.5.3 label in name).
+      aria-label={ta ? `Slot ${n} of ${section.name}: ${ta.name}` : `Empty slot ${n} of ${section.name}: ${emptyText}`}
       className={`flex min-h-14 w-full min-w-0 items-center gap-2.5 rounded-xl border px-3 text-left transition-[background-color,border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         isOver
           ? "border-accent bg-accent/10 ring-2 ring-accent"
@@ -47,7 +49,7 @@ function Slot({ section, slot, ta, onTap }: { section: Section; slot: 0 | 1; ta:
           <span className="min-w-0 flex-1 truncate font-medium text-ink">{ta.name}</span>
         </>
       ) : (
-        <span className="text-sm">{dragging ? "Drop here" : "Tap or drop a TA"}</span>
+        <span className="text-sm">{emptyText}</span>
       )}
     </motion.button>
   );

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "~/components/ui/Button";
 import { Sheet } from "~/components/ui/Sheet";
 import type { Occurrence, OccurrenceRef, TA, Task } from "~/engine/types";
+import { useStepFocus } from "~/lib/focus";
 import { fmtDateLong } from "~/lib/format";
 import { EASE_OUT, stepSlide, usePressMotion } from "~/lib/motion";
 import { useCommand } from "~/lib/use-command";
@@ -77,6 +78,7 @@ function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: OccurrenceRe
   const reduced = useReducedMotion();
   const [first, setFirst] = useState<OccurrenceRef | null>(null);
   const [dir, setDir] = useState(1);
+  const stepFocus = useStepFocus();
 
   const mine = groupByTask(workspace.tasks, (o) => o.taId === ta.id);
   const others = groupByTask(workspace.tasks, (o) => o.taId !== ta.id);
@@ -86,10 +88,12 @@ function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: OccurrenceRe
 
   const pickFirst = (ref: OccurrenceRef) => {
     setDir(1);
+    stepFocus.request();
     setFirst(ref);
   };
   const back = () => {
     setDir(-1);
+    stepFocus.request();
     setFirst(null);
   };
 
@@ -115,6 +119,7 @@ function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: OccurrenceRe
         <AnimatePresence mode="wait" initial={false} custom={dir}>
           <motion.div
             key={step}
+            ref={stepFocus.ref}
             custom={dir}
             variants={reduced ? undefined : stepSlide}
             initial="enter"

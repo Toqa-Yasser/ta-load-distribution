@@ -9,6 +9,9 @@ export type ToastInput = {
 };
 
 type ToastItem = ToastInput & { id: number };
+/** Auto-dismiss clock; paused while any hold (pointer over it, focus inside) is active. */
+type Timer = { handle?: ReturnType<typeof setTimeout>; deadline: number; remaining: number; holds: Set<Hold> };
+type Hold = "hover" | "focus";
 
 const TOAST_MS = 6000;
 
@@ -23,27 +26,53 @@ export function useToast(): (t: ToastInput) => void {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
-  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const timers = useRef(new Map<number, Timer>());
 
   const dismiss = useCallback((id: number) => {
-    clearTimeout(timers.current.get(id));
+    clearTimeout(timers.current.get(id)?.handle);
     timers.current.delete(id);
     setItems((xs) => xs.filter((x) => x.id !== id));
   }, []);
+
+  const run = useCallback(
+    (id: number, timer: Timer) => {
+      timer.deadline = Date.now() + timer.remaining;
+      timer.handle = setTimeout(() => dismiss(id), timer.remaining);
+    },
+    [dismiss],
+  );
 
   const push = useCallback(
     (t: ToastInput) => {
       const id = nextId.current++;
       // Keep the stack short: newest three.
       setItems((xs) => [...xs.slice(-2), { ...t, id }]);
-      timers.current.set(id, setTimeout(() => dismiss(id), TOAST_MS));
+      const timer: Timer = { deadline: 0, remaining: TOAST_MS, holds: new Set() };
+      timers.current.set(id, timer);
+      run(id, timer);
     },
-    [dismiss],
+    [run],
   );
+
+  // WCAG 2.2.1: the countdown (and with it the Undo) waits while the toast is hovered or focused.
+  const hold = (id: number, why: Hold) => {
+    const timer = timers.current.get(id);
+    if (!timer || timer.holds.has(why)) return;
+    if (timer.holds.size === 0) {
+      clearTimeout(timer.handle);
+      timer.remaining = Math.max(0, timer.deadline - Date.now());
+    }
+    timer.holds.add(why);
+  };
+  const release = (id: number, why: Hold) => {
+    const timer = timers.current.get(id);
+    if (!timer || !timer.holds.delete(why)) return;
+    if (timer.holds.size === 0) run(id, timer);
+  };
 
   useEffect(() => {
     const map = timers.current;
-    return () => map.forEach(clearTimeout);
+    return () => map.forEach((t) => clearTimeout(t.handle));
   }, []);
 
   const value = useMemo(() => push, [push]);
@@ -67,6 +96,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduced ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.96 }}
               transition={{ duration: reduced ? 0 : 0.28, ease: EASE_OUT }}
+              onMouseEnter={() => hold(t.id, "hover")}
+              onMouseLeave={() => release(t.id, "hover")}
+              onFocus={() => hold(t.id, "focus")}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) release(t.id, "focus");
+              }}
               className="glass pointer-events-auto flex w-full max-w-md items-center gap-3 py-2 pl-4 pr-2 text-sm"
             >
               <span

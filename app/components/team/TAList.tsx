@@ -3,8 +3,10 @@ import { useState, type FormEvent } from "react";
 import { Button } from "~/components/ui/Button";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { Field } from "~/components/ui/Field";
+import { INPUT_CLASS } from "~/components/ui/input";
 import type { TA } from "~/engine/types";
-import { INPUT_CLASS, InlineRename } from "./InlineRename";
+import { plural } from "~/lib/format";
+import { InlineRename } from "./InlineRename";
 import { TAChip } from "./TAChip";
 
 type TAListProps = {
@@ -91,7 +93,7 @@ export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onR
         title="Remove TA?"
         body={
           removing
-            ? `${removing.name} has ${occurrenceCounts[removing.id] ?? 0} task occurrences; they will be re-distributed to the other TAs.`
+            ? `${removing.name} has ${plural(occurrenceCounts[removing.id] ?? 0, "task occurrence", "task occurrences")}; they will be re-distributed to the other TAs.`
             : ""
         }
         confirmLabel="Remove"
