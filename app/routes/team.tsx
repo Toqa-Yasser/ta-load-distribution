@@ -7,14 +7,13 @@ import { TAChip } from "~/components/team/TAChip";
 import { TAList } from "~/components/team/TAList";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { turnSize } from "~/engine/capacity";
+import { plural } from "~/lib/format";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Team · TA Load Distribution" }];
 }
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 export default function Team() {
   const { workspace, capacities, taById } = useWorkspace();

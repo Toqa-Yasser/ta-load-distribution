@@ -33,3 +33,8 @@ export function fmtScheduleSummary(s: Schedule, _semester: Semester): string {
     }
   }
 }
+
+/** "1 occurrence", "3 occurrences" */
+export function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
