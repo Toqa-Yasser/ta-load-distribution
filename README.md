@@ -11,7 +11,7 @@ covers. Every change is snapshotted, so you can undo or roll back.
   two-step swap of one TA's date with another's.
 - **Team**: add, rename and remove TAs; create sections and drag (or tap) TAs into each section's two slots.
 - **Tasks**: three-step creation (name → schedule → preview of who gets each date) with one-time, daily,
-  weekly, monthly, per-semester or custom schedules; redistribute or delete a task; a task detail page.
+  weekly, monthly or custom schedules; redistribute or delete a task; a task detail page.
 - **Calendar**: month grid of every occurrence; reassign a date to another TA or swap two dates.
 - **History**: a snapshot per change, with rollback, toast Undo, and a password-protected "delete history".
 - **Settings**: semester dates, light/dark/system theme, "redistribute everything" and "reset everything".
@@ -46,7 +46,8 @@ Nothing is sent to the browser.
 | `SUPABASE_URL`            | Project URL, e.g. `https://xxxx.supabase.co`                             |
 | `SUPABASE_SECRET_KEY`     | Supabase **secret** key (`sb_secret_…`): server-only, never commit it    |
 | `HISTORY_DELETE_PASSWORD` | Password required to delete the snapshot history                         |
-| `DATA_STORE`              | Optional: `memory` or `supabase`. Defaults to `supabase` when `SUPABASE_URL` is set |
+| `DATA_STORE`              | Optional: `memory` or `supabase`. Defaults to `supabase` when `SUPABASE_URL` is set, and always in production |
+| `APP_TIMEZONE`            | Optional IANA timezone for "today" (e.g. `Africa/Cairo`, the default)    |
 
 ## Supabase setup
 
@@ -72,8 +73,12 @@ The Vercel preset is already configured in `react-router.config.ts` (`@vercel/re
 
 1. Import the repository in Vercel. The framework is detected as React Router.
 2. Under Project → Settings → Environment Variables, set `SUPABASE_URL`, `SUPABASE_SECRET_KEY`
-   and `HISTORY_DELETE_PASSWORD`.
+   and `HISTORY_DELETE_PASSWORD` (optionally `APP_TIMEZONE`).
 3. Deploy.
+
+Without `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, a production deploy refuses to start (every
+request fails with a clear error) rather than silently keeping data in memory. `DATA_STORE=memory`
+is for development only: its data is lost on every restart.
 
 `.npmrc` sets `legacy-peer-deps=true`. The Vercel preset's peer range doesn't list React Router 8
 yet, and this lets `npm install` succeed both locally and on Vercel. Keep the file.

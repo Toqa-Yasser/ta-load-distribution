@@ -92,7 +92,7 @@ supabase/migrations/0001_init.sql
   export interface TA { id: string; name: string; color: string }
   export interface Section { id: string; name: string; taIds: [string | null, string | null] }
   export type Schedule =
-    | { type: "one-time" | "per-semester"; date: ISODate }
+    | { type: "one-time"; date: ISODate }
     | { type: "daily" | "weekly" | "monthly"; start: ISODate; end: ISODate | null }
     | { type: "custom"; start: ISODate; count: number; gapDays: number; dates: ISODate[] };
   export interface Occurrence { id: string; date: ISODate; taId: string; turn: number }
@@ -198,7 +198,7 @@ git commit -m "feat(engine): types, rng, ids, empty workspace, capacity"
 **Interfaces:**
 - Consumes: `Schedule`, `Semester`, `TooManyOccurrencesError` from Task 1.
 - Produces: `export function generateDates(schedule: Schedule, semester: Semester): ISODate[]` (sorted ascending, unique); `export function customDates(start: ISODate, count: number, gapDays: number): ISODate[]`.
-- Semantics: one-time / per-semester → `[date]`. daily/weekly/monthly → start, start+step, … while `<= (schedule.end ?? semester.end)`; step via date-fns `addDays(1)` / `addWeeks(1)` / `addMonths(1)` (month-end clamps). If start > end → `[]`. custom → `schedule.dates` sorted + de-duplicated. Throw `TooManyOccurrencesError` if result length > 500. Parse/format with date-fns `parseISO` / `format(d, "yyyy-MM-dd")`.
+- Semantics: one-time → `[date]`. daily/weekly/monthly → start, start+step, … while `<= (schedule.end ?? semester.end)`; step via date-fns `addDays(1)` / `addWeeks(1)` / `addMonths(1)` (month-end clamps). If start > end → `[]`. custom → `schedule.dates` sorted + de-duplicated. Throw `TooManyOccurrencesError` if result length > 500. Parse/format with date-fns `parseISO` / `format(d, "yyyy-MM-dd")`.
 
 - [ ] **Step 1: Write failing tests**
 
@@ -207,9 +207,8 @@ import { generateDates, customDates } from "~/engine/schedule";
 import { TooManyOccurrencesError } from "~/engine/types";
 const sem = { name: "F26", start: "2026-09-01", end: "2026-12-31" };
 
-test("one-time and per-semester yield the single date", () => {
+test("one-time yields the single date", () => {
   expect(generateDates({ type: "one-time", date: "2026-10-05" }, sem)).toEqual(["2026-10-05"]);
-  expect(generateDates({ type: "per-semester", date: "2026-12-20" }, sem)).toEqual(["2026-12-20"]);
 });
 test("weekly with explicit end is inclusive", () => {
   expect(generateDates({ type: "weekly", start: "2026-10-01", end: "2026-10-22" }, sem))
@@ -696,7 +695,7 @@ test("matches only the exact password", () => {
 
 **Interfaces:**
 - Produces (`theme.ts`): `export type ThemePref = "light" | "dark" | "system"`; `export function resolveTheme(pref: ThemePref, prefersDark: boolean): "light" | "dark"`; `export const THEME_INIT_SCRIPT: string` (reads `localStorage.theme`, falls back to `system`, sets `document.documentElement.dataset.theme`); `export function useTheme(): { pref: ThemePref; resolved: "light" | "dark"; setPref(p: ThemePref): void }`.
-- Produces (`format.ts`): `export function fmtDate(iso: ISODate): string` → `"Oct 20"`; `export function fmtDateLong(iso): string` → `"Mon, Oct 20 2026"`; `export function fmtScheduleSummary(s: Schedule, semester: Semester): string` → `"One-time · Oct 20"`, `"Weekly · Oct 1 → Dec 31"`, `"Weekly · Oct 1 → end of semester"`, `"Custom · 4 dates"`, `"Per semester · Dec 20"`, `"Daily …"`, `"Monthly …"`.
+- Produces (`format.ts`): `export function fmtDate(iso: ISODate): string` → `"Oct 20"`; `export function fmtDateLong(iso): string` → `"Mon, Oct 20 2026"`; `export function fmtScheduleSummary(s: Schedule, semester: Semester): string` → `"One-time · Oct 20"`, `"Weekly · Oct 1 → Dec 31"`, `"Weekly · Oct 1 → end of semester"`, `"Custom · 4 dates"`, `"Daily …"`, `"Monthly …"`.
 - Produces (`use-workspace.ts`): `export function useWorkspace(): { workspace: Workspace; version: number; today: ISODate; capacities: Record<string, number>; taById: Map<string, TA> }` from `useRouteLoaderData("root")`.
 - Produces (`use-command.ts`): `export function useCommand(): { submit(cmd: Command, opts?: { toast?: string }): void; pending: boolean }` — POSTs `{ command }` JSON to `/api/command` via `useFetcher`; on `{ ok: true, snapshotId, label }` shows toast `label` with **Undo** (POST `/api/history` `{ intent: "rollback", snapshotId }`); on `{ ok: false, message }` shows error toast.
 - Produces (`api.command.tsx` action): request JSON `{ command: Command }` → `applyCommand(getStore(), command)` → `200 { ok: true, version, snapshotId, label: describe(cmd, old) }`; `EngineError` → `400 { ok: false, message, code }`.
@@ -848,7 +847,7 @@ test("tapping an empty slot and choosing a TA calls onSetSlot", () => {
 **Interfaces:**
 - Consumes: `useCommand`, `customDates`, `generateDates`, `fmtScheduleSummary`, `Sheet`, `Gauge`, `/api/preview`.
 - `NewTaskSheet({ open; onClose })` — local state `{ step: 0|1|2; title; notes; schedule: Schedule }`; `AnimatePresence mode="wait"` slides steps horizontally; step 2 fetches `/api/preview` with `{ command: { type: "createTask", ... } }` and renders `StepPreview`; Confirm → `submit(createTask)` → close. Open via `/tasks?new=1` (the "New task" button sets the param so a refresh keeps the sheet).
-- `StepSchedule({ schedule; semester; onChange })` — segmented control of the six types (animated indicator); fields per type; for custom shows `CustomDatesEditor`.
+- `StepSchedule({ schedule; semester; onChange })` — segmented control of the five types (animated indicator); fields per type; for custom shows `CustomDatesEditor`.
 - `CustomDatesEditor({ start; count; gapDays; dates; onChange(next: { start; count; gapDays; dates }) })` — Generate button fills `dates = customDates(start, count, gapDays)`; each date chip has a `<input type="date">` to edit; remove chip; add chip.
 - `StepPreview({ preview: Workspace | null; taskTitle; loading; error })` — list of `{date, TA chip}` rows with staggered entrance; right column: gauges for every TA as they'd look after; shows `"N occurrences"`.
 - `TaskCard({ task; onRedistribute; onDelete })` — title, `fmtScheduleSummary`, count, `SplitBar` (per-TA segments proportional to occurrence counts), menu with Redistribute / Delete (ConfirmDialog).

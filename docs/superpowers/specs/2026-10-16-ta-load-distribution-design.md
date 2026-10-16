@@ -38,7 +38,7 @@ interface Workspace {
 interface Task {
   id: string; title: string; notes?: string; createdAt: string;
   schedule:
-    | { type: "one-time" | "per-semester"; date: ISODate }
+    | { type: "one-time"; date: ISODate }
     | { type: "daily" | "weekly" | "monthly"; start: ISODate; end: ISODate | null }   // null → semester end
     | { type: "custom"; start: ISODate; count: number; gapDays: number; dates: ISODate[] };
   occurrences: { id: string; date: ISODate; taId: string; turn: number }[];
@@ -51,7 +51,7 @@ Derived (never stored): `capacity(taId) = number of section slots holding taId`;
 ### A2. Distribution engine (pure TypeScript, `app/engine/`)
 
 **Occurrence generation** (`schedule.ts`):
-- one-time / per-semester → 1 occurrence on `date`.
+- one-time → 1 occurrence on `date`.
 - daily / weekly / monthly → dates from `start`, stepping 1 day / 7 days / 1 calendar month
   (clamp day-of-month), while `≤ end ?? semester.end`. Guard: max 500 occurrences.
 - custom → `dates` as stored (UI generates `start + i*gapDays` for i<count, user may edit any).
