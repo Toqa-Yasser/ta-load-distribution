@@ -115,3 +115,15 @@ test("toggling reduced motion mid-fade still clears the bar", () => {
   tick(5);
   expect(bar()).toBeNull();
 });
+
+test("aria-busy is set on <body> while pending (outside the inert #app-root), and cleared on idle", () => {
+  const view = render(<TopProgress />);
+  expect(document.body).not.toHaveAttribute("aria-busy");
+  setPending(view, "loading");
+  expect(document.body).toHaveAttribute("aria-busy", "true");
+  setPending(view, "idle");
+  expect(document.body).not.toHaveAttribute("aria-busy");
+  setPending(view, "loading");
+  view.unmount();
+  expect(document.body).not.toHaveAttribute("aria-busy");
+});

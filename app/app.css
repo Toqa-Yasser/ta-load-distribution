@@ -137,9 +137,14 @@ html {
     scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem);
   }
   /* interactive-widget=resizes-content lifts fixed bottom UI above the keyboard, over the field.
-     Hide it while an in-page field has focus (fields in sheets portal outside #app-root). */
-  :root:has(#app-root :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, [contenteditable=true]):focus) :is([data-tabbar], #fab-slot) {
-    display: none;
+     Hide it while an in-page text field has focus (fields in sheets portal outside #app-root), and
+     drop the toast's FAB offset in the same rule: the hidden FAB no longer needs clearing.
+     Keep the input list in sync with isTextEntry in app/lib/pointer.ts. */
+  :root:has(#app-root :is(input:is([type=text],[type=search],[type=email],[type=url],[type=tel],[type=password],[type=number],[type=date],[type=time],[type=datetime-local],[type=month],[type=week],:not([type])), textarea, [contenteditable=true]):focus) {
+    --fab-clear: 0px;
+    & :is([data-tabbar], #fab-slot) {
+      display: none;
+    }
   }
 }
 

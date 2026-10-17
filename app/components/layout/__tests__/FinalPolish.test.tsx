@@ -26,11 +26,16 @@ test("toast stack clears the FAB via --fab-clear, defined in app.css", () => {
   expect(c).toMatch(/:root:has\(#fab-slot > \*\) \{ --fab-clear: 4\.25rem;/);
 });
 
-test("tab bar hides under an in-page field on coarse pointers; sheets unaffected", () => {
+const TEXT_INPUTS =
+  "input:is([type=text],[type=search],[type=email],[type=url],[type=tel],[type=password],[type=number],[type=date],[type=time],[type=datetime-local],[type=month],[type=week],:not([type]))";
+const FOCUS = `:root:has(#app-root :is(${TEXT_INPUTS}, textarea, [contenteditable=true]):focus)`;
+
+test("tab bar hides under an in-page text field on coarse pointers; sheets unaffected", () => {
   const c = squash(css);
   expect(c).toContain("@media (pointer: coarse)");
-  expect(c).toContain(":root:has(#app-root :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, [contenteditable=true]):focus) :is([data-tabbar], #fab-slot)");
-  expect(c).toContain("scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem)");
+  // One combined rule: hiding the bar/FAB and dropping the toast's FAB offset share a condition.
+  expect(c).toContain(`${FOCUS} { --fab-clear: 0px; & :is([data-tabbar], #fab-slot) { display: none; } }`);
+  for (const t of ["button", "file", "checkbox", "radio", "range", "submit"]) expect(c).not.toContain(`[type=${t}]`);
   const Stub = createRoutesStub([{ path: "*", Component: () => <NavBar placement="bottom" /> }]);
   const { container } = render(<Stub initialEntries={["/"]} />);
   expect(container.querySelector("nav[data-tabbar]")).not.toBeNull();

@@ -6,7 +6,7 @@ import { Fab, FAB_SLOT_ID } from "~/components/ui/Fab";
 import { pageTransition, phonePageTransition } from "~/lib/motion";
 import { AppShell } from "../AppShell";
 
-const state = vi.hoisted(() => ({ phone: false, reduced: false, pending: false, presence: [] as Record<string, unknown>[] }));
+const state = vi.hoisted(() => ({ phone: false, reduced: false, presence: [] as Record<string, unknown>[] }));
 
 vi.mock("~/lib/motion", async (orig) => ({
   ...(await orig<typeof import("~/lib/motion")>()),
@@ -49,8 +49,6 @@ vi.mock("../NavBar", () => ({ NavBar: () => null }));
 vi.mock("../Background", () => ({ Background: () => null }));
 vi.mock("../SettingsPanel", () => ({ SettingsPanel: () => null }));
 vi.mock("../CommandToasts", () => ({ CommandToasts: ({ children }: { children: ReactNode }) => <>{children}</> }));
-vi.mock("~/lib/use-pending", () => ({ usePendingGlobal: () => state.pending }));
-vi.mock("../TopProgress", () => ({ TopProgress: () => null }));
 vi.mock("~/lib/use-history", () => ({ UNDO_FETCHER_KEY: "undo", useHistory: () => {} }));
 
 const page = (name: string) => () => (
@@ -86,7 +84,6 @@ const states = () => ({ initial: JSON.parse(main().dataset.initial!), exit: JSON
 beforeEach(() => {
   state.reduced = false;
   state.presence = [];
-  state.pending = false;
 });
 
 test("AppShell uses horizontal variants below md and fade above", async () => {
@@ -144,17 +141,4 @@ test("a page's Fab lands in #fab-slot outside <main>, fixed above the tab bar", 
   expect(cls).toEqual(
     expect.arrayContaining(["fixed", "right-4", "z-40", "md:hidden", "bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+0.75rem+0.75rem)]"]),
   );
-});
-
-test("<main> is aria-busy only while a navigation or command is pending", async () => {
-  const view = renderShell();
-  await screen.findByRole("heading", { name: "Dashboard" });
-  expect(main()).not.toHaveAttribute("aria-busy");
-  state.pending = true;
-  await go("to tasks", "Tasks");
-  expect(main()).toHaveAttribute("aria-busy", "true");
-  state.pending = false;
-  await go("to dashboard", "Dashboard");
-  expect(main()).not.toHaveAttribute("aria-busy");
-  view.unmount();
 });

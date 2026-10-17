@@ -5,6 +5,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { AppShell } from "~/components/layout/AppShell";
 import { ValidationError } from "~/engine/types";
+import { TopProgress } from "~/components/layout/TopProgress";
 import { Toaster } from "~/components/ui/Toast";
 import { UNREADABLE_WORKSPACE_MESSAGE } from "~/lib/errors";
 import { shouldRevalidateRoot } from "~/lib/revalidate";
@@ -93,6 +94,8 @@ export default function App() {
       <ThemeProvider>
         <ToastProvider>
           <AppShell />
+          {/* Outside #app-root: a sheet makes that inert, and the bar and aria-busy must stay live. */}
+          <TopProgress />
           <Toaster />
         </ToastProvider>
       </ThemeProvider>

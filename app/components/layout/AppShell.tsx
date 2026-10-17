@@ -14,14 +14,12 @@ import {
 } from "~/lib/motion";
 import { OpenSettingsContext } from "~/lib/settings";
 import { UNDO_FETCHER_KEY, useHistory } from "~/lib/use-history";
-import { usePendingGlobal } from "~/lib/use-pending";
 import { Background } from "./Background";
 import { CommandToasts } from "./CommandToasts";
 import { CONTENT_COLUMN } from "./column";
 import { Header } from "./Header";
 import { NavBar } from "./NavBar";
 import { SettingsPanel } from "./SettingsPanel";
-import { TopProgress } from "./TopProgress";
 
 export function AppShell() {
   const { pathname } = useLocation();
@@ -43,8 +41,6 @@ export function AppShell() {
   const openSettings = useCallback(() => setSettingsOpen(true), []);
   // Toasts the result of every toast's Undo; mounted here so it outlives the page that showed it.
   useHistory(UNDO_FETCHER_KEY);
-  // Pairs with TopProgress (an indeterminate bar): assistive tech hears the page is updating.
-  const pending = usePendingGlobal();
 
   return (
     <OpenSettingsContext.Provider value={openSettings}>
@@ -53,14 +49,12 @@ export function AppShell() {
         {/* Made inert while a Sheet is open; sheets portal to <body>, outside it. */}
         <div id={APP_ROOT_ID} className="relative min-h-dvh overflow-x-clip">
           <Background />
-          <TopProgress />
           <Header />
           {/* `custom` reaches the exiting page too, so it leaves in the new direction. */}
           <AnimatePresence mode="wait" initial={false} custom={dir}>
             <motion.main
               key={pathname}
               custom={dir}
-              aria-busy={pending || undefined}
               variants={variants}
               initial="initial"
               animate="enter"

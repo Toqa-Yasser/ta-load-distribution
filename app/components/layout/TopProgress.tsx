@@ -12,7 +12,7 @@ const HOLD_PCT = 80;
 type Phase = "idle" | "running" | "done";
 
 /**
- * Thin accent bar on the top edge while a navigation or command is pending. Appears after 120ms,
+ * Thin accent bar (rendered outside #app-root, so it survives a sheet's inert) on the top edge while a navigation or command is pending. Appears after 120ms,
  * creeps from 8% towards 80% with a decelerating ramp, jumps to 100% and fades out when everything
  * is idle. Renders nothing when idle, on the server and before hydration.
  */
@@ -50,13 +50,20 @@ export function TopProgress() {
     return () => clearTimeout(t);
   }, [phase, reduced]);
 
+  // On <body>, not <main>: a sheet makes #app-root inert, which would hide <main>'s busy state
+  // from assistive tech while a command runs inside the sheet.
+  useEffect(() => {
+    if (!pending) return;
+    document.body.setAttribute("aria-busy", "true");
+    return () => document.body.removeAttribute("aria-busy");
+  }, [pending]);
+
   if (!hydrated || phase === "idle") return null;
 
   const done = phase === "done";
   // z-[60]: above the sheet layer (z-50) and its backdrop.
   const className = "pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 bg-accent shadow-[0_0_8px_var(--accent)]";
-  // Indeterminate: the width is a cue, not a measure, so there is no aria-valuenow (AppShell sets
-  // aria-busy on <main> while pending). data-phase is for tests and debugging.
+  // Indeterminate: the width is a cue, not a measure, so there is no aria-valuenow (aria-busy goes on <body>). data-phase is for tests and debugging.
   const aria = { role: "progressbar", "aria-label": "Loading", "data-phase": phase } as const;
 
   if (reduced) return <div {...aria} className={className} style={{ width: done ? "100%" : `${HOLD_PCT}%` }} />;
