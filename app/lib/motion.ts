@@ -1,5 +1,5 @@
 import { useReducedMotion, type TargetAndTransition, type Transition, type Variants } from "motion/react";
-import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type RefObject } from "react";
 
 /** Springy ease used for page and toast entrances. */
 export const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -51,6 +51,28 @@ export function stagger(i: number, direction: "rise" | "down" = "rise", classNam
   const step = Math.min(Math.max(0, Math.floor(i)), STAGGER_MAX - 1);
   const enter = direction === "down" ? "enter-down" : "enter-rise";
   return { className: className ? `${enter} ${className}` : enter, style: { "--stagger": step } };
+}
+
+/**
+ * For lists that mix the CSS entrance with motion's own enter animation (AnimatePresence): true
+ * during the list's first render only. Read it when an item mounts (see useStaggerOnMount) so
+ * items of the first render stagger in, and items added later animate only through motion.
+ */
+export function useFirstRender(): RefObject<boolean> {
+  const first = useRef(true);
+  useEffect(() => {
+    first.current = false;
+  }, []);
+  return first;
+}
+
+/**
+ * stagger(i) for an item that mounted in its list's first render, otherwise just `className`.
+ * Decided once at mount, so an item never loses its class (and its entrance) mid-animation.
+ */
+export function useStaggerOnMount(listFirstRender: RefObject<boolean>, i: number, className: string): { className: string; style?: CSSProperties } {
+  const [entrance] = useState(() => (listFirstRender.current ? stagger(i, "rise", className) : null));
+  return entrance ?? { className };
 }
 
 /* ---------- Sheets and menus ---------- */

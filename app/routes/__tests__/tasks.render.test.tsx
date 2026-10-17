@@ -63,3 +63,15 @@ test("a kind with no tasks shows an empty state that clears the filter", async (
     ws.tasks = saved;
   }
 });
+
+test("only the cards of the first render get the CSS entrance; cards that mount later rely on their own motion", async () => {
+  renderAt("/tasks?kind=heavy");
+  const item = (title: string) => screen.getByText(title).closest("li")!;
+  expect(await screen.findByText("Exam")).toBeInTheDocument();
+  expect(item("Exam")).toHaveClass("enter-rise");
+  fireEvent.click(within(screen.getByRole("group", { name: "Filter by kind" })).getByRole("button", { name: "All" }));
+  expect(await screen.findByText("Quiz")).toBeInTheDocument();
+  expect(item("Quiz")).not.toHaveClass("enter-rise");
+  expect(item("Lab")).not.toHaveClass("enter-rise");
+  expect(item("Exam")).toHaveClass("enter-rise");
+});

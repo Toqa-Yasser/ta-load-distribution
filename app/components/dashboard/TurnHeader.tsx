@@ -21,7 +21,7 @@ export function TurnHeader({ kind, turn, usedUnits, turnSize, className = "" }: 
   const width = `${Math.min(1, Math.max(0, usedUnits / turnSize)) * 100}%`;
   const strip = `h-full rounded-full ${kind === "light" ? "bg-light" : "bg-heavy"}`;
   return (
-    <div role="group" aria-label={`${KIND_LABEL[kind]} turn`} className={`glass flex min-w-0 flex-col gap-3 p-4 sm:p-5 ${className}`}>
+    <div role="group" aria-label={`${KIND_LABEL[kind]} turn`} className={`glass flex min-w-0 flex-col gap-3 p-5 ${className}`}>
       <div className="flex items-center justify-between gap-2">
         <KindBadge kind={kind} />
         <span className="text-sm text-muted">Turn {turn}</span>

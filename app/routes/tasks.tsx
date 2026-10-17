@@ -1,4 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import type { ReactNode, RefObject } from "react";
 import { useSearchParams } from "react-router";
 import type { Route } from "./+types/tasks";
 import { NewTaskSheet } from "~/components/tasks/NewTaskSheet";
@@ -9,7 +10,7 @@ import { Fab } from "~/components/ui/Fab";
 import { PlusIcon, TasksIcon } from "~/components/ui/icons";
 import { isTaskKind, KIND_LABEL, type TaskKind } from "~/engine/types";
 import { plural } from "~/lib/format";
-import { indicatorSpring, stagger, usePressMotion } from "~/lib/motion";
+import { indicatorSpring, stagger, useFirstRender, usePressMotion, useStaggerOnMount } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
@@ -22,6 +23,7 @@ export default function Tasks() {
   const { workspace } = useWorkspace();
   const { submit } = useCommand();
   const reduced = useReducedMotion();
+  const listFirstRender = useFirstRender();
   // `?new=1` opens the sheet, so a refresh keeps it open.
   const [params, setParams] = useSearchParams();
   const sheetOpen = params.get("new") === "1";
@@ -94,21 +96,13 @@ export default function Tasks() {
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence initial={false}>
             {tasks.map((task, i) => (
-              <motion.li
-                key={task.id}
-                layout
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: reduced ? 0 : 0.2 }}
-                {...stagger(2 + i, "rise", "h-full")}
-              >
+              <TaskItem key={task.id} index={2 + i} listFirstRender={listFirstRender} reduced={reduced}>
                 <TaskCard
                   task={task}
                   onRedistribute={() => submit({ type: "redistributeTask", taskId: task.id })}
                   onDelete={() => submit({ type: "deleteTask", taskId: task.id })}
                 />
-              </motion.li>
+              </TaskItem>
             ))}
           </AnimatePresence>
         </ul>
@@ -124,6 +118,36 @@ export default function Tasks() {
   );
 }
 
+/**
+ * One grid cell. Cards of the page's first render rise in with the CSS stagger; cards that appear
+ * later (a filter change, a new task) only use motion's enter, so they never animate twice.
+ */
+function TaskItem({
+  index,
+  listFirstRender,
+  reduced,
+  children,
+}: {
+  index: number;
+  listFirstRender: RefObject<boolean>;
+  reduced: boolean | null;
+  children: ReactNode;
+}) {
+  const enter = useStaggerOnMount(listFirstRender, index, "h-full");
+  return (
+    <motion.li
+      layout
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: reduced ? 0 : 0.2 }}
+      {...enter}
+    >
+      {children}
+    </motion.li>
+  );
+}
+
 const FILTERS: { value: TaskKind | null; label: string }[] = [
   { value: null, label: "All" },
   { value: "light", label: KIND_LABEL.light },
@@ -134,6 +158,7 @@ const FILTERS: { value: TaskKind | null; label: string }[] = [
 function KindFilter({ value, onChange }: { value: TaskKind | null; onChange: (kind: TaskKind | null) => void }) {
   const press = usePressMotion();
   const reduced = useReducedMotion();
+  const listFirstRender = useFirstRender();
   return (
     <div role="group" aria-label="Filter by kind" className="flex flex-wrap gap-2">
       {FILTERS.map((f) => {

@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { Button } from "~/components/ui/Button";
 import { EASE_OUT, useHydrated } from "~/lib/motion";
@@ -14,11 +14,13 @@ type EmptyStateProps = {
 
 /**
  * Placeholder for empty lists. Server-rendered (and hydrating) markup is shown as-is, fully
- * visible; one that appears later on the client fades and rises in. Under reduced motion
- * MotionConfig makes the rise instant.
+ * visible; one that appears later on the client fades and rises in. Under reduced motion it
+ * appears at rest: MotionConfig only stills transforms, so the opacity fade is skipped here.
+ * (Hydration-safe: the server and hydration render always take the `false` branch.)
  */
 export function EmptyState({ icon, title, body, action, titleAs: Title = "h2" }: EmptyStateProps) {
-  const animateIn = useHydrated();
+  const reduced = useReducedMotion();
+  const animateIn = useHydrated() && !reduced;
   return (
     <motion.div
       initial={animateIn ? { opacity: 0, y: 10 } : false}
