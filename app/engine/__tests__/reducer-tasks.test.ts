@@ -106,15 +106,39 @@ test("reassigning to the same TA is a no-op", () => {
   const occ = t.tasks[0].occurrences[0];
   expect(reduce(t, { type: "reassignOccurrence", ref: { taskId: t.tasks[0].id, occurrenceId: occ.id }, taId: occ.taId }, ctx)).toBe(t);
 });
-test("reassigning a past-turn occurrence does not decrement its old TA", () => {
+test("reassigning a past-turn occurrence keeps its turn and leaves the ledger alone", () => {
   const { ws, id } = team();
   const t = quiz(ws, 10);                        // ledger is in turn 2 with two units used
   const old = t.tasks[0].occurrences.find(o => o.turn === 1)!;
   const target = [id("A"), id("B"), id("C"), id("D")].find(x => x !== old.taId)!;
   const out = reduce(t, { type: "reassignOccurrence", ref: { taskId: t.tasks[0].id, occurrenceId: old.id }, taId: target }, ctx);
-  expect(out.ledgers.light.used[old.taId] ?? 0).toBe(t.ledgers.light.used[old.taId] ?? 0);
-  expect(out.ledgers.light.used[target]).toBe((t.ledgers.light.used[target] ?? 0) + 1);
-  expect(out.tasks[0].occurrences.find(o => o.id === old.id)).toMatchObject({ taId: target, turn: 2 });
+  expect(out.ledgers.light).toEqual(t.ledgers.light);
+  expect(out.tasks[0].occurrences.find(o => o.id === old.id)).toMatchObject({ taId: target, turn: 1 });
+});
+// `used` may carry explicit zeros after a refund; everywhere reads it as `used[id] ?? 0`.
+const nonZero = (ledger: Workspace["ledgers"]["light"]) =>
+  ({ turn: ledger.turn, used: Object.fromEntries(Object.entries(ledger.used).filter(([, n]) => n > 0)) });
+test("reassigning an occurrence away and back restores the ledger (current turn)", () => {
+  const { ws, id } = team();
+  const t = quiz(ws, 3);
+  const occ = t.tasks[0].occurrences[0];
+  const target = occ.taId === id("A") ? id("B") : id("A");
+  const ref: OccurrenceRef = { taskId: t.tasks[0].id, occurrenceId: occ.id };
+  const away = reduce(t, { type: "reassignOccurrence", ref, taId: target }, ctx);
+  const back = reduce(away, { type: "reassignOccurrence", ref, taId: occ.taId }, ctx);
+  expect(nonZero(back.ledgers.light)).toEqual(nonZero(t.ledgers.light));
+  expect(back.tasks[0].occurrences[0]).toEqual(occ);
+});
+test("reassigning an occurrence away and back restores the ledger (past turn)", () => {
+  const { ws, id } = team();
+  const t = quiz(ws, 10);
+  const old = t.tasks[0].occurrences.find(o => o.turn === 1)!;
+  const target = [id("A"), id("B"), id("C"), id("D")].find(x => x !== old.taId)!;
+  const ref: OccurrenceRef = { taskId: t.tasks[0].id, occurrenceId: old.id };
+  const away = reduce(t, { type: "reassignOccurrence", ref, taId: target }, ctx);
+  const back = reduce(away, { type: "reassignOccurrence", ref, taId: old.taId }, ctx);
+  expect(back.ledgers.light).toEqual(t.ledgers.light);
+  expect(back.tasks[0].occurrences.find(o => o.id === old.id)).toEqual(old);
 });
 test("swapOccurrences works across two tasks of the same kind", () => {
   const { ws } = team();

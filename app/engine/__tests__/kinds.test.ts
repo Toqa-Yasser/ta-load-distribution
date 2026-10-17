@@ -135,6 +135,7 @@ test("updateTask, redistributeTask and reassignOccurrence touch only their kind'
   const target = occ.taId === id("A") ? id("B") : id("A");
   const moved = reduce(t, { type: "reassignOccurrence", ref: ref(heavy.id, occ), taId: target }, ctx);
   expect(moved.ledgers.heavy.used[target]).toBe((t.ledgers.heavy.used[target] ?? 0) + 1);
+  expect(moved.ledgers.heavy.used[occ.taId] ?? 0).toBe((t.ledgers.heavy.used[occ.taId] ?? 0) - 1);
   expect(moved.ledgers.light).toEqual(t.ledgers.light);
 });
 

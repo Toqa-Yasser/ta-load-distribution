@@ -78,7 +78,7 @@ goes to B or C. Use an injectable seeded RNG so tests are deterministic.
 | deleteTask | refund: for each occurrence with `turn === ledger.turn`, `used[ta]−−` (min 0) |
 | redistributeTask | refund (as above) → `assign` again |
 | redistributeAll | `ledger = {turn:1, used:{}}`; re-run createTask assignment for all tasks in `createdAt` order |
-| reassignOccurrence(occ, newTa) | `used[old]−−` (min 0, only if occ.turn === current turn), `used[new]++`; occ.turn = current |
+| reassignOccurrence(occ, newTa) | occ keeps its turn; only if occ.turn === current turn: `used[old]−−` (min 0), `used[new]++`. Past-turn occurrences leave the ledger alone, so reassigning back always restores it |
 | swapOccurrences(a, b) | trade `taId`s; ledger unchanged |
 | setSemester | if `end` moved earlier, truncate occurrences past it (refund those) |
 | reset | fresh empty workspace |

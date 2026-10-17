@@ -291,10 +291,16 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
       if (occ.taId === cmd.taId) return ws;
       const { kind } = findTask(ws, cmd.ref.taskId);
       const ledger = ws.ledgers[kind];
+      // The occurrence keeps its turn, so the ledger's `used` keeps counting exactly the
+      // current-turn occurrences each TA holds: a current-turn unit moves with the occurrence,
+      // a past-turn one is already settled and leaves the ledger alone. Either way, reassigning
+      // it back restores the ledger exactly.
       const used = { ...ledger.used };
-      if (occ.turn === ledger.turn) used[occ.taId] = Math.max(0, (used[occ.taId] ?? 0) - 1);
-      used[cmd.taId] = (used[cmd.taId] ?? 0) + 1;
-      const moved: Occurrence = { ...occ, taId: cmd.taId, turn: ledger.turn };
+      if (occ.turn === ledger.turn) {
+        used[occ.taId] = Math.max(0, (used[occ.taId] ?? 0) - 1);
+        used[cmd.taId] = (used[cmd.taId] ?? 0) + 1;
+      }
+      const moved: Occurrence = { ...occ, taId: cmd.taId };
       return {
         ...ws,
         tasks: ws.tasks.map((t) =>
