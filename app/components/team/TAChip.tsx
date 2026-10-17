@@ -56,7 +56,7 @@ export function TAChip({ ta, capacity, draggable = true, onClick }: TAChipProps)
   if (draggable) return <DraggableChip ta={ta} capacity={capacity} onClick={onClick} />;
   // Opaque (the glass surface is translucent): the slot under it must not show through the name.
   return (
-    <div className={`${CHIP} cursor-grabbing bg-[var(--bg)] shadow-xl ring-2 ring-accent/40`}>
+    <div className={`${CHIP} h-full cursor-grabbing bg-[var(--bg)] shadow-xl ring-2 ring-accent/40`}>
       <ChipFace ta={ta} capacity={capacity} />
     </div>
   );

@@ -13,7 +13,7 @@ import { EmptyState } from "~/components/ui/EmptyState";
 import { PersonIcon, SectionsIcon } from "~/components/ui/icons";
 import { capacities as computeCapacities, turnSize } from "~/engine/capacity";
 import { plural } from "~/lib/format";
-import { EASE_OUT, stagger } from "~/lib/motion";
+import { stagger } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
@@ -22,8 +22,21 @@ export function meta({ matches }: Route.MetaArgs) {
   return routeMeta(matches, { title: "Team", description: "Teaching assistants and the sections they teach.", path: "/team" });
 }
 
-const LAND_MS = 220;
-const LAND_EASING = `cubic-bezier(${EASE_OUT.join(", ")})`;
+const LAND_MS = 320;
+/** Gentler than EASE_OUT, so the squash into the slot is seen rather than over in a few frames. */
+const LAND_EASING = "cubic-bezier(0.33, 1, 0.68, 1)";
+/** The capacity badge is gone by this point of the landing; the slot shows no badge. */
+const LAND_BADGE_FADE = 0.4;
+/** The chip stays opaque until here, then fades out over the identical content in the slot. */
+const LAND_FADE_FROM = 0.7;
+
+/** An element's box with any transform scale removed (its offset size, centred on its client rect). */
+function restingRect(node: HTMLElement): { left: number; top: number; width: number; height: number } {
+  const r = node.getBoundingClientRect();
+  const width = node.offsetWidth;
+  const height = node.offsetHeight;
+  return { left: r.left + (r.width - width) / 2, top: r.top + (r.height - height) / 2, width, height };
+}
 
 export default function Team() {
   const { workspace: saved, taById } = useWorkspace();
@@ -60,15 +73,26 @@ export default function Team() {
         duration: LAND_MS,
         easing: LAND_EASING,
         keyframes: ({ transform, dragOverlay, droppableContainers }) => {
-          const rect = landing.current ? droppableContainers.get(landing.current)?.rect.current : null;
+          // The slot's live box (one measured at drag start could be stale after a scroll), at its
+          // resting size: at this moment it is still scaled up from the hover, so its client rect is
+          // a little larger than where it settles.
+          const node = landing.current ? droppableContainers.get(landing.current)?.node.current : null;
+          const rect = node && restingRect(node);
           if (!rect) return [{ transform: CSS.Transform.toString(transform.initial) }, { transform: CSS.Transform.toString(transform.final) }];
-          // Centre the chip on the slot, shrinking and fading as it lands.
-          const dx = rect.left + rect.width / 2 - (dragOverlay.rect.left + dragOverlay.rect.width / 2);
-          const dy = rect.top + rect.height / 2 - (dragOverlay.rect.top + dragOverlay.rect.height / 2);
+          // The chip squashes to the slot's exact box: its dot and name share the slot's padding,
+          // so when it fades at the end the slot's own content is already in the same place.
+          dragOverlay.node.querySelector("[data-badge]")?.animate([{ opacity: 1 }, { opacity: 0 }], {
+            duration: LAND_MS * LAND_BADGE_FADE,
+            easing: LAND_EASING,
+            fill: "forwards",
+          });
           const { initial } = transform;
+          const dx = rect.left - dragOverlay.rect.left;
+          const dy = rect.top - dragOverlay.rect.top;
           return [
-            { transform: CSS.Transform.toString(initial), opacity: 1 },
-            { transform: `translate3d(${initial.x + dx}px, ${initial.y + dy}px, 0) scale(0.9)`, opacity: 0 },
+            { transform: CSS.Transform.toString(initial), width: `${dragOverlay.rect.width}px`, height: `${dragOverlay.rect.height}px`, opacity: 1, offset: 0 },
+            { opacity: 1, offset: LAND_FADE_FROM },
+            { transform: `translate3d(${initial.x + dx}px, ${initial.y + dy}px, 0)`, width: `${rect.width}px`, height: `${rect.height}px`, opacity: 0, offset: 1 },
           ];
         },
         // The default side effect hides the source chip while the overlay flies back; when the

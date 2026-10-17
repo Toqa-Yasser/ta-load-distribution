@@ -92,18 +92,22 @@ function Slot({
       onClick={onTap}
       // The accessible name contains the visible text (WCAG 2.5.3 label in name).
       aria-label={ta ? `Slot ${n} of ${section.name}: ${ta.name}` : `Empty slot ${n} of ${section.name}: ${emptyText}`}
-      className={`flex min-h-14 w-full min-w-0 items-center gap-2 rounded-field border px-3 text-left transition-[background-color,border-color,box-shadow] duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+      className={`relative flex min-h-14 w-full min-w-0 items-center gap-2 rounded-field border px-3 text-left transition-[background-color,border-color,box-shadow] duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         isOver
           ? "border-accent bg-accent/10 ring-2 ring-accent"
           : flash
             ? "border-accent bg-surface ring-2 ring-accent/60"
             : ta
               ? "border-line bg-surface hover:border-ink/25"
-              : `border-dashed border-ink/20 text-muted hover:border-accent hover:text-accent-ink ${
-                  dragging ? "animate-pulse border-accent/60 motion-reduce:animate-none" : ""
-                }`
+              : "border-dashed border-ink/20 text-muted hover:border-accent hover:text-accent-ink"
       }`}
     >
+      {/* The pulse lives on a textless overlay: Safari starts the animation (a new compositor
+          layer) in the same frame the label changes, and a layer holding text keeps painting the
+          old label under the new one. */}
+      {dragging && !ta && !incoming && (
+        <span aria-hidden className="pointer-events-none absolute -inset-px animate-pulse rounded-field border border-dashed border-accent/70 motion-reduce:animate-none" />
+      )}
       {/* Keyed by TA so a new one springs in; the first render (and reduced motion) starts at rest. */}
       <motion.span
         key={incoming && incoming.id !== ta?.id ? `ghost:${incoming.id}` : ta?.id ?? "empty"}
