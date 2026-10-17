@@ -36,7 +36,12 @@ export function getEnv(): Env {
     SUPABASE_SECRET_KEY,
     HISTORY_DELETE_PASSWORD: process.env.HISTORY_DELETE_PASSWORD || undefined,
     DATA_STORE,
-    APP_URL: (process.env.APP_URL ||
-      (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : DEFAULT_APP_URL)).replace(/\/+$/, ""),
+    APP_URL: appUrl(),
   };
+}
+
+/** Explicit APP_URL, else the Vercel production host (documented without a scheme, tolerated with one), else localhost. */
+function appUrl(): string {
+  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.replace(/^https?:\/\//i, "");
+  return (process.env.APP_URL || (vercelHost ? `https://${vercelHost}` : DEFAULT_APP_URL)).replace(/\/+$/, "");
 }

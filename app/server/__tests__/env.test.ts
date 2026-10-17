@@ -61,3 +61,13 @@ test("APP_URL falls back to the Vercel production URL, then localhost; explicit 
   process.env.APP_URL = "https://custom.example/";
   expect(getEnv().APP_URL).toBe("https://custom.example");
 });
+
+test("the Vercel production URL fallback strips an accidental scheme", () => {
+  process.env.NODE_ENV = "test";
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = "https://app.vercel.app/";
+  expect(getEnv().APP_URL).toBe("https://app.vercel.app");
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = "http://app.vercel.app";
+  expect(getEnv().APP_URL).toBe("https://app.vercel.app");
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = "HTTPS://app.vercel.app";
+  expect(getEnv().APP_URL).toBe("https://app.vercel.app");
+});
