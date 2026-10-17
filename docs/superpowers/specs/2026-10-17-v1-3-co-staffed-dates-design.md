@@ -47,7 +47,8 @@ assignOccurrences({ capacities, ledger, occurrences, taCount, rng })
 For each pending occurrence in date order:
 1. `eligible` = TAs with capacity > 0. If `eligible.length === 0` → `NoCapacityError` (unchanged
    message). If `eligible.length < taCount` → `NotEnoughTAsError(taCount, eligible.length)`:
-   `"This task needs 3 TAs but only 2 have sections."`, code `NOT_ENOUGH_TAS`. Both checks run once,
+   `"This task needs 3 TAs but only 2 have sections."` (`"… but only 1 has sections."` for one), code
+   `NOT_ENOUGH_TAS`. Both checks run once,
    before any occurrence is dealt, so a failed deal changes nothing.
 2. If every eligible TA has `used ≥ capacity` → `turn++`, `used[ta] = max(0, used[ta] − capacity[ta])`
    for every TA (overshoot carries forward; for 1-TA tasks overshoot never happens, so this equals
