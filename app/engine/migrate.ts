@@ -11,7 +11,7 @@ function isLedger(value: unknown): value is Ledger {
 }
 
 /** Semester, TAs, sections and a task list: the parts both shapes share. */
-function hasCommonShape(doc: unknown): doc is Doc & { tasks: unknown[] } {
+function hasCommonShape(doc: unknown): doc is Doc & { tas: unknown[]; sections: unknown[]; tasks: Doc[] } {
   return (
     isObject(doc) &&
     isObject(doc.semester) &&
@@ -22,6 +22,43 @@ function hasCommonShape(doc: unknown): doc is Doc & { tasks: unknown[] } {
   );
 }
 
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isTA(value: unknown): boolean {
+  return isObject(value) && isString(value.id) && isString(value.name) && isString(value.color);
+}
+
+function isSlot(value: unknown): boolean {
+  return value === null || isString(value);
+}
+
+function isSection(value: unknown): boolean {
+  return (
+    isObject(value) &&
+    isString(value.id) &&
+    isString(value.name) &&
+    Array.isArray(value.taIds) &&
+    value.taIds.length === 2 &&
+    value.taIds.every(isSlot)
+  );
+}
+
+function isOccurrence(value: unknown): boolean {
+  return (
+    isObject(value) &&
+    isString(value.id) &&
+    isString(value.date) &&
+    isString(value.taId) &&
+    typeof value.turn === "number"
+  );
+}
+
+function isCurrentTask(value: Doc): boolean {
+  return isTaskKind(value.kind) && Array.isArray(value.occurrences) && value.occurrences.every(isOccurrence);
+}
+
 export function isCurrentWorkspace(doc: unknown): doc is Workspace {
   return (
     hasCommonShape(doc) &&
@@ -29,7 +66,9 @@ export function isCurrentWorkspace(doc: unknown): doc is Workspace {
     isObject(doc.ledgers) &&
     isLedger(doc.ledgers.light) &&
     isLedger(doc.ledgers.heavy) &&
-    doc.tasks.every((t) => isTaskKind((t as Doc).kind))
+    doc.tas.every(isTA) &&
+    doc.sections.every(isSection) &&
+    doc.tasks.every(isCurrentTask)
   );
 }
 
