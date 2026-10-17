@@ -6,6 +6,7 @@ import {
   useReducedMotion,
   useTransform,
   type InertiaOptions,
+  type MotionStyle,
   type PanInfo,
 } from "motion/react";
 import {
@@ -26,7 +27,7 @@ import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
 import { isTextEntry, useCoarsePointer } from "~/lib/pointer";
 import { holdSheetOpen, openSheetCount } from "~/lib/sheet-open";
-import { backdropOpacityFor, DESKTOP_QUERY, overlayPop, overlaySpring, overlayTransition, sheetDragElastic, touchSpring, useMediaQuery } from "~/lib/motion";
+import { backdropOpacityFor, DESKTOP_QUERY, overlayPop, overlaySpring, scrimMotion, sheetDragElastic, touchSpring, useMediaQuery } from "~/lib/motion";
 import { IconButton } from "./IconButton";
 import { CloseIcon } from "./icons";
 
@@ -274,7 +275,6 @@ export function Sheet({ open, onClose, title, side = "center", children, footer 
 
   if (!mounted) return null;
 
-  const fade = reduced ? { duration: 0 } : overlayTransition;
   const right = desktop && side === "right";
   const panelMotion = right
     ? {
@@ -304,18 +304,18 @@ export function Sheet({ open, onClose, title, side = "center", children, footer 
         >
           <motion.div
             aria-hidden
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={fade}
+            data-sheet-scrim
+            {...scrimMotion(reduced)}
+            // The drag fades the blur (here) and the colour (below) together.
+            style={desktop ? undefined : ({ "--sheet-drag": dragOpacity } as MotionStyle)}
             onClick={onClose}
             // Clicking the scrim closes the sheet, so it gets the pointer.
-            className="absolute inset-0 cursor-pointer"
+            className="sheet-scrim absolute inset-0 cursor-pointer"
           >
             <motion.div
               data-sheet-backdrop
               style={desktop ? undefined : { opacity: dragOpacity }}
-              className="absolute inset-0 bg-scrim backdrop-blur-sm"
+              className="absolute inset-0 bg-scrim"
             />
           </motion.div>
           <motion.div

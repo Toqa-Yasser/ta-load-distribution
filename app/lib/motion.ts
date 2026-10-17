@@ -182,6 +182,22 @@ export function backdropOpacityFor(y: number, dismissDistance: number): number {
   return Math.min(1, Math.max(0, 1 - y / dismissDistance));
 }
 
+/** Blur radius behind an open sheet's scrim (Tailwind's backdrop-blur-sm). */
+export const SHEET_BLUR = "8px";
+const SCRIM_SHOWN = { opacity: 1, "--sheet-blur": SHEET_BLUR };
+const SCRIM_HIDDEN = { opacity: 0, "--sheet-blur": "0px" };
+
+/**
+ * A sheet's scrim fades in and its backdrop blur grows from 0 to SHEET_BLUR with it (and back on
+ * exit). The blur is a CSS variable that `.sheet-scrim` (app.css) reads for both backdrop-filter
+ * and its -webkit- twin. Under reduced motion the scrim starts at its final values.
+ */
+export function scrimMotion(reduced: boolean | null) {
+  return reduced
+    ? { initial: SCRIM_SHOWN, animate: SCRIM_SHOWN, exit: SCRIM_HIDDEN, transition: { duration: 0 } }
+    : { initial: SCRIM_HIDDEN, animate: SCRIM_SHOWN, exit: SCRIM_HIDDEN, transition: overlayTransition };
+}
+
 const POP_STILL = { opacity: 1, scale: 1, y: 0 };
 
 /**
