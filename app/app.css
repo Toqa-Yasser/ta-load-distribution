@@ -175,13 +175,12 @@ h3 {
     border-radius: var(--radius-card);
     box-shadow: var(--shadow);
   }
-  /* Sheet scrim blur: Sheet animates --sheet-blur (0 to 8px, see scrimMotion) and, while a bottom
-     sheet is dragged, --sheet-drag (1 to 0). On the outer scrim, whose own opacity fades it: under
-     an ancestor with opacity < 1 (a backdrop root in Chrome) the blur would see nothing until the
-     fade had ended, then pop in. */
+  /* Sheet scrim blur: Sheet animates --sheet-blur (0 to 8px, see scrimMotion). On the outer
+     scrim, whose own opacity fades it: under an ancestor with opacity < 1 (a backdrop root in
+     Chrome) the blur would see nothing until the fade had ended, then pop in. */
   .sheet-scrim {
-    -webkit-backdrop-filter: blur(calc(var(--sheet-blur, 0px) * var(--sheet-drag, 1)));
-    backdrop-filter: blur(calc(var(--sheet-blur, 0px) * var(--sheet-drag, 1)));
+    -webkit-backdrop-filter: blur(var(--sheet-blur, 0px));
+    backdrop-filter: blur(var(--sheet-blur, 0px));
   }
   /* Hover lift for clickable cards: 1px up and the raised shadow (mouse/trackpad only). The lift
      uses the `translate` property, so it composes with motion's tilt `transform`. */

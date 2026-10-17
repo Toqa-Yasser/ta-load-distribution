@@ -1,4 +1,4 @@
-import { ROUTE_ORDER, backdropOpacityFor, pageVariants, pageVariantsFor, phonePageTransition, slideDirection } from "~/lib/motion";
+import { ROUTE_ORDER, pageVariants, pageVariantsFor, phonePageTransition, slideDirection } from "~/lib/motion";
 
 const pairs = ROUTE_ORDER.flatMap((from, i) => ROUTE_ORDER.map((to, j) => [from, to, Math.sign(j - i)] as const));
 
@@ -36,12 +36,4 @@ test("phone variants slide 24px horizontally in the direction of travel; desktop
   expect(pageVariantsFor(-1, true).exit).toEqual({ opacity: 0, x: 24 });
   expect(pageVariantsFor(1, false)).toBe(pageVariants);
   expect(phonePageTransition).toMatchObject({ duration: 0.18 });
-});
-
-test("backdrop opacity is 1 at rest, 0 at the dismiss distance, clamped either side", () => {
-  expect(backdropOpacityFor(0, 120)).toBe(1);
-  expect(backdropOpacityFor(-10, 120)).toBe(1);
-  expect(backdropOpacityFor(60, 120)).toBeCloseTo(0.5);
-  expect(backdropOpacityFor(120, 120)).toBe(0);
-  expect(backdropOpacityFor(400, 120)).toBe(0);
 });

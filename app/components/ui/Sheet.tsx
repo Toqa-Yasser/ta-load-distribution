@@ -1,14 +1,4 @@
-import {
-  AnimatePresence,
-  motion,
-  useDragControls,
-  useMotionValue,
-  useReducedMotion,
-  useTransform,
-  type InertiaOptions,
-  type MotionStyle,
-  type PanInfo,
-} from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   useEffect,
   useId,
@@ -23,7 +13,7 @@ import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
 import { isTextEntry, useCoarsePointer } from "~/lib/pointer";
 import { holdSheetOpen, openSheetCount } from "~/lib/sheet-open";
-import { backdropOpacityFor, DESKTOP_QUERY, overlayPop, overlaySpring, scrimMotion, sheetDragElastic, touchSpring, useMediaQuery } from "~/lib/motion";
+import { DESKTOP_QUERY, overlayPop, overlaySpring, scrimMotion, useMediaQuery } from "~/lib/motion";
 import { IconButton } from "./IconButton";
 import { CloseIcon } from "./icons";
 
@@ -31,7 +21,7 @@ type SheetProps = {
   open: boolean;
   onClose: () => void;
   title: string;
-  /** Desktop placement: a centred dialog (default) or a full-height slide-over from the right. */
+  /** Desktop placement: a centred dialog (default) or a full-height slide-over from the right. Phones always get the centred card. */
   side?: "center" | "right";
   /** Content of the scrolling body; an action row goes last (see SHEET_ACTIONS). */
   children: ReactNode;
@@ -46,8 +36,9 @@ export const SHEET_ACTIONS = "flex gap-2 *:flex-1 *:whitespace-nowrap sm:justify
 
 /**
  * Where the visual viewport is smaller than the layout viewport (iOS Safari with the keyboard up,
- * which ignores `interactive-widget`), the sheet's container is fitted to the visible region.
- * Elsewhere (and when pinch-zoomed) it stays `inset-0`.
+ * which ignores `interactive-widget`), the sheet's container is fitted to the visible region, so
+ * the flex centring places the card in the uncovered area. Elsewhere (and when pinch-zoomed) it
+ * stays `inset-0`.
  */
 function useKeyboardFit(open: boolean): CSSProperties | undefined {
   const [fit, setFit] = useState<{ top: number; height: number } | null>(null);
@@ -91,11 +82,6 @@ function revealSoon(el: HTMLElement) {
   requestAnimationFrame(() => el.scrollIntoView?.({ block: "nearest" }));
 }
 
-const DISMISS_OFFSET = 120;
-const DISMISS_VELOCITY = 600;
-/** `type: false` makes motion jump straight to the target, so the release snaps back without a spring. */
-export const INSTANT_DRAG = { type: false } as unknown as InertiaOptions;
-
 /** Id of the shell element that is made `inert` while any sheet is open (sheets portal outside it). */
 export const APP_ROOT_ID = "app-root";
 /** Panels of the open sheets, oldest first; focus that escapes is recovered into the last one. */
@@ -111,10 +97,10 @@ function holdAppRootInert(): () => void {
 }
 
 /**
- * Modal surface: a draggable bottom sheet below `md`, a centred dialog (or, with
- * `side="right"`, a right-hand slide-over) from `md` up.
- * Portalled to <body> after mount (renders nothing on the server). Escape, backdrop click,
- * the close button and (on mobile) a downward drag/fling all call onClose. While open, focus
+ * Modal surface: a centred card that pops in (fade + scale + a short rise; 12px on phones, 8px
+ * from `md` up), or, with `side="right"`, a right-hand slide-over from `md` up (a centred card on
+ * phones). Portalled to <body> after mount (renders nothing on the server). Escape, a backdrop
+ * tap and the close button all call onClose. While open, focus
  * is moved inside and trapped (and pulled back if it escapes to <body>), body scroll is locked,
  * and the app root is `inert` (counted, so stacked sheets release it only when the last closes);
  * focus returns to the opener on close.
@@ -124,17 +110,12 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
   useEffect(() => setMounted(true), []);
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const reduced = useReducedMotion();
-  const drag = useDragControls();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const keyboardFit = useKeyboardFit(open);
   // Read by the focus effect when the sheet opens (false only while hydrating, before any sheet can open).
   const coarse = useCoarsePointer();
-  // The bottom sheet's drag offset; the backdrop fades out as it nears the dismiss distance.
-  // Enter/exit animate y in percent (a string), which leaves the backdrop to its own fade.
-  const panelY = useMotionValue<number | string>(0);
-  const dragOpacity = useTransform(panelY, (y) => (typeof y === "number" ? backdropOpacityFor(y, DISMISS_OFFSET) : 1));
 
   // Declared before the focus effect: cleanups run in order, and the opener must not be inert
   // when focus is handed back to it.
@@ -236,10 +217,6 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
     }, 0);
   };
 
-  const onDragEnd = (_: unknown, info: PanInfo) => {
-    if (info.offset.y > DISMISS_OFFSET || info.velocity.y > DISMISS_VELOCITY) onClose();
-  };
-
   if (!mounted) return null;
 
   const right = desktop && side === "right";
@@ -250,14 +227,7 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
         exit: { x: "110%" },
         transition: reduced ? { duration: 0 } : overlaySpring,
       }
-    : desktop
-    ? overlayPop(reduced, 8)
-    : {
-        initial: { y: "100%" },
-        animate: { y: 0 },
-        exit: { y: "100%" },
-        transition: reduced ? { duration: 0 } : touchSpring,
-      };
+    : overlayPop(reduced, desktop ? 8 : 12);
 
   return createPortal(
     <AnimatePresence>
@@ -265,25 +235,19 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
         <div
           key="sheet"
           style={keyboardFit}
-          className={`fixed inset-0 z-50 flex items-end justify-center ${
-            side === "right" ? "md:items-stretch md:justify-end md:p-3" : "md:items-center md:p-6"
+          className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+            side === "right" ? "md:items-stretch md:justify-end md:p-3" : "md:p-6"
           }`}
         >
           <motion.div
             aria-hidden
             data-sheet-scrim
             {...scrimMotion(reduced)}
-            // The drag fades the blur (here) and the colour (below) together.
-            style={desktop ? undefined : ({ "--sheet-drag": dragOpacity } as MotionStyle)}
             onClick={onClose}
             // Clicking the scrim closes the sheet, so it gets the pointer.
             className="sheet-scrim absolute inset-0 cursor-pointer"
           >
-            <motion.div
-              data-sheet-backdrop
-              style={desktop ? undefined : { opacity: dragOpacity }}
-              className="absolute inset-0 bg-scrim"
-            />
+            <div data-sheet-backdrop className="absolute inset-0 bg-scrim" />
           </motion.div>
           <motion.div
             ref={panelRef}
@@ -294,39 +258,14 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             onKeyDown={onKeyDown}
             onBlur={onBlur}
             {...panelMotion}
-            style={desktop ? undefined : { y: panelY }}
-            drag={desktop ? false : "y"}
-            dragListener={false}
-            dragControls={drag}
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={sheetDragElastic}
-            dragTransition={reduced ? INSTANT_DRAG : undefined}
-            onDragEnd={onDragEnd}
-            // min(…, 100%): never taller than the container, which shrinks to the visible region
-            // when useKeyboardFit applies.
-            // The safe-area padding goes while the container is fitted above the keyboard (it would
-            // be dead space between the sheet and the keys).
+            // min(…, 100%): never taller than the container's padded box, which shrinks to the
+            // visible region when useKeyboardFit applies (the card then centres above the keyboard).
             data-keyboard-fit={keyboardFit ? "" : undefined}
-            className={`glass relative flex max-h-[min(90dvh,100%)] w-full flex-col rounded-b-none outline-none md:rounded-card md:pb-0 ${
-              keyboardFit ? "pb-0" : "pb-[env(safe-area-inset-bottom)]"
-            } ${
-              side === "right" ? "md:max-h-none md:max-w-md" : "md:max-w-lg"
+            className={`glass relative flex max-h-[min(90dvh,100%)] w-full max-w-lg flex-col rounded-card outline-none${
+              side === "right" ? " md:max-h-none md:max-w-md" : ""
             }`}
           >
-            {!desktop && (
-              <div
-                aria-hidden
-                data-sheet-handle
-                onPointerDown={(e) => {
-                  e.preventDefault(); // no text selection while dragging with a mouse
-                  drag.start(e);
-                }}
-                className="flex h-11 shrink-0 cursor-grab touch-none select-none items-center justify-center active:cursor-grabbing"
-              >
-                <span className="h-1.5 w-10 rounded-full bg-ink/20" />
-              </div>
-            )}
-            <div className="flex items-center gap-3 pl-5 pr-2 md:pt-2">
+            <div className="flex items-center gap-3 pl-5 pr-2 pt-2">
               <h2
                 id={titleId}
                 ref={headingRef}

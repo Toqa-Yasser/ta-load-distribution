@@ -21,8 +21,8 @@ const LINK =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-field px-4 font-medium text-ink transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 /**
- * Sheet for one occurrence (bottom sheet on mobile, dialog on desktop): reassign it to
- * another TA, start a swap, or open its task. The handlers are already bound to the occurrence.
+ * Sheet for one occurrence (a centred dialog): reassign it to another TA, start a swap, or open
+ * its task. The handlers are already bound to the occurrence.
  */
 export function OccurrencePopover({ open, task, occ, tas, onReassign, onStartSwap, onClose }: OccurrencePopoverProps) {
   const selectId = useId();

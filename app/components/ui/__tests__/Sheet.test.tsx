@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
-import { INSTANT_DRAG, Sheet } from "~/components/ui/Sheet";
+import { Sheet } from "~/components/ui/Sheet";
+import * as motionLib from "~/lib/motion";
 test("closes on Escape", () => {
   const onClose = vi.fn();
   render(<Sheet open onClose={onClose} title="Hi"><p>body</p></Sheet>);
@@ -98,21 +99,53 @@ test("focus escaping from a lower stacked sheet is recovered into the topmost sh
   lower.blur();
   await waitFor(() => expect(screen.getByRole("dialog", { name: "Upper" }).contains(document.activeElement)).toBe(true));
 });
-test("reduced motion: the drag release jumps back without a spring", () => {
-  expect(INSTANT_DRAG).toEqual({ type: false });
+/** A matchMedia where only the listed queries match. */
+function stubMatchMedia(matching: string[]) {
+  vi.stubGlobal("matchMedia", (q: string) => ({ matches: matching.includes(q), media: q, addEventListener() {}, removeEventListener() {} }));
+}
+afterEach(() => vi.unstubAllGlobals());
+
+test("phone sheet is centred and uses the pop variants", () => {
+  stubMatchMedia([]);
+  render(<Sheet open onClose={() => {}} title="Centred"><p>body</p></Sheet>);
+  const panel = screen.getByRole("dialog");
+  const container = panel.parentElement!;
+  const c = container.className.split(/\s+/);
+  expect(c).toEqual(expect.arrayContaining(["fixed", "inset-0", "z-50", "flex", "items-center", "justify-center", "p-4", "md:p-6"]));
+  expect(c).not.toContain("items-end");
+  const p = panel.className.split(/\s+/);
+  expect(p).toEqual(expect.arrayContaining(["rounded-card", "w-full", "max-w-lg", "max-h-[min(90dvh,100%)]"]));
+  expect(p).not.toContain("rounded-b-none");
+  expect(p).not.toContain("md:rounded-card");
+  expect(panel.className).not.toContain("safe-area");
+  expect(document.querySelector("[data-sheet-handle]")).toBeNull();
+  // First frame = overlayPop(false, 12).initial: faded, scaled to 0.96, 12px low.
+  expect(panel.style.opacity).toBe("0");
+  expect(panel.style.transform).toContain("translateY(12px)");
+  expect(panel.style.transform).toContain("scale(0.96)");
 });
 
-test("Sheet backdrop opacity follows drag progress", async () => {
-  render(<Sheet open onClose={() => {}} title="Drag me"><p>body</p></Sheet>);
-  const backdrop = document.querySelector<HTMLElement>("[data-sheet-backdrop]")!;
-  expect(backdrop).not.toBeNull();
-  expect(Number(backdrop.style.opacity || 1)).toBe(1);
-  const handle = document.querySelector<HTMLElement>("[data-sheet-handle]")!;
-  const ptr = { pointerId: 1, isPrimary: true, button: 0, buttons: 1, pointerType: "touch" };
-  fireEvent.pointerDown(handle, { ...ptr, clientX: 100, clientY: 100 });
-  for (const y of [110, 130, 160]) fireEvent.pointerMove(window, { ...ptr, clientX: 100, clientY: y });
-  await waitFor(() => expect(Number(backdrop.style.opacity)).toBeCloseTo(0.5, 1));
-  fireEvent.pointerMove(window, { ...ptr, clientX: 100, clientY: 400 });
-  await waitFor(() => expect(Number(backdrop.style.opacity)).toBe(0));
-  fireEvent.pointerUp(window, { ...ptr, clientX: 100, clientY: 400 });
+test("phone side=\"right\" sheet is a centred card too; desktop keeps the slide-over", () => {
+  stubMatchMedia([]);
+  const { unmount } = render(<Sheet open side="right" onClose={() => {}} title="Settings"><p>body</p></Sheet>);
+  const c = screen.getByRole("dialog").parentElement!.className.split(/\s+/);
+  expect(c).toEqual(expect.arrayContaining(["items-center", "justify-center", "p-4", "md:items-stretch", "md:justify-end", "md:p-3"]));
+  expect(screen.getByRole("dialog").className.split(/\s+/)).toEqual(expect.arrayContaining(["rounded-card", "md:max-w-md", "md:max-h-none"]));
+  unmount();
+});
+
+test("desktop centred dialog keeps its classes and the 8px pop", () => {
+  stubMatchMedia([motionLib.DESKTOP_QUERY]);
+  render(<Sheet open onClose={() => {}} title="Desk"><p>body</p></Sheet>);
+  const panel = screen.getByRole("dialog");
+  expect(panel.parentElement!.className.split(/\s+/)).toEqual(expect.arrayContaining(["items-center", "justify-center", "md:p-6"]));
+  expect(panel.className.split(/\s+/)).toEqual(expect.arrayContaining(["rounded-card", "max-w-lg"]));
+  expect(panel.style.transform).toContain("translateY(8px)");
+});
+
+test("the bottom-sheet drag helpers are gone", () => {
+  const lib = motionLib as Record<string, unknown>;
+  expect(lib.touchSpring).toBeUndefined();
+  expect(lib.sheetDragElastic).toBeUndefined();
+  expect(lib.backdropOpacityFor).toBeUndefined();
 });

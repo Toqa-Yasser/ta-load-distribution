@@ -166,22 +166,8 @@ export function useEntranceOnce<T extends HTMLElement>(
 
 /** The one transition every sheet, dialog and menu uses for its fade/pop. */
 export const overlayTransition: Transition = { duration: 0.2, ease: EASE_OUT };
-/** Slide-in panels (bottom sheet, right-hand slide-over). */
+/** Slide-in panels (the desktop right-hand slide-over). */
 export const overlaySpring: Transition = { type: "spring", stiffness: 420, damping: 40 };
-/** Bottom sheet enter/exit, tuned for touch. */
-export const touchSpring: Transition = { type: "spring", stiffness: 420, damping: 38 };
-/** Bottom sheet drag: a light rubber band above the rest position, free travel downwards. */
-export const sheetDragElastic = { top: 0.08, bottom: 1 };
-
-/**
- * Backdrop opacity for a bottom sheet dragged `y` px down: 1 at rest (or above it), falling
- * linearly to 0 at the dismiss distance.
- */
-export function backdropOpacityFor(y: number, dismissDistance: number): number {
-  if (!(dismissDistance > 0) || !Number.isFinite(y)) return 1;
-  return Math.min(1, Math.max(0, 1 - y / dismissDistance));
-}
-
 /** Blur radius behind an open sheet's scrim (Tailwind's backdrop-blur-sm). */
 export const SHEET_BLUR = "8px";
 const SCRIM_SHOWN = { opacity: 1, "--sheet-blur": SHEET_BLUR };

@@ -46,9 +46,9 @@ test("action rows render at the end of the scroll body: no pinned footer", async
   expect(body).toContainElement(row);
   expect(row.nextElementSibling).toBeNull(); // last in the body content
   expect(document.querySelector("[data-sheet-footer]")).toBeNull();
-  // The body keeps its bottom padding, and the panel the safe area.
+  // The body keeps its bottom padding; the floating card needs no safe-area padding.
   expect(body.className.split(/\s+/)).toContain("pb-5");
-  expect(screen.getByRole("dialog").className).toContain("pb-[env(safe-area-inset-bottom)]");
+  expect(screen.getByRole("dialog").className).not.toContain("safe-area");
 });
 
 test("the password dialog's buttons sit inside its form, in the body", async () => {
@@ -193,7 +193,7 @@ test("two-button action rows share one row class: equal flex shares that never w
   expect(screen.getByRole("button", { name: "Remove" }).parentElement!.className).toBe(SHEET_ACTIONS);
 });
 
-test("the panel drops its safe-area bottom padding while the keyboard fit is active", () => {
+test("while the keyboard fit is active the card is centred inside the visible region", () => {
   stubMatchMedia(["(pointer: coarse)"]);
   const vv = { height: 500, scale: 1, offsetTop: 0, addEventListener() {}, removeEventListener() {} };
   vi.stubGlobal("visualViewport", vv);
@@ -201,15 +201,18 @@ test("the panel drops its safe-area bottom padding while the keyboard fit is act
   render(<Sheet open onClose={() => {}} title="New task"><p>x</p></Sheet>);
   const panel = screen.getByRole("dialog");
   expect(panel).toHaveAttribute("data-keyboard-fit");
-  expect(panel.className).not.toContain("pb-[env(safe-area-inset-bottom)]");
+  const container = panel.parentElement!;
+  expect(container.style.height).toBe("500px");
+  expect(container.className.split(/\s+/)).toContain("items-center");
+  expect(panel.className).toContain("max-h-[min(90dvh,100%)]");
 });
 
-test("without a keyboard fit the panel keeps the safe-area bottom padding", () => {
+test("without a keyboard fit the panel has no data-keyboard-fit and the container stays inset-0", () => {
   stubMatchMedia(["(pointer: coarse)"]);
   vi.stubGlobal("visualViewport", { height: 800, scale: 1, offsetTop: 0, addEventListener() {}, removeEventListener() {} });
   Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
   render(<Sheet open onClose={() => {}} title="New task"><p>x</p></Sheet>);
   const panel = screen.getByRole("dialog");
   expect(panel).not.toHaveAttribute("data-keyboard-fit");
-  expect(panel.className).toContain("pb-[env(safe-area-inset-bottom)]");
+  expect(panel.parentElement!.style.height).toBe("");
 });

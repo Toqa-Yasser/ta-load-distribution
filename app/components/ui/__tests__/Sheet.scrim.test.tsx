@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { Sheet } from "~/components/ui/Sheet";
 import { scrimMotion, SHEET_BLUR } from "~/lib/motion";
 
@@ -30,7 +30,7 @@ test("reduced motion: the scrim starts at its final values (no blur tween)", () 
 });
 
 test("both backdrop-filter properties read the animated variable (Safari needs the prefix)", () => {
-  const rule = "blur(calc(var(--sheet-blur, 0px) * var(--sheet-drag, 1)))";
+  const rule = "blur(var(--sheet-blur, 0px))";
   expect(css).toContain(`.sheet-scrim { -webkit-backdrop-filter: ${rule}; backdrop-filter: ${rule}; }`);
 });
 
@@ -46,14 +46,4 @@ test("reduced motion renders the scrim fully blurred on the first frame", () => 
   reduced.value = true;
   render(<Sheet open onClose={() => {}} title="Blur"><p>body</p></Sheet>);
   expect(scrim().style.getPropertyValue("--sheet-blur")).toBe("8px");
-});
-
-test("dragging the bottom sheet scales the blur with the scrim colour", async () => {
-  render(<Sheet open onClose={() => {}} title="Drag"><p>body</p></Sheet>);
-  const handle = document.querySelector<HTMLElement>("[data-sheet-handle]")!;
-  const ptr = { pointerId: 1, isPrimary: true, button: 0, buttons: 1, pointerType: "touch" };
-  fireEvent.pointerDown(handle, { ...ptr, clientX: 100, clientY: 100 });
-  for (const y of [110, 130, 160]) fireEvent.pointerMove(window, { ...ptr, clientX: 100, clientY: y });
-  await waitFor(() => expect(Number(scrim().style.getPropertyValue("--sheet-drag"))).toBeCloseTo(0.5, 1));
-  fireEvent.pointerUp(window, { ...ptr, clientX: 100, clientY: 160 });
 });
