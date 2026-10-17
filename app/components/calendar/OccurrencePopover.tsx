@@ -14,6 +14,8 @@ type OccurrencePopoverProps = {
   mode: "view" | "pick";
   /** TA ids of the seats offered in pick mode, in seat order. */
   pickable?: string[];
+  /** Name of the TA whose seat is moving (pick mode), shown in the lead text. */
+  sourceName?: string;
   /** Starts a swap from the seat held by this TA. */
   onStartSwap: (taId: string) => void;
   /** Completes the pending swap with the seat held by this TA (pick mode). */
@@ -26,9 +28,10 @@ const LINK =
 
 /**
  * Sheet for one occurrence (a centred dialog). In view mode it shows who holds each seat, starts a
- * swap from any seat, or opens its task; dates change hands only by swapping, so the TAs are
- * read-only here. In pick mode it is the seat chooser for a swap onto a co-staffed date. The
- * handlers are already bound to the occurrence.
+ * swap from any seat, or opens its task (a single-seat date keeps the one-owner layout with a
+ * "Swap with…" button); dates change hands only by swapping, so the TAs are read-only here. In
+ * pick mode it is the seat chooser for a swap onto a co-staffed date. The handlers are already
+ * bound to the occurrence.
  */
 export function OccurrencePopover({
   open,
@@ -37,10 +40,36 @@ export function OccurrencePopover({
   tas,
   mode,
   pickable = [],
+  sourceName,
   onStartSwap,
   onPickSeat = () => {},
   onClose,
 }: OccurrencePopoverProps) {
+  if (mode === "view" && occ.seats.length === 1) {
+    const taId = occ.seats[0].taId;
+    const owner = tas.find((t) => t.id === taId);
+    return (
+      <Sheet open={open} onClose={onClose} title={`${task.title} · ${fmtDateLong(occ.date)}`}>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-muted">Assigned TA</span>
+            <div className="flex items-center gap-2">
+              <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: owner?.color ?? "var(--muted)" }} />
+              <span className={owner ? "font-medium" : "text-muted"}>{owner?.name ?? "Unassigned"}</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Link to={`/tasks/${task.id}`} className={LINK} onClick={onClose}>
+              Open task
+            </Link>
+            <Button variant="ghost" onClick={() => onStartSwap(taId)}>
+              Swap with…
+            </Button>
+          </div>
+        </div>
+      </Sheet>
+    );
+  }
   const seats = mode === "pick" ? occ.seats.filter((s) => pickable.includes(s.taId)) : occ.seats;
   const onSwap = mode === "pick" ? onPickSeat : onStartSwap;
   return (
@@ -48,7 +77,7 @@ export function OccurrencePopover({
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-muted">
-            {mode === "pick" ? "Swap with" : occ.seats.length === 1 ? "Assigned TA" : "Assigned TAs"}
+            {mode === "pick" ? (sourceName ? `Swap ${sourceName}'s seat with` : "Swap with") : "Assigned TAs"}
           </span>
           <ul className="flex flex-col gap-1">
             {seats.map(({ taId }) => {

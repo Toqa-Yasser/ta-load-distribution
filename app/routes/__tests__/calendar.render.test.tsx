@@ -78,9 +78,10 @@ function renderAt(url: string) {
   return render(<ToastProvider><Stub initialEntries={[url]} /></ToastProvider>);
 }
 const pill = (name: RegExp) => screen.getByRole("button", { name });
-const startSwapFrom = async (name: RegExp, taName = "Ahmed") => {
+// A single-seat occurrence offers "Swap with…"; a co-staffed one offers "Swap <name>" per seat.
+const startSwapFrom = async (name: RegExp, taName?: string) => {
   fireEvent.click(await screen.findByRole("button", { name }));
-  fireEvent.click(await screen.findByRole("button", { name: `Swap ${taName}` }));
+  fireEvent.click(await screen.findByRole("button", { name: taName ? `Swap ${taName}` : "Swap with…" }));
 };
 
 test("an invalid ?m= falls back to the current month", async () => {
@@ -121,7 +122,17 @@ test("the popover names the assigned TA but offers no way to reassign", async ()
   expect(dialog).toHaveTextContent("Ahmed");
   expect(screen.queryByRole("combobox", { name: "Assigned TA" })).not.toBeInTheDocument();
   expect(dialog).not.toHaveTextContent("Assigned TAs");
-  expect(screen.getByRole("button", { name: "Swap Ahmed" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Swap with…" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Swap Ahmed" })).not.toBeInTheDocument();
+  expect(within(dialog).queryByRole("listitem")).not.toBeInTheDocument();
+  expect(within(dialog).getByRole("link", { name: "Open task" })).toBeInTheDocument();
+});
+
+test("Swap with… on a single-seat popover starts swap mode from its TA", async () => {
+  renderAt("/calendar?m=2026-10");
+  await startSwapFrom(/^Quiz · Oct 5/);
+  expect(await screen.findByRole("status")).toHaveTextContent("Pick another light occurrence to swap with");
+  expect(pill(/^Quiz · Oct 5 · Ahmed · Light · swapping/)).toBeInTheDocument();
 });
 
 test("popover lists every seat with its own Swap button", async () => {
@@ -142,11 +153,11 @@ test("popover in pick mode lists only pickable seats and no Open task link", () 
   render(
     <MemoryRouter>
       <OccurrencePopover open task={lab} occ={lab.occurrences[0]} tas={[A, B, C]} mode="pick" pickable={["C"]}
-        onStartSwap={() => {}} onPickSeat={onPickSeat} onClose={() => {}} />
+        sourceName="Ahmed" onStartSwap={() => {}} onPickSeat={onPickSeat} onClose={() => {}} />
     </MemoryRouter>,
   );
   const dialog = screen.getByRole("dialog", { name: /^Lab · / });
-  expect(dialog).toHaveTextContent("Swap with");
+  expect(dialog).toHaveTextContent("Swap Ahmed's seat with");
   expect(within(dialog).getAllByRole("button", { name: /^Swap / }).map((b) => b.getAttribute("aria-label") ?? b.textContent))
     .toEqual(["Swap Carla"]);
   expect(within(dialog).queryByRole("link", { name: "Open task" })).not.toBeInTheDocument();
@@ -189,7 +200,7 @@ test("tapping a multi-seat pill opens the seat chooser and picking submits", asy
   expect(pill(/^Lab · Oct 11/).className).toContain("opacity-40");
   fireEvent.click(pill(/^Lab · Oct 10 · Bassem, Carla/));
   const dialog = await screen.findByRole("dialog", { name: /^Lab · / });
-  expect(dialog).toHaveTextContent("Swap with");
+  expect(dialog).toHaveTextContent("Swap Ahmed's seat with");
   expect(within(dialog).queryByRole("link", { name: "Open task" })).not.toBeInTheDocument();
   expect(action).not.toHaveBeenCalled();
   fireEvent.click(within(dialog).getByRole("button", { name: "Swap Carla" }));
@@ -200,6 +211,20 @@ test("tapping a multi-seat pill opens the seat chooser and picking submits", asy
     b: { taskId: "l", occurrenceId: "l1", taId: "C" },
   });
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
+test("swapping from a co-staffed date names the moving seat in the status bar", async () => {
+  ws = withLab();
+  renderAt("/calendar?m=2026-10");
+  await startSwapFrom(/^Lab · Oct 10/, "Bassem");
+  expect(await screen.findByRole("status")).toHaveTextContent("Swapping Bassem's seat — pick another light occurrence");
+});
+
+test("swapping from a single-seat date keeps the plain status text", async () => {
+  renderAt("/calendar?m=2026-10");
+  await startSwapFrom(/^Exam · Oct 8/);
+  expect(await screen.findByRole("status")).toHaveTextContent("Pick another heavy occurrence to swap with");
+  expect(screen.getByRole("status")).not.toHaveTextContent("seat");
 });
 
 test("pills are plain buttons, not toggle buttons", async () => {
@@ -238,4 +263,19 @@ test("swap mode ends when the source TA leaves the source occurrence", async () 
   await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
   expect(screen.queryByRole("button", { name: /· swapping$/ })).not.toBeInTheDocument();
   expect(pill(/^Exam · Oct 8/).className).not.toContain("opacity-40");
+});
+
+test("the seat chooser closes when swap mode ends underneath it", async () => {
+  ws = withLab();
+  renderAt("/calendar?m=2026-10");
+  await startSwapFrom(/^Quiz · Oct 5/);
+  fireEvent.click(pill(/^Lab · Oct 10 · Bassem, Carla/));
+  expect(await screen.findByRole("dialog", { name: /^Lab · / })).toHaveTextContent("Swap Ahmed's seat with");
+  // An undo elsewhere moves Ahmed off the source date while the chooser is open.
+  setWs({ ...ws, tasks: ws.tasks.map((t) => (t.id === "q" ? { ...t, occurrences: t.occurrences.map((o) =>
+    o.id === "q1" ? { ...o, seats: [{ taId: "B", turn: 1 }] } : o) } : t)) });
+  await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: /^Lab · / })).not.toBeInTheDocument());
+  await act(() => new Promise((r) => setTimeout(r, 30)));
+  expect(action).not.toHaveBeenCalled();
 });

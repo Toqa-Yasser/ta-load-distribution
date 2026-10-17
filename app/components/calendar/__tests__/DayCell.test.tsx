@@ -64,6 +64,7 @@ test("single-seat pill is unchanged", () => {
   render(<OccurrencePill task={quiz} occ={quiz.occurrences[0]} tas={[SARA]} selected={false} swapRole={null} onClick={() => {}} />);
   const btn = screen.getByRole("button", { name: "Quiz · Oct 5 · Sara · Light" });
   expect(btn.className.split(/\s+/)).toContain("border-l-4");
+  expect(btn.style.borderLeftColor).toBe("rgb(255, 0, 0)");
   const style = btn.getAttribute("style") ?? "";
   expect(style).toContain("color-mix(in srgb, rgb(255, 0, 0) 22%, transparent)");
   expect(style).not.toContain("gradient");

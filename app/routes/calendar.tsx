@@ -37,7 +37,8 @@ export default function Calendar() {
   const yearMonth = m && MONTH.test(m) ? m : today.slice(0, 7);
   // The ref stays set after closing so the sheet can animate out with its content.
   // "pick" is the seat chooser for a swap onto a co-staffed date; `pickable` lists its valid seats.
-  const [popover, setPopover] = useState<{ ref: OccurrenceRef; open: boolean; mode: "view" | "pick" } | null>(null);
+  // `sourceName` (pick mode) is kept with it so the lead text survives the exit animation.
+  const [popover, setPopover] = useState<{ ref: OccurrenceRef; open: boolean; mode: "view" | "pick"; sourceName?: string } | null>(null);
   const [pickable, setPickable] = useState<string[]>([]);
   const [swapSource, setSwapSource] = useState<SeatRef | null>(null);
 
@@ -73,7 +74,7 @@ export default function Calendar() {
       return;
     }
     setPickable(valid);
-    setPopover({ ref, open: true, mode: "pick" });
+    setPopover({ ref, open: true, mode: "pick", sourceName: taById.get(swapSource.taId)?.name });
   };
 
   // Memoised: useRetained needs a stable reference. If the occurrence disappears while the
@@ -85,8 +86,13 @@ export default function Calendar() {
   const found = swapSource ? lookup(workspace, swapSource) : null;
   // Seat-level: the source TA must still sit on that occurrence (an undo or reassign can move them).
   const swapping = found?.occ.seats.some((s) => s.taId === swapSource?.taId) ? found : null;
-  // The swap source vanished (deleted elsewhere, undone, TA moved off): leave swap mode rather than dim everything.
-  if (swapSource && swapping === null) setSwapSource(null);
+  // The swap source vanished (deleted elsewhere, undone, TA moved off): leave swap mode rather than
+  // dim everything, and close a seat chooser that belonged to it so it cannot submit a stale swap.
+  if (swapSource && swapping === null) {
+    setSwapSource(null);
+    if (popover?.open && popover.mode === "pick") setPopover({ ...popover, open: false });
+  }
+  const sourceName = swapSource ? taById.get(swapSource.taId)?.name : undefined;
   const closePopover = () => setPopover((p) => p && { ...p, open: false });
 
   return (
@@ -124,7 +130,13 @@ export default function Calendar() {
 
       {swapSource && (
         <div role="status" className="glass flex items-center justify-between gap-3 py-1 pl-4 pr-1 text-sm">
-          <span>{swapping ? `Pick another ${swapping.task.kind} occurrence to swap with` : "Pick an occurrence to swap with"}</span>
+          <span>
+            {!swapping
+              ? "Pick an occurrence to swap with"
+              : swapping.occ.seats.length > 1 && sourceName
+                ? `Swapping ${sourceName}'s seat — pick another ${swapping.task.kind} occurrence`
+                : `Pick another ${swapping.task.kind} occurrence to swap with`}
+          </span>
           <Button variant="ghost" size="sm" onClick={() => setSwapSource(null)}>
             Cancel
           </Button>
@@ -160,6 +172,7 @@ export default function Calendar() {
           tas={workspace.tas}
           mode={popover.mode}
           pickable={pickable}
+          sourceName={popover.sourceName}
           onClose={closePopover}
           onStartSwap={(taId) => {
             setSwapSource({ ...popover.ref, taId });
