@@ -15,7 +15,7 @@ covers. Every change is snapshotted, so you can undo or roll back.
 - **Calendar**: month grid of every occurrence; reassign a date to another TA or swap two dates.
 - **History**: a snapshot per change, with rollback, toast Undo, and a password-protected "delete history".
 - **Settings**: semester dates, light/dark/system theme, "redistribute everything" and "reset everything".
-- Mobile-first: bottom tabs, draggable bottom sheets, ≥44px targets, and every animation turned off
+- Mobile-first: bottom tabs, centred pop-in dialogs, ≥44px targets, and every animation turned off
   under `prefers-reduced-motion`.
 
 ## The distribution rule

@@ -235,7 +235,7 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
         <div
           key="sheet"
           style={keyboardFit}
-          className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+          className={`fixed inset-0 z-50 flex items-center justify-center p-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] ${
             side === "right" ? "md:items-stretch md:justify-end md:p-3" : "md:p-6"
           }`}
         >

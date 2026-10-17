@@ -64,7 +64,7 @@ function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
   const { submit } = useCommand();
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  // Closed mid-request (Escape, scrim, X, drag, Back): the result belongs to the shell's toast
+  // Closed mid-request (Escape, scrim, X, Back): the result belongs to the shell's toast
   // only — no inline error, and no onDone, which would navigate from a possibly stale route. While
   // the sheet animates out, AnimatePresence keeps rendering the old element (open still true),
   // so the exit is read from useIsPresent; the unmount cleanup covers closes without an exit.
