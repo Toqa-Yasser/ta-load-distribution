@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Exact copy from the spec: `"This task needs 3 TAs but only 2 have sections."` (singular `"… but only 1 has sections."`; code `NOT_ENOUGH_TAS`), `"TAs per date must be a whole number of at least 1."`, `"A TA can't hold the same date twice."`, snapshot label `Upgraded to co-staffed dates`, history label `Added heavy task "X" for 2 TAs`, stepper hints `Each date is covered by this many TAs together. Every one of them counts it toward their load.` / `Give more TAs sections to co-staff dates.`, summary suffix ` · 2 TAs per date`.
-- `taCount === 1` behaviour is byte-for-byte today's: single-TA pills, labels, deals and ledgers do not change. Existing tests change only in fixture shape, except the distribute test for a TA whose capacity shrank below their current-turn usage, where the carry now applies.
+- `taCount === 1` behaviour is byte-for-byte today's: single-TA pills, labels, deals and ledgers do not change. Existing tests change only in fixture shape.
 - The engine (`app/engine`) imports nothing from `lib`, `components` or `server` (`boundaries.test.ts`).
 - ≥44px targets, reduced-motion safe, hydration-safe, tokens only, mutations via `useCommand`.
 - No AI-attribution trailers or tool mentions in commits or files.
@@ -58,14 +58,15 @@ export function refundSeats(ledger: Ledger, seats: Seat[]): Ledger
 
 - [ ] **Step 1: Rewrite `distribute.test.ts` fixtures to seats.** `count` reads `o.seats.map(s => s.taId)`; every `assignOccurrences` call passes `taCount: 1`; `refund` fixtures become `{ id, date, seats: [{ taId: "A", turn: 2 }] }`; `o.turn` reads become `o.seats[0].turn`. Add the failing tests:
   - `taCount 2 seats two distinct TAs with the highest remaining fractions`: caps `{A:1,B:2,C:2,D:3}`, 4 dates, `taCount: 2` → for seeds 1–5: every occurrence has 2 seats with distinct `taId`s, all `turn 1`, and `ledger.used` equals `{A:1,B:2,C:2,D:3}` (a full turn exactly).
-  - `overshoot carries across a rollover`: caps `{A:1,B:1}`, 1 date, `taCount: 2`, ledger `{turn:1, used:{A:1}}` → seats are A and B in turn 1 (not every TA was full, so no rollover), ledger `{turn:1, used:{A:2,B:1}}`; then a second call with that ledger and 1 date `taCount: 1` → rolls over to turn 2 with `used` `{A:1, B:0}` before picking, so the pick is B and the result ledger is `{turn:2, used:{A:1,B:1}}`.
+  - `a seat with nobody left to take it starts the new turn instead of overshooting`: caps `{A:1,B:1}`, ledger `{turn:1, used:{A:1}}`, 1 date, `taCount: 2` → seats `[{B,1},{A,2}]`, ledger `{turn:2, used:{A:1}}`.
+  - `a turn is never over-full`: caps `{A:1,B:2,C:2,D:3}`, start `used:{A:1}`, six 2-TA dates → after each, the used total ≤ 8 and no TA exceeds capacity.
   - `fewer eligible TAs than taCount throws NotEnoughTAsError before dealing`: caps `{A:1,B:1,C:0}`, `taCount: 3` → `toThrow(new NotEnoughTAsError(3, 2))` and the message equals `"This task needs 3 TAs but only 2 have sections."`.
   - `no capacity anywhere still throws NoCapacityError even with taCount 2`.
   - `refill keeps held seats and never seats their TAs again`: caps `{A:1,B:1,C:1}`, one pending `{ id, date, seats: [{taId:"A",turn:1}] }`, `taCount: 2`, ledger `{turn:1, used:{A:1}}` → result seats `[{A,1}, {X,1}]` with X ∈ {B,C}; `used[A]` stays 1 (kept seats are not charged).
   - `refundSeats releases only current-turn seats and floors at 0`.
   - `eligibleCount counts TAs with capacity > 0` (in `capacity.test.ts`, using the `team()` fixture → 4; after clearing every slot → 0).
 - [ ] **Step 2: Run** `npx vitest run app/engine/__tests__/distribute.test.ts app/engine/__tests__/capacity.test.ts` → FAIL (shape/type errors).
-- [ ] **Step 3: Implement** the types above; `NotEnoughTAsError`; `eligibleCount`; `assignOccurrences` per spec §2.1 (eligibility checks once up front; per occurrence: rollover check with carry `used[ta] = max(0, used[ta] − capacity[ta])`, then `taCount − kept.length` picks excluding TAs already seated on the occurrence, ties via `pick(tied, rng)`); `refund` via `refundSeats`.
+- [ ] **Step 3: Implement** the types above; `NotEnoughTAsError`; `eligibleCount`; `assignOccurrences` per spec §2.1 (eligibility checks once up front; per seat: if every eligible TA not yet seated on the occurrence is full → `turn++`, `used = {}`; then pick the highest remaining fraction among those TAs, ties via `pick(tied, rng)`); `refund` via `refundSeats`.
 - [ ] **Step 4: Run** the same command → PASS.
 - [ ] **Step 5: Commit** `feat(engine): seats per occurrence; deal taCount distinct TAs per date`.
 

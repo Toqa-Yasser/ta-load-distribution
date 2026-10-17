@@ -36,16 +36,17 @@ export function assignOccurrences(args: {
   const out: Occurrence[] = [];
 
   for (const occ of sorted) {
-    if (eligible.every((id) => (used[id] ?? 0) >= capacities[id])) {
-      turn += 1;
-      // Overshoot (a TA seated beyond capacity to fill a date) carries into the new turn.
-      const carried = eligible.map((id): [string, number] => [id, Math.max(0, (used[id] ?? 0) - capacities[id])]);
-      used = Object.fromEntries(carried.filter(([, n]) => n > 0));
-    }
     const kept = occ.seats ?? [];
     const seats = [...kept];
     while (seats.length < taCount) {
       const open = eligible.filter((id) => !seats.some((s) => s.taId === id));
+      // The turn ends when nobody who could still take this seat has room left. Checked per
+      // seat, not per date, so a co-staffed date never pushes a TA beyond their capacity: its
+      // later seats simply open the next turn.
+      if (open.every((id) => (used[id] ?? 0) >= capacities[id])) {
+        turn += 1;
+        used = {};
+      }
       const taId = pickFairest(open, capacities, used, rng);
       used[taId] = (used[taId] ?? 0) + 1;
       seats.push({ taId, turn });
