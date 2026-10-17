@@ -65,18 +65,23 @@ export function NavBar({ placement, className = "", ...navProps }: { placement: 
       aria-label="Primary"
       data-tabbar
       data-hidden={hidden || undefined}
-      // --tabbar-h (56px) of tabs; the safe area pads below them (border-box, so the height includes it).
-      className={`glass fixed inset-x-3 bottom-3 z-40 flex h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] justify-around px-1 pb-[env(safe-area-inset-bottom)] md:hidden ${BAR_SLIDE} ${
+      // Exactly --tabbar-h (56px) tall; the safe area raises the whole bar (12px + inset from the
+      // edge) instead of padding inside it, so no empty band sits under the labels where a browser
+      // reports a gesture-bar inset. Its top is therefore 12px + inset + --tabbar-h from the bottom.
+      className={`glass fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 flex h-(--tabbar-h) justify-around px-1 md:hidden ${BAR_SLIDE} ${
         hidden ? TABBAR_HIDDEN : "translate-y-0"
       }`}
     >
       {NAV_ITEMS.map((item) => (
-        <NavLink key={item.to} to={item.to} end={item.end} className="flex-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-accent">
+        <NavLink key={item.to} to={item.to} end={item.end} className="min-w-0 flex-auto rounded-2xl focus-visible:outline-2 focus-visible:outline-accent">
           {({ isActive }) => (
             <motion.span
               data-press="tab"
               whileTap={tabTap}
-              className={`relative isolate flex h-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[11px] font-medium transition-colors ${
+              // Sized to its content (flex-auto on the link: content width plus an equal share of
+              // the spare room), so a long label ("Dashboard") gets the width it needs. One-line
+              // labels; 10px below 360px. px-2: the label stays 4px inside the inset-1 indicator.
+              className={`relative isolate flex h-full flex-col items-center justify-center gap-0.5 whitespace-nowrap rounded-2xl px-2 text-[11px] font-medium transition-colors max-[22.5rem]:text-[10px] ${
                 isActive ? "text-accent-ink" : "text-muted"
               }`}
             >
@@ -85,7 +90,8 @@ export function NavBar({ placement, className = "", ...navProps }: { placement: 
                   data-tab-indicator
                   layoutId="tab-indicator"
                   transition={spring}
-                  className="absolute inset-x-1 inset-y-1.5 -z-10 rounded-full bg-accent/12"
+                  // Covers the tab's whole box (icon and label) with 4px breathing room.
+                  className="absolute inset-1 -z-10 rounded-xl bg-accent/12"
                 />
               )}
               <item.Icon size={24} />

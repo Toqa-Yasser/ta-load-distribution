@@ -68,7 +68,33 @@ test("tab items have press feedback props", async () => {
     expect(link.querySelector('[data-press="tab"]')).not.toBeNull();
     expect(link.querySelector("span")!.className).toContain("text-[11px]");
   }
-  // Bar content is 56px tall and only the safe area pads below it.
-  expect(nav.className).toContain("h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]");
-  expect(nav.className).toContain("pb-[env(safe-area-inset-bottom)]");
+});
+
+test("the bar is exactly --tabbar-h tall and the safe area goes into its offset from the edge", async () => {
+  renderBar("/");
+  const nav = await screen.findByRole("navigation", { name: "Primary" });
+  const cls = nav.className.split(/\s+/);
+  expect(cls).toContain("h-(--tabbar-h)");
+  expect(cls).toContain("bottom-[calc(0.75rem+env(safe-area-inset-bottom))]");
+  // No inner band under the labels where a browser reports a gesture-bar inset (Chrome Android).
+  expect(nav.className).not.toMatch(/(^|\s)pb-|h-\[calc/);
+  expect(cls).not.toContain("bottom-3");
+});
+
+test("each tab's indicator covers its whole hit box (icon and label) with 4px to spare", async () => {
+  renderBar("/");
+  const nav = await screen.findByRole("navigation", { name: "Primary" });
+  const indicator = nav.querySelector<HTMLElement>("[data-tab-indicator]")!;
+  const item = indicator.closest<HTMLElement>('[data-press="tab"]')!;
+  expect(item).not.toBeNull();
+  expect(indicator.parentElement).toBe(item);
+  const ind = indicator.className.split(/\s+/);
+  expect(ind).toEqual(expect.arrayContaining(["absolute", "inset-1", "-z-10"]));
+  expect(ind.some((c) => c.startsWith("inset-x-") || c.startsWith("inset-y-"))).toBe(false);
+  for (const link of within(nav).getAllByRole("link")) {
+    // Content-sized: a long label gets more width than a short one.
+    expect(link.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-w-0", "flex-auto"]));
+    const tab = link.querySelector<HTMLElement>('[data-press="tab"]')!.className.split(/\s+/);
+    expect(tab).toEqual(expect.arrayContaining(["h-full", "px-2", "whitespace-nowrap", "text-[11px]", "max-[22.5rem]:text-[10px]"]));
+  }
 });
