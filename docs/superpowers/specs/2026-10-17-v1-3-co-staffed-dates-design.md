@@ -134,8 +134,9 @@ change. `readCommand` shape checks gain `taCount` and `SeatRef`.
   background `linear-gradient(to right, tint(ta1), tint(ta2), …)` at 28% mix; the stripe is a
   `linear-gradient(to bottom, …)` with equal hard bands, one per seat, in seat order. Accessible
   name lists every TA: `Lab · Oct 21 · Sara, Omar · Heavy`.
-- **Popover**: "Assigned TA" → "Assigned TAs"; one row per seat, each with its own `Swap…` button.
-  With one seat the layout is as today.
+- **Popover**: "Assigned TA" → "Assigned TAs"; one row per seat, each with its own `Swap…` button
+  (accessible name `Swap <name>`). With one seat the layout is as today (owner line, then `Open task`
+  and `Swap with…`). In pick mode the lead text names the moving seat: `Swap Omar's seat with`.
 - **Swap mode**: `swapSource: SeatRef`. A pill is a valid target when it is a different occurrence of
   the same kind and has at least one seat whose TA ≠ source TA and is not already seated on the
   source occurrence, and the source TA is not already seated on it. Pills with no valid seat are
