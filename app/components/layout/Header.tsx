@@ -6,7 +6,9 @@ import { SettingsIcon } from "~/components/ui/icons";
 import { ThemeToggle } from "~/components/ui/ThemeToggle";
 import { stagger, useEntranceOnce } from "~/lib/motion";
 import { useOpenSettings } from "~/lib/settings";
+import { useScrollDirection } from "~/lib/use-scroll-direction";
 import { useScrolled } from "~/lib/use-scrolled";
+import { BAR_SLIDE, HEADER_HIDDEN } from "./bars";
 import { NavBar } from "./NavBar";
 
 /**
@@ -16,10 +18,12 @@ import { NavBar } from "./NavBar";
  * pages live in the bottom tab bar, so the row spreads brand to the start and actions to the end.
  * The header is fixed and --header-h tall (12px top gap + 44px pills below md, 16px + 48px from
  * md); AppShell's <main> pads by the same variable. On load the pills fade down one after another (stagger, CSS only).
+ * While the page scrolls down the whole header slides up out of view (see bars.ts).
  */
 export function Header() {
   const openSettings = useOpenSettings();
   const scrolled = useScrolled();
+  const hidden = useScrollDirection() === "down";
   const headerRef = useRef<HTMLElement>(null);
   // The brand mark pulses (CSS) until the first client effect: a cue that the page is still loading.
   useEffect(() => {
@@ -32,7 +36,11 @@ export function Header() {
   const pagesEntrance = useEntranceOnce<HTMLElement>(1, "down", `${pill} pointer-events-auto`);
 
   return (
-    <header ref={headerRef} className="pointer-events-none fixed inset-x-0 top-0 z-30 h-(--header-h) pt-3 md:pt-4">
+    <header
+      ref={headerRef}
+      data-hidden={hidden || undefined}
+      className={`pointer-events-none fixed inset-x-0 top-0 z-30 h-(--header-h) pt-3 md:pt-4 ${BAR_SLIDE} ${hidden ? HEADER_HIDDEN : "translate-y-0"}`}
+    >
       <div data-header-row className="flex items-center justify-between gap-3 px-4 md:justify-center md:px-6">
         <div data-pill="brand" {...stagger(0, "down", `${pill} pointer-events-auto`)}>
           <Link

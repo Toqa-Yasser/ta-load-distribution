@@ -3,6 +3,8 @@ import type { ComponentProps } from "react";
 import { NavLink } from "react-router";
 import { CalendarIcon, DashboardIcon, HistoryIcon, TasksIcon, TeamIcon } from "~/components/ui/icons";
 import { indicatorSpring, pressMotion, tabPress } from "~/lib/motion";
+import { useScrollDirection } from "~/lib/use-scroll-direction";
+import { BAR_SLIDE, TABBAR_HIDDEN } from "./bars";
 
 const NAV_ITEMS: { to: string; label: string; end?: boolean; Icon: typeof DashboardIcon }[] = [
   { to: "/", label: "Dashboard", end: true, Icon: DashboardIcon },
@@ -17,7 +19,8 @@ const NAV_ITEMS: { to: string; label: string; end?: boolean; Icon: typeof Dashbo
  * `className` carries the shared pill styling, including its `flex`, so below md it is removed
  * with `max-md:hidden` rather than a `hidden`/`md:flex` pair that would fight that `flex`; other
  * nav props, such as the entrance's ref and animation handlers, go to that pill); `placement="bottom"`
- * is the fixed tab bar below md, whose active pill slides between tabs.
+ * is the fixed tab bar below md, whose active pill slides between tabs; it slides down out of view
+ * while the page scrolls down (see bars.ts).
  */
 export function NavBar({ placement, className = "", ...navProps }: { placement: "header" | "bottom" } & Omit<ComponentProps<"nav">, "children">) {
   const reduced = useReducedMotion();
@@ -26,6 +29,8 @@ export function NavBar({ placement, className = "", ...navProps }: { placement: 
   const tabTap = reduced ? {} : tabPress;
   // Reduced motion: the active indicator snaps instead of sliding.
   const spring = reduced ? { duration: 0 } : indicatorSpring;
+  // Called for both placements (hook order); only the tab bar uses it.
+  const hidden = useScrollDirection() === "down";
 
   if (placement === "header") {
     return (
@@ -59,8 +64,11 @@ export function NavBar({ placement, className = "", ...navProps }: { placement: 
     <nav
       aria-label="Primary"
       data-tabbar
+      data-hidden={hidden || undefined}
       // --tabbar-h (56px) of tabs; the safe area pads below them (border-box, so the height includes it).
-      className="glass fixed inset-x-3 bottom-3 z-40 flex h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] justify-around px-1 pb-[env(safe-area-inset-bottom)] md:hidden"
+      className={`glass fixed inset-x-3 bottom-3 z-40 flex h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] justify-around px-1 pb-[env(safe-area-inset-bottom)] md:hidden ${BAR_SLIDE} ${
+        hidden ? TABBAR_HIDDEN : "translate-y-0"
+      }`}
     >
       {NAV_ITEMS.map((item) => (
         <NavLink key={item.to} to={item.to} end={item.end} className="flex-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-accent">

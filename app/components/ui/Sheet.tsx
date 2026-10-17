@@ -25,6 +25,7 @@ import {
 import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
 import { isTextEntry, useCoarsePointer } from "~/lib/pointer";
+import { holdSheetOpen, openSheetCount } from "~/lib/sheet-open";
 import { backdropOpacityFor, DESKTOP_QUERY, overlayPop, overlaySpring, overlayTransition, sheetDragElastic, touchSpring, useMediaQuery } from "~/lib/motion";
 import { IconButton } from "./IconButton";
 import { CloseIcon } from "./icons";
@@ -116,16 +117,15 @@ export const INSTANT_DRAG = { type: false } as unknown as InertiaOptions;
 
 /** Id of the shell element that is made `inert` while any sheet is open (sheets portal outside it). */
 export const APP_ROOT_ID = "app-root";
-let openSheets = 0;
 /** Panels of the open sheets, oldest first; focus that escapes is recovered into the last one. */
 const sheetStack: HTMLElement[] = [];
 
 function holdAppRootInert(): () => void {
-  openSheets += 1;
+  const release = holdSheetOpen();
   document.getElementById(APP_ROOT_ID)?.setAttribute("inert", "");
   return () => {
-    openSheets -= 1;
-    if (openSheets === 0) document.getElementById(APP_ROOT_ID)?.removeAttribute("inert");
+    release();
+    if (openSheetCount() === 0) document.getElementById(APP_ROOT_ID)?.removeAttribute("inert");
   };
 }
 
