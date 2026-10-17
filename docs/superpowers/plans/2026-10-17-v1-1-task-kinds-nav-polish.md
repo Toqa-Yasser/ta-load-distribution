@@ -16,7 +16,7 @@
 - Two independent ledgers: every ledger operation uses `ws.ledgers[task.kind]`; swaps only within a kind.
 - `upgradeWorkspace` is idempotent and returns the same reference for current documents.
 - Secrets only in `*.server.ts`; `APP_URL` is the only new env var.
-- No `Co-Authored-By` trailers and no Claude/Anthropic mentions in commits or files.
+- No AI-attribution trailers or tool mentions in commits or files (user requirement).
 - ≥44px targets; every animation (incl. non-transform tweens) disabled under reduced motion; `useMounted` for markup-changing reduced-motion branches; hydration-safe; theme tokens only.
 - All mutations through `useCommand`; preview never saves.
 - `npm test`, `npm run typecheck`, `npm run build` green before every commit.
