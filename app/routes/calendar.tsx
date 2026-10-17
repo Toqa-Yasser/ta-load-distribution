@@ -82,8 +82,10 @@ export default function Calendar() {
   const shown = useRetained(current);
   // Closed for good (adjusted during render), so it can't spring back open if an undo restores it.
   if (popover?.open && current === null) setPopover({ ...popover, open: false });
-  const swapping = swapSource ? lookup(workspace, swapSource) : null;
-  // The swap source vanished (deleted elsewhere, undone): leave swap mode rather than dim everything.
+  const found = swapSource ? lookup(workspace, swapSource) : null;
+  // Seat-level: the source TA must still sit on that occurrence (an undo or reassign can move them).
+  const swapping = found?.occ.seats.some((s) => s.taId === swapSource?.taId) ? found : null;
+  // The swap source vanished (deleted elsewhere, undone, TA moved off): leave swap mode rather than dim everything.
   if (swapSource && swapping === null) setSwapSource(null);
   const closePopover = () => setPopover((p) => p && { ...p, open: false });
 

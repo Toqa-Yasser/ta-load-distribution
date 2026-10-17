@@ -44,7 +44,8 @@ export function MonthGrid({ yearMonth, tasks, taById, selected, swapSource, onSe
     if (!swapSource) return null;
     const task = tasks.find((t) => t.id === swapSource.taskId);
     const occ = task?.occurrences.find((o) => o.id === swapSource.occurrenceId);
-    return task && occ ? { task, occ, taId: swapSource.taId } : null;
+    // A stale source (the TA left that date, e.g. after an undo) is no source at all.
+    return task && occ?.seats.some((s) => s.taId === swapSource.taId) ? { task, occ, taId: swapSource.taId } : null;
   }, [tasks, swapSource]);
 
   return (

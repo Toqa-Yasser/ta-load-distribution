@@ -12,7 +12,7 @@ type DayCellProps = {
   taById: Map<string, TA>;
   selected: OccurrenceRef | null;
   swapSource: SeatRef | null;
-  /** The swap source resolved (by MonthGrid); pills with no seat it may trade with are dimmed. */
+  /** The swap source resolved (by MonthGrid); null when stale. Pills with no seat it may trade with are dimmed. */
   swapFrom: SeatSource | null;
   onSelect: (ref: OccurrenceRef) => void;
   /** Showing every pill. Owned by MonthGrid, which collapses it whenever the month changes. */
@@ -54,9 +54,9 @@ export function DayCell({
   const hiddenDesktop = entries.length - DESKTOP_MAX;
 
   const roleOf = (ref: OccurrenceRef, entry: DayEntry): SwapRole => {
-    if (!swapSource) return null;
+    if (!swapSource || !swapFrom) return null;
     if (same(swapSource, ref)) return "source";
-    return swapFrom && swappableSeats(swapFrom, entry).length > 0 ? "target" : "ineligible";
+    return swappableSeats(swapFrom, entry).length > 0 ? "target" : "ineligible";
   };
 
   return (

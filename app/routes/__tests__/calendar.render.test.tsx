@@ -227,3 +227,15 @@ test("swap mode ends when the source occurrence disappears", async () => {
   expect(pill(/^Quiz · Oct 6 · Ahmed/).className).not.toContain("opacity-40");
   expect(pill(/^Exam · Oct 8/).className).not.toContain("opacity-40");
 });
+
+test("swap mode ends when the source TA leaves the source occurrence", async () => {
+  renderAt("/calendar?m=2026-10");
+  await startSwapFrom(/^Quiz · Oct 5/);
+  expect(screen.getByRole("status")).toBeInTheDocument();
+  // The occurrence survives (e.g. an undo of a reassign) but Ahmed no longer sits on it.
+  setWs({ ...ws, tasks: ws.tasks.map((t) => (t.id === "q" ? { ...t, occurrences: t.occurrences.map((o) =>
+    o.id === "q1" ? { ...o, seats: [{ taId: "B", turn: 1 }] } : o) } : t)) });
+  await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+  expect(screen.queryByRole("button", { name: /· swapping$/ })).not.toBeInTheDocument();
+  expect(pill(/^Exam · Oct 8/).className).not.toContain("opacity-40");
+});

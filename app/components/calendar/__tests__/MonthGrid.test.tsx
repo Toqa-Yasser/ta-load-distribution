@@ -45,3 +45,13 @@ test("an expanded day collapses again after changing month and coming back", () 
   rerender(ui("2026-10"));
   expect(screen.queryByRole("button", { name: "Less" })).not.toBeInTheDocument();
 });
+
+test("MonthGrid dims nothing when the source TA is no longer on the source occurrence", () => {
+  const tasks = [{ id: "t", title: "Quiz", kind: "light", createdAt: "", schedule: { type: "one-time", date: "x" }, taCount: 1, occurrences: [
+    { id: "1", date: "2026-10-05", seats: [{ taId: "B", turn: 1 }] }, { id: "2", date: "2026-10-06", seats: [{ taId: "A", turn: 1 }] }] }];
+  render(<MonthGrid yearMonth="2026-10" tasks={tasks as any} taById={taById}
+    selected={null} swapSource={{ taskId: "t", occurrenceId: "1", taId: "A" }} onSelect={() => {}} />);
+  // Stale source: Ahmed left Oct 5, so no pill is treated as the source and none is a target.
+  expect(screen.queryByRole("button", { name: /· swapping$/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Quiz · Oct 6 · Ahmed · Light" }).className.split(/\s+/)).not.toContain("opacity-40");
+});
