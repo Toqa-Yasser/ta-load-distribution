@@ -58,8 +58,8 @@ For each pending occurrence in date order:
    capacity: when the last TA with room has taken a seat, the date's remaining seats open the next
    turn and carry its turn number. For 1-TA tasks this is exactly today's once-per-date check.
 3. Among eligible TAs not already seated on this occurrence, take the highest `remainingFraction`;
-   ties → `pick(tied, rng)`. Each pick does `used[ta]++` and appends `{ taId, turn }`. `used` never
-   exceeds capacity, so the ledger invariant (`used[ta]` = current-turn seats held) has no exceptions.
+   ties → `pick(tied, rng)`. Each pick does `used[ta]++` and appends `{ taId, turn }`. The deal never
+   pushes `used` beyond capacity, so the ledger invariant (`used[ta]` = current-turn seats held) has no exceptions.
 4. Output occurrence = `{ id, date, seats: [...kept, ...picked] }`.
 
 With `taCount === 1` and no kept seats, steps 1–4 reproduce today's algorithm exactly. The existing
