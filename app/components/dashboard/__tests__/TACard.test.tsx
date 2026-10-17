@@ -45,3 +45,19 @@ test("each Next date chip names its tasks in a tooltip", () => {
   expect(chip).toHaveAttribute("title", "Quiz, Lab");
   expect(within(chip as HTMLElement).getByText(": Quiz, Lab")).toHaveClass("sr-only");
 });
+
+test("date chips are keyboard-reachable (no button) with an inset focus ring", () => {
+  renderCard([{ date: "2026-10-18", titles: ["Quiz"] }, { date: "2026-10-20", titles: ["Lab"] }]);
+  const chips = [...document.querySelectorAll<HTMLElement>("[data-badge]")];
+  expect(chips).toHaveLength(2);
+  for (const chip of chips) {
+    expect(chip.tagName).toBe("SPAN");
+    expect(chip).toHaveAttribute("tabindex", "0");
+    expect(chip.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(["focus-visible:outline-2", "focus-visible:-outline-offset-2", "focus-visible:outline-accent"]),
+    );
+  }
+  chips[0].focus();
+  expect(chips[0]).toHaveFocus();
+  expect(screen.queryAllByRole("button").filter((b) => b.closest("dd"))).toHaveLength(0);
+});

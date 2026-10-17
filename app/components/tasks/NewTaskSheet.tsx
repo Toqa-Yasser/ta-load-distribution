@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/Button";
-import { Sheet, SheetFooter } from "~/components/ui/Sheet";
+import { Sheet, SHEET_ACTIONS, SheetFooter } from "~/components/ui/Sheet";
 import type { Command, Schedule, TaskKind, Workspace } from "~/engine/types";
 import { messageOf } from "~/lib/errors";
 import { useStepFocus } from "~/lib/focus";
@@ -44,7 +44,9 @@ function StepDots({ step }: { step: Step }) {
  * Confirm keeps the sheet open until the create command settles: success closes it (the shell
  * toasts with Undo), a failure is shown here instead of in a toast.
  */
-function Wizard({ open, initialKind, onDone, onCancel }: { open: boolean; initialKind: TaskKind; onDone: () => void; onCancel: () => void }) {
+type WizardProps = { open: boolean; initialKind: TaskKind; onDone: () => void; onCancel: () => void };
+
+function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
   const { today, workspace } = useWorkspace();
   const reduced = useReducedMotion();
   const [state, setState] = useState<{ step: Step; kind: TaskKind; title: string; notes: string; schedule: Schedule }>({
@@ -171,7 +173,7 @@ function Wizard({ open, initialKind, onDone, onCancel }: { open: boolean; initia
       )}
 
       <SheetFooter>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+        <div className={SHEET_ACTIONS}>
           <Button variant="ghost" disabled={creating} onClick={step === 0 ? onCancel : () => go((step - 1) as Step)}>
             {step === 0 ? "Cancel" : "Back"}
           </Button>

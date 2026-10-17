@@ -2,7 +2,7 @@ import { useEffect, useId, useState, type FormEvent } from "react";
 import { INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
-import { Sheet } from "~/components/ui/Sheet";
+import { Sheet, SHEET_ACTIONS } from "~/components/ui/Sheet";
 
 type PasswordDialogProps = {
   open: boolean;
@@ -39,7 +39,7 @@ export function PasswordDialog({ open, onClose, onSubmit, error, pending }: Pass
       title="Delete history"
       footer={
         // In the sticky footer, outside the form: `form` ties the submit button to it.
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+        <div className={SHEET_ACTIONS}>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>

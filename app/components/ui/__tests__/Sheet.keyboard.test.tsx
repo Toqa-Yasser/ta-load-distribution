@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { Profiler, useState } from "react";
 import { Sheet, SheetFooter } from "~/components/ui/Sheet";
 import { useStepFocus } from "~/lib/focus";
 
@@ -122,4 +122,81 @@ test("a pinch-zoomed visual viewport leaves the sheet alone", () => {
   vi.stubGlobal("visualViewport", { height: 400, offsetTop: 0, scale: 2, addEventListener() {}, removeEventListener() {} });
   render(<Sheet open onClose={() => {}} title="Zoom"><p>body</p></Sheet>);
   expect(screen.getByRole("dialog").parentElement!.style.height).toBe("");
+});
+
+test("Shift+Tab from the focused heading wraps to the last control instead of leaving the sheet", () => {
+  stubMatchMedia(["(pointer: coarse)"]);
+  render(
+    <>
+      <button type="button">Outside</button>
+      <Sheet open onClose={() => {}} title="Trap">
+        <button type="button">Inner</button>
+      </Sheet>
+    </>,
+  );
+  const heading = screen.getByRole("heading", { name: "Trap" });
+  expect(document.activeElement).toBe(heading);
+  const ev = fireEvent.keyDown(heading, { key: "Tab", shiftKey: true });
+  expect(ev).toBe(false); // default prevented: the browser does not move focus out
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Inner" }));
+});
+
+describe("keyboard fit updates", () => {
+  type Listener = () => void;
+  function stubViewport(init: { height: number; offsetTop: number }) {
+    const vv = { ...init, scale: 1, listeners: [] as Listener[], addEventListener: (_: string, l: Listener) => vv.listeners.push(l), removeEventListener() {} };
+    vi.stubGlobal("visualViewport", vv);
+    return vv;
+  }
+  function stubFrames() {
+    const queue: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => queue.push(cb));
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+    return () => act(() => queue.splice(0).forEach((cb) => cb(0)));
+  }
+
+  test("a burst of viewport events is applied once, on the next frame", () => {
+    const vv = stubViewport({ height: 400, offsetTop: 0 });
+    const flush = stubFrames();
+    render(<Sheet open onClose={() => {}} title="Fit"><p>body</p></Sheet>);
+    const container = () => screen.getByRole("dialog").parentElement!;
+    expect(container().style.height).toBe("400px");
+    act(() => {
+      for (const h of [390, 380, 370]) {
+        vv.height = h;
+        vv.listeners.forEach((l) => l());
+      }
+    });
+    expect(container().style.height).toBe("400px");
+    flush();
+    expect(container().style.height).toBe("370px");
+  });
+
+  test("events that leave the fitted region unchanged do not re-render the sheet", () => {
+    const vv = stubViewport({ height: 400, offsetTop: 0 });
+    const flush = stubFrames();
+    let commits = 0;
+    render(
+      <Profiler id="sheet" onRender={() => (commits += 1)}>
+        <Sheet open onClose={() => {}} title="Fit"><p>body</p></Sheet>
+      </Profiler>,
+    );
+    flush();
+    const before = commits;
+    for (let i = 0; i < 3; i++) {
+      act(() => vv.listeners.forEach((l) => l()));
+      flush();
+    }
+    expect(commits).toBe(before);
+  });
+});
+
+test("two-button footers share one row class: equal flex shares that never wrap their labels", async () => {
+  const { SHEET_ACTIONS } = await import("~/components/ui/Sheet");
+  const cls = SHEET_ACTIONS.split(/\s+/);
+  expect(cls).toEqual(expect.arrayContaining(["flex", "*:flex-1", "*:whitespace-nowrap", "sm:justify-end", "sm:*:flex-none"]));
+  expect(cls).not.toContain("grid-cols-2");
+  const { ConfirmDialog } = await import("~/components/ui/ConfirmDialog");
+  render(<ConfirmDialog open title="Remove?" body="x" confirmLabel="Remove" onConfirm={() => {}} onClose={() => {}} />);
+  expect(screen.getByRole("button", { name: "Remove" }).parentElement!.className).toBe(SHEET_ACTIONS);
 });

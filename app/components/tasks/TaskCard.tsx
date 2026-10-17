@@ -96,8 +96,11 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
             </div>
           </div>
           <div ref={menuRef} className="relative z-10">
+            {/* propagate tap=false: the kebab and its items claim their press, so the card does not dip
+                too (motion's press listeners are native, so a React stopPropagation could not stop it). */}
             <IconButton
               ref={triggerRef}
+              propagate={{ tap: false }}
               aria-label={`Actions for ${task.title}`}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
@@ -127,6 +130,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
                     role="menuitem"
                     tabIndex={-1}
                     whileTap={press.whileTap}
+                    propagate={{ tap: false }}
                     className={MENU_ITEM}
                     onClick={() => pick("redistribute")}
                   >
@@ -137,6 +141,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
                     role="menuitem"
                     tabIndex={-1}
                     whileTap={press.whileTap}
+                    propagate={{ tap: false }}
                     className={`${MENU_ITEM} text-danger-ink`}
                     onClick={() => pick("delete")}
                   >

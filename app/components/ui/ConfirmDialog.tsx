@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Button } from "~/components/ui/Button";
-import { Sheet } from "~/components/ui/Sheet";
+import { Sheet, SHEET_ACTIONS } from "~/components/ui/Sheet";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -20,7 +20,7 @@ export function ConfirmDialog({ open, title, body, confirmLabel, danger = false,
       onClose={onClose}
       title={title}
       footer={
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+        <div className={SHEET_ACTIONS}>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>

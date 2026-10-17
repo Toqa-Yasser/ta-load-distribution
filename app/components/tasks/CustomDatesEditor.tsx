@@ -1,7 +1,7 @@
 import { addDays, format, parseISO } from "date-fns";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { FIELD_FOCUS, INPUT_CLASS } from "~/components/ui/input";
+import { INPUT_CLASS, TEXT_FIELD_FOCUS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
 import { CloseIcon } from "~/components/ui/icons";
@@ -93,7 +93,7 @@ function DateChip({ date, onEdit, onRemove }: { date: ISODate; onEdit: (next: IS
           defaultValue={date}
           onKeyDown={onKeyDown}
           onBlur={(e) => commit(e.currentTarget.value)}
-          className={`min-h-11 rounded-l-field bg-transparent px-2 text-sm text-ink ${FIELD_FOCUS}`}
+          className={`min-h-11 rounded-l-field bg-transparent px-2 text-sm text-ink ${TEXT_FIELD_FOCUS}`}
         />
       ) : (
         <motion.button

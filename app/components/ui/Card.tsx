@@ -64,7 +64,9 @@ export function Card({ children, className = "", interactive = false, pressable 
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
       whileTap={pressable ? (reduced ? {} : cardPress) : undefined}
-      // The press gesture would otherwise make the card a tab stop; its link is the focus target.
+      // Kept on purpose: motion's press gesture gives an element without a tabindex tabIndex=0,
+      // which would add a second tab stop per card. A pressable card always holds a stretched link
+      // (TaskCard), and that link is the focus target; -1 only allows programmatic/click focus.
       tabIndex={pressable ? -1 : undefined}
       style={{ rotateX, rotateY, transformPerspective: 900 }}
       className={`glass card-lift relative ${tilting ? "will-change-transform" : ""} ${className}`}

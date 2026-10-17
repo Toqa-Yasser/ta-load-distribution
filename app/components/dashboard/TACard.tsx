@@ -74,7 +74,14 @@ export function TACard({ ta, capacity, used, counts, totalOccurrences, nextDates
               <span className="text-muted">Nothing upcoming</span>
             ) : (
               nextDates.map(({ date, titles }) => (
-                <Badge key={date} tone="plain" title={titles.join(", ")} className="tabular-nums">
+                // Focusable so the tooltip opens from the keyboard too; the inset ring matches form controls.
+                <Badge
+                  key={date}
+                  tone="plain"
+                  title={titles.join(", ")}
+                  tabIndex={0}
+                  className="tabular-nums focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+                >
                   {fmtDate(date)}
                   <span className="sr-only">: {titles.join(", ")}</span>
                 </Badge>

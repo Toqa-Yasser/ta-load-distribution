@@ -24,7 +24,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
-import { isCoarsePointer, isTextEntry } from "~/lib/pointer";
+import { isTextEntry, useCoarsePointer } from "~/lib/pointer";
 import { backdropOpacityFor, overlayPop, overlaySpring, overlayTransition, sheetDragElastic, touchSpring } from "~/lib/motion";
 import { IconButton } from "./IconButton";
 import { CloseIcon } from "./icons";
@@ -42,6 +42,13 @@ type SheetProps = {
    */
   footer?: ReactNode;
 };
+
+/**
+ * Row for a footer's two buttons (Cancel + action). Below sm they split the row in equal flex
+ * shares but never wrap a label: a longer label ("Delete all history") takes the extra width it
+ * needs at 320px instead of breaking onto two lines. From sm they sit at natural width, right-aligned.
+ */
+export const SHEET_ACTIONS = "flex gap-2 *:flex-1 *:whitespace-nowrap sm:justify-end sm:*:flex-none";
 
 type FooterSlot = { el: HTMLElement | null; claim: () => () => void };
 const FooterSlotContext = createContext<FooterSlot | null>(null);
@@ -65,17 +72,32 @@ function useKeyboardFit(open: boolean): CSSProperties | undefined {
   useEffect(() => {
     const vv = typeof window !== "undefined" ? window.visualViewport : null;
     if (!open || !vv) return;
+    // The last region applied; an unchanged one is not set again (no re-render).
+    let last: { top: number; height: number } | null = null;
     const update = () => {
       const covered = window.innerHeight - vv.height;
       const zoomed = Math.abs(vv.scale - 1) > 0.01;
-      setFit(!zoomed && (covered > 1 || vv.offsetTop > 1) ? { top: vv.offsetTop, height: vv.height } : null);
+      const next = !zoomed && (covered > 1 || vv.offsetTop > 1) ? { top: vv.offsetTop, height: vv.height } : null;
+      if (next?.top === last?.top && next?.height === last?.height) return;
+      last = next;
+      setFit(next);
+    };
+    // Viewport events fire many times per frame while the keyboard slides; apply the last one per frame.
+    let frame = 0;
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
     };
     update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
+    vv.addEventListener("resize", schedule);
+    vv.addEventListener("scroll", schedule);
     return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
+      vv.removeEventListener("resize", schedule);
+      vv.removeEventListener("scroll", schedule);
+      if (frame) cancelAnimationFrame(frame);
       setFit(null);
     };
   }, [open]);
@@ -140,6 +162,8 @@ export function Sheet({ open, onClose, title, side = "center", children, footer 
   const panelRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const keyboardFit = useKeyboardFit(open);
+  // Read by the focus effect when the sheet opens (false only while hydrating, before any sheet can open).
+  const coarse = useCoarsePointer();
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
   const [footerClaims, setFooterClaims] = useState(0);
   const footerSlot = useMemo<FooterSlot>(
@@ -174,7 +198,7 @@ export function Sheet({ open, onClose, title, side = "center", children, footer 
     const opener = document.activeElement as HTMLElement | null;
     const panel = panelRef.current;
     if (panel && !panel.contains(opener)) {
-      const target = isCoarsePointer() ? headingRef.current : panel.querySelector<HTMLElement>("[data-autofocus]");
+      const target = coarse ? headingRef.current : panel.querySelector<HTMLElement>("[data-autofocus]");
       (target ?? panel).focus();
     }
     return () => {
@@ -234,7 +258,9 @@ export function Sheet({ open, onClose, title, side = "center", children, footer 
     const first = items[0];
     const last = items[items.length - 1];
     const active = document.activeElement;
-    if (e.shiftKey && (active === first || active === panelRef.current)) {
+    // Shift+Tab from the first control, or from a non-tabbable focus target (the panel, the heading
+    // focused on open), would otherwise leave the sheet.
+    if (e.shiftKey && (active === first || !items.includes(active as HTMLElement))) {
       e.preventDefault();
       last.focus();
     } else if (!e.shiftKey && active === last) {

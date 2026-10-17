@@ -14,3 +14,15 @@ test.each([
   expect(cls).toContain("aria-[invalid=true]:border-danger");
   expect(cls).toContain("aria-[invalid=true]:focus-visible:outline-danger");
 });
+
+// Safari leaves :focus-visible unmatched on a clicked <input type="date">, so text and date fields
+// draw the same inset ring on plain :focus too. Select keeps focus-visible only (no ring on click).
+test("text and date fields ring on :focus as well as :focus-visible", () => {
+  const cls = INPUT_CLASS.split(/\s+/);
+  for (const c of ["focus:outline-2", "focus:-outline-offset-2", "focus:outline-accent", "focus:border-transparent", "aria-[invalid=true]:focus:outline-danger"]) {
+    expect(cls).toContain(c);
+  }
+  expect(cls).toContain("focus-visible:outline-accent");
+  render(<Select aria-label="Pick"><option>A</option></Select>);
+  expect(screen.getByLabelText("Pick").className).not.toMatch(/(^|\s)focus:/);
+});

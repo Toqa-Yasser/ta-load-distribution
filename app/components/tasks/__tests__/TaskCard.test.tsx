@@ -77,3 +77,36 @@ test("ArrowUp on the trigger opens the menu on its last item", async () => {
   fireEvent.keyDown(screen.getByRole("button", { name: "Actions for Quiz" }), { key: "ArrowUp" });
   await waitFor(() => expect(document.activeElement).toBe(screen.getAllByRole("menuitem").at(-1)));
 });
+
+describe("pressing the kebab or a menu item does not press the card", () => {
+  beforeAll(async () => {
+    (await import("motion/react")).MotionGlobalConfig.instantAnimations = true;
+  });
+  afterAll(async () => {
+    (await import("motion/react")).MotionGlobalConfig.instantAnimations = false;
+  });
+  const press = async (el: HTMLElement) => {
+    fireEvent.pointerDown(el, { isPrimary: true, button: 0, pointerType: "mouse" });
+    await new Promise((r) => setTimeout(r, 30));
+  };
+  const cardOf = (el: HTMLElement) => el.closest<HTMLElement>(".card-lift")!;
+
+  test("the card itself still dips; the kebab and its items claim their own press", async () => {
+    render(
+      <MemoryRouter>
+        <TaskCard task={task} onRedistribute={() => {}} onDelete={() => {}} />
+      </MemoryRouter>,
+    );
+    const trigger = screen.getByRole("button", { name: "Actions for Quiz" });
+    const card = cardOf(trigger);
+    await press(trigger);
+    expect(card.style.transform).not.toContain("scale");
+    fireEvent.pointerUp(window);
+    fireEvent.click(trigger);
+    await press(screen.getByRole("menuitem", { name: "Delete" }));
+    expect(card.style.transform).not.toContain("scale");
+    fireEvent.pointerUp(window);
+    await press(screen.getByRole("link", { name: "Quiz" }));
+    expect(card.style.transform).toContain("scale(0.98)");
+  });
+});
