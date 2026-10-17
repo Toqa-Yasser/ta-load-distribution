@@ -1,5 +1,5 @@
 import { reduce } from "~/engine/reducer";
-import type { Workspace } from "~/engine/types";
+import { NotEnoughTAsError, type Workspace } from "~/engine/types";
 import { ctx, team } from "./fixtures";
 
 const total = (ws: Workspace) => Object.values(ws.ledgers.light.used).reduce((a, b) => a + b, 0);
@@ -81,4 +81,17 @@ test("setSemester extension deals new dates with the task's taCount", () => {
     expect(o.seats).toHaveLength(2);
     expect(new Set(o.seats.map((s) => s.taId)).size).toBe(2);
   }
+});
+
+test("setSemester extension names the task when too few TAs have sections", () => {
+  const { ws: base } = team();
+  let ws = withSemester(base, "2026-10-01", "2026-10-14");
+  ws = reduce(ws, { type: "createTask", kind: "light", title: "Pair", taCount: 2, schedule: { type: "weekly", start: "2026-10-01", end: null } }, ctx);
+  for (const s of ws.sections.slice(0, 3)) {
+    for (const slot of [0, 1] as const) ws = reduce(ws, { type: "setSectionSlot", sectionId: s.id, slot, taId: null }, ctx);
+  }
+  const before = structuredClone(ws);
+  expect(() => withSemester(ws, "2026-10-01", "2026-10-28")).toThrow(new NotEnoughTAsError(2, 1, "Pair"));
+  expect(() => withSemester(ws, "2026-10-01", "2026-10-28")).toThrow('"Pair" needs 2 TAs on each date but only 1 has sections.');
+  expect(ws).toEqual(before);
 });

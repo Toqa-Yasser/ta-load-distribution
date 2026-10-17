@@ -212,6 +212,20 @@ test("redistributeAll is atomic", () => {
   }
   const before = structuredClone(narrow);
   expect(() => reduce(narrow, { type: "redistributeAll" }, ctx)).toThrow(NotEnoughTAsError);
+  expect(() => reduce(narrow, { type: "redistributeAll" }, ctx)).toThrow('"Pair" needs 2 TAs on each date but only 1 has sections.');
+  expect(narrow).toEqual(before);
+});
+test("redistributeTask names the task when too few TAs have sections", () => {
+  const { ws } = team();
+  const t = pair(ws, 3);
+  let narrow = t;
+  for (const s of t.sections.slice(0, 3)) {
+    for (const slot of [0, 1] as const) narrow = reduce(narrow, { type: "setSectionSlot", sectionId: s.id, slot, taId: null }, ctx);
+  }
+  const before = structuredClone(narrow);
+  const cmd: Command = { type: "redistributeTask", taskId: t.tasks[0].id };
+  expect(() => reduce(narrow, cmd, ctx)).toThrow(new NotEnoughTAsError(2, 1, "Pair"));
+  expect(() => reduce(narrow, cmd, ctx)).toThrow('"Pair" needs 2 TAs on each date but only 1 has sections.');
   expect(narrow).toEqual(before);
 });
 test("swapOccurrences trades one seat and keeps turns with the seat", () => {

@@ -83,9 +83,21 @@ export class NoCapacityError extends EngineError {
   }
 }
 
+/**
+ * Fewer TAs hold section slots than a date asks for. Without `taskTitle` (the wizard, where the
+ * task is in view) the message says "This task"; paths acting on existing tasks name it.
+ */
 export class NotEnoughTAsError extends EngineError {
-  constructor(public readonly needed: number, public readonly available: number) {
-    super(`This task needs ${needed} TAs but only ${available} ${available === 1 ? "has" : "have"} sections.`, "NOT_ENOUGH_TAS");
+  constructor(
+    public readonly needed: number,
+    public readonly available: number,
+    public readonly taskTitle?: string,
+  ) {
+    const rest = `but only ${available} ${available === 1 ? "has" : "have"} sections.`;
+    super(
+      taskTitle === undefined ? `This task needs ${needed} TAs ${rest}` : `"${taskTitle}" needs ${needed} TAs on each date ${rest}`,
+      "NOT_ENOUGH_TAS",
+    );
     this.name = "NotEnoughTAsError";
   }
 }

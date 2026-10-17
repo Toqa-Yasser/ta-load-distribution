@@ -1,4 +1,6 @@
-import { reduce, describe as describeCmd } from "~/engine/reducer";
+import { reduce, describe as describeCmd, testContext } from "~/engine/reducer";
+import { assignOccurrences, refundSeats } from "~/engine/distribute";
+import { seededRng } from "~/engine/rng";
 import { emptyWorkspace } from "~/engine/empty";
 import { capacities } from "~/engine/capacity";
 import { ValidationError, NoCapacityError, NotEnoughTAsError, type Command } from "~/engine/types";
@@ -141,6 +143,8 @@ test("removeTA is rejected when a seat cannot be refilled", () => {
   ], w);
   const before = structuredClone(w);
   expect(() => reduce(w, { type: "removeTA", taId: w.tas[0].id }, ctx)).toThrow(NotEnoughTAsError);
+  expect(() => reduce(w, { type: "removeTA", taId: w.tas[0].id }, ctx)).toThrow(new NotEnoughTAsError(2, 1, "Pair"));
+  expect(() => reduce(w, { type: "removeTA", taId: w.tas[0].id }, ctx)).toThrow('"Pair" needs 2 TAs on each date but only 1 has sections.');
   expect(w).toEqual(before);
 });
 test("describe labels co-staffed tasks", () => {
@@ -148,4 +152,33 @@ test("describe labels co-staffed tasks", () => {
   const schedule = { type: "one-time", date: "2026-10-01" } as const;
   expect(describeCmd({ type: "createTask", kind: "heavy", title: "Lab", taCount: 2, schedule }, ws)).toBe('Added heavy task "Lab" for 2 TAs');
   expect(describeCmd({ type: "createTask", kind: "heavy", title: "Lab", taCount: 1, schedule }, ws)).toBe('Added heavy task "Lab"');
+});
+
+test("removeTA refills orphaned dates in date order across tasks, like one date-sorted deal", () => {
+  const { ws, id } = team();
+  // Two 1-TA tasks whose dates interleave: X on Oct 1, 8, 15, …; Y on Oct 4, 11, 18, ….
+  let w = reduce(ws, { type: "createTask", kind: "light", title: "X", schedule: { type: "weekly", start: "2026-10-01", end: "2026-11-30" } }, ctx);
+  w = reduce(w, { type: "createTask", kind: "light", title: "Y", schedule: { type: "weekly", start: "2026-10-04", end: "2026-11-30" } }, ctx);
+  const D = id("D");
+  const orphans = w.tasks
+    .flatMap((t) => t.occurrences.filter((o) => o.seats.some((s) => s.taId === D)))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  // The fixture only proves something if D's dates interleave across both tasks.
+  const owner = (occId: string) => w.tasks.find((t) => t.occurrences.some((o) => o.id === occId))!.title;
+  expect(new Set(orphans.map((o) => owner(o.id)))).toEqual(new Set(["X", "Y"]));
+  expect(orphans.map((o) => owner(o.id))).not.toEqual([...orphans.map((o) => owner(o.id))].sort());
+
+  const out = reduce(w, { type: "removeTA", taId: D }, testContext(7));
+  const used = { ...refundSeats(w.ledgers.light, orphans.flatMap((o) => o.seats)).used };
+  delete used[D];
+  const expected = assignOccurrences({
+    capacities: capacities(out),
+    ledger: { turn: w.ledgers.light.turn, used },
+    occurrences: orphans.map((o) => ({ id: o.id, date: o.date })),
+    taCount: 1,
+    rng: seededRng(7),
+  });
+  const refilled = new Map(out.tasks.flatMap((t) => t.occurrences).map((o) => [o.id, o]));
+  expect(orphans.map((o) => refilled.get(o.id))).toEqual(expected.occurrences);
+  expect(out.ledgers.light).toEqual(expected.ledger);
 });

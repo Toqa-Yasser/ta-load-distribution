@@ -120,6 +120,11 @@ test("NotEnoughTAsError says 'has' for a single TA", () => {
   expect(new NotEnoughTAsError(2, 1).message).toBe("This task needs 2 TAs but only 1 has sections.");
   expect(new NotEnoughTAsError(2, 1)).toMatchObject({ code: "NOT_ENOUGH_TAS", needed: 2, available: 1 });
 });
+test("NotEnoughTAsError names the task when given its title", () => {
+  expect(new NotEnoughTAsError(2, 1, "Lab").message).toBe('"Lab" needs 2 TAs on each date but only 1 has sections.');
+  expect(new NotEnoughTAsError(3, 2, "Lab").message).toBe('"Lab" needs 3 TAs on each date but only 2 have sections.');
+  expect(new NotEnoughTAsError(3, 2, "Lab")).toMatchObject({ code: "NOT_ENOUGH_TAS", needed: 3, available: 2, taskTitle: "Lab" });
+});
 test("no capacity anywhere still throws NoCapacityError even with taCount 2", () => {
   expect(() => assignOccurrences({ capacities: { A: 0, B: 0 }, ledger: { turn: 1, used: {} }, occurrences: occ(1), taCount: 2, rng: seededRng(1) })).toThrow(NoCapacityError);
 });
