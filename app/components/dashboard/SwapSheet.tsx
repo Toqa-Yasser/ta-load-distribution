@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { KindBadge } from "~/components/tasks/KindBadge";
 import { Button } from "~/components/ui/Button";
-import { Sheet, SheetFooter } from "~/components/ui/Sheet";
+import { Sheet } from "~/components/ui/Sheet";
 import type { Occurrence, OccurrenceRef, TA, Task } from "~/engine/types";
 import { useStepFocus } from "~/lib/focus";
 import { fmtDateLong } from "~/lib/format";
@@ -145,13 +145,11 @@ function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: OccurrenceRe
           </motion.div>
         </AnimatePresence>
       </div>
-      <SheetFooter>
-        <div className="flex justify-end">
-          <Button variant="ghost" onClick={step === 0 ? onCancel : back}>
-            {step === 0 ? "Cancel" : "Back"}
-          </Button>
-        </div>
-      </SheetFooter>
+      <div className="flex justify-end">
+        <Button variant="ghost" onClick={step === 0 ? onCancel : back}>
+          {step === 0 ? "Cancel" : "Back"}
+        </Button>
+      </div>
     </div>
   );
 }

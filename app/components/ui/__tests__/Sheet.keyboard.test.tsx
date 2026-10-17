@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Profiler, useState } from "react";
-import { Sheet, SheetFooter } from "~/components/ui/Sheet";
+import { Sheet } from "~/components/ui/Sheet";
 import { useStepFocus } from "~/lib/focus";
 
 /** A matchMedia where only the listed queries match. */
@@ -38,40 +38,32 @@ test("on a fine pointer data-autofocus is honoured", () => {
   expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Title" }));
 });
 
-test("footer renders outside the scroll body", () => {
-  render(
-    <Sheet open onClose={() => {}} title="Sure?" footer={<button type="button">Go</button>}>
-      <p>body</p>
-    </Sheet>,
-  );
+test("action rows render at the end of the scroll body: no pinned footer", async () => {
+  const { ConfirmDialog } = await import("~/components/ui/ConfirmDialog");
+  render(<ConfirmDialog open title="Remove?" body="Gone for good." confirmLabel="Remove" onConfirm={() => {}} onClose={() => {}} />);
   const body = document.querySelector<HTMLElement>(".overflow-y-auto")!;
-  const footer = document.querySelector<HTMLElement>("[data-sheet-footer]")!;
-  expect(body).toContainElement(screen.getByText("body"));
-  expect(footer).toContainElement(screen.getByRole("button", { name: "Go" }));
-  expect(body.contains(footer)).toBe(false);
-  expect(footer.parentElement).toBe(body.parentElement);
-  expect(footer.hidden).toBe(false);
+  const row = screen.getByRole("button", { name: "Remove" }).parentElement!;
+  expect(body).toContainElement(row);
+  expect(row.nextElementSibling).toBeNull(); // last in the body content
+  expect(document.querySelector("[data-sheet-footer]")).toBeNull();
+  // The body keeps its bottom padding, and the panel the safe area.
+  expect(body.className.split(/\s+/)).toContain("pb-5");
+  expect(screen.getByRole("dialog").className).toContain("pb-[env(safe-area-inset-bottom)]");
 });
 
-test("SheetFooter from inside the body renders into the footer slot", () => {
-  render(
-    <Sheet open onClose={() => {}} title="Wizard">
-      <p>step</p>
-      <SheetFooter>
-        <button type="button">Next</button>
-      </SheetFooter>
-    </Sheet>,
-  );
+test("the password dialog's buttons sit inside its form, in the body", async () => {
+  const { PasswordDialog } = await import("~/components/history/PasswordDialog");
+  render(<PasswordDialog open onClose={() => {}} onSubmit={async () => true} error={undefined} pending={false} />);
   const body = document.querySelector<HTMLElement>(".overflow-y-auto")!;
-  const footer = document.querySelector<HTMLElement>("[data-sheet-footer]")!;
-  expect(footer).toContainElement(screen.getByRole("button", { name: "Next" }));
-  expect(body.contains(screen.getByRole("button", { name: "Next" }))).toBe(false);
-  expect(footer.hidden).toBe(false);
+  const submit = screen.getByRole("button", { name: "Delete all history" });
+  expect(body).toContainElement(submit);
+  expect(submit.closest("form")).not.toBeNull();
+  expect(submit).not.toHaveAttribute("form");
 });
 
-test("a sheet without a footer keeps the slot hidden", () => {
-  render(<Sheet open onClose={() => {}} title="Plain"><p>body</p></Sheet>);
-  expect(document.querySelector<HTMLElement>("[data-sheet-footer]")?.hidden ?? true).toBe(true);
+test("Sheet no longer exports SheetFooter", async () => {
+  const mod = await import("~/components/ui/Sheet");
+  expect("SheetFooter" in mod).toBe(false);
 });
 
 function Steps() {
@@ -191,7 +183,7 @@ describe("keyboard fit updates", () => {
   });
 });
 
-test("two-button footers share one row class: equal flex shares that never wrap their labels", async () => {
+test("two-button action rows share one row class: equal flex shares that never wrap their labels", async () => {
   const { SHEET_ACTIONS } = await import("~/components/ui/Sheet");
   const cls = SHEET_ACTIONS.split(/\s+/);
   expect(cls).toEqual(expect.arrayContaining(["flex", "*:flex-1", "*:whitespace-nowrap", "sm:justify-end", "sm:*:flex-none"]));

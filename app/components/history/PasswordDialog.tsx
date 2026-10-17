@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
@@ -18,7 +18,6 @@ type PasswordDialogProps = {
 export function PasswordDialog({ open, onClose, onSubmit, error, pending }: PasswordDialogProps) {
   const [password, setPassword] = useState("");
   const [failed, setFailed] = useState(false);
-  const formId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -33,23 +32,8 @@ export function PasswordDialog({ open, onClose, onSubmit, error, pending }: Pass
   };
 
   return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title="Delete history"
-      footer={
-        // In the sticky footer, outside the form: `form` ties the submit button to it.
-        <div className={SHEET_ACTIONS}>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" form={formId} variant="danger" disabled={!password} loading={pending}>
-            Delete all history
-          </Button>
-        </div>
-      }
-    >
-      <form id={formId} onSubmit={submit} className="flex flex-col gap-4">
+    <Sheet open={open} onClose={onClose} title="Delete history">
+      <form onSubmit={submit} className="flex flex-col gap-4">
         <p className="text-muted">
           Every snapshot is deleted for good, including the ones Undo uses. The current state is kept.
         </p>
@@ -66,6 +50,14 @@ export function PasswordDialog({ open, onClose, onSubmit, error, pending }: Pass
             }}
           />
         </Field>
+        <div className={`${SHEET_ACTIONS} pt-1`}>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="danger" disabled={!password} loading={pending}>
+            Delete all history
+          </Button>
+        </div>
       </form>
     </Sheet>
   );

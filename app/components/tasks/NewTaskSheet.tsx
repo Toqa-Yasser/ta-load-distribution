@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/Button";
-import { Sheet, SHEET_ACTIONS, SheetFooter } from "~/components/ui/Sheet";
+import { Sheet, SHEET_ACTIONS } from "~/components/ui/Sheet";
 import type { Command, Schedule, TaskKind, Workspace } from "~/engine/types";
 import { messageOf } from "~/lib/errors";
 import { useStepFocus } from "~/lib/focus";
@@ -172,22 +172,20 @@ function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
         </p>
       )}
 
-      <SheetFooter>
-        <div className={SHEET_ACTIONS}>
-          <Button variant="ghost" disabled={creating} onClick={step === 0 ? onCancel : () => go((step - 1) as Step)}>
-            {step === 0 ? "Cancel" : "Back"}
+      <div className={SHEET_ACTIONS}>
+        <Button variant="ghost" disabled={creating} onClick={step === 0 ? onCancel : () => go((step - 1) as Step)}>
+          {step === 0 ? "Cancel" : "Back"}
+        </Button>
+        {step < 2 ? (
+          <Button disabled={!valid} onClick={next}>
+            Next
           </Button>
-          {step < 2 ? (
-            <Button disabled={!valid} onClick={next}>
-              Next
-            </Button>
-          ) : (
-            <Button disabled={!previewWs} loading={loading || creating} onClick={confirm}>
-              Confirm
-            </Button>
-          )}
-        </div>
-      </SheetFooter>
+        ) : (
+          <Button disabled={!previewWs} loading={loading || creating} onClick={confirm}>
+            Confirm
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

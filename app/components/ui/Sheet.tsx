@@ -10,12 +10,8 @@ import {
   type PanInfo,
 } from "motion/react";
 import {
-  createContext,
-  useContext,
   useEffect,
   useId,
-  useLayoutEffect,
-  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -37,32 +33,16 @@ type SheetProps = {
   title: string;
   /** Desktop placement: a centred dialog (default) or a full-height slide-over from the right. */
   side?: "center" | "right";
+  /** Content of the scrolling body; an action row goes last (see SHEET_ACTIONS). */
   children: ReactNode;
-  /**
-   * Actions pinned below the scrolling body, so they stay in view when the on-screen keyboard
-   * shrinks the sheet. Content whose state lives inside the body can use <SheetFooter> instead.
-   */
-  footer?: ReactNode;
 };
 
 /**
- * Row for a footer's two buttons (Cancel + action). Below sm they split the row in equal flex
+ * Row for a sheet's two action buttons, at the end of its body (Cancel + action). Below sm they split the row in equal flex
  * shares but never wrap a label: a longer label ("Delete all history") takes the extra width it
  * needs at 320px instead of breaking onto two lines. From sm they sit at natural width, right-aligned.
  */
 export const SHEET_ACTIONS = "flex gap-2 *:flex-1 *:whitespace-nowrap sm:justify-end sm:*:flex-none";
-
-type FooterSlot = { el: HTMLElement | null; claim: () => () => void };
-const FooterSlotContext = createContext<FooterSlot | null>(null);
-
-/** Renders its children into the enclosing Sheet's footer (see Sheet's `footer`). */
-export function SheetFooter({ children }: { children: ReactNode }) {
-  const slot = useContext(FooterSlotContext);
-  const claim = slot?.claim;
-  // Sheets render only on the client, so the layout effect never runs on the server.
-  useLayoutEffect(() => claim?.(), [claim]);
-  return slot?.el ? createPortal(children, slot.el) : null;
-}
 
 /**
  * Where the visual viewport is smaller than the layout viewport (iOS Safari with the keyboard up,
@@ -139,7 +119,7 @@ function holdAppRootInert(): () => void {
  * and the app root is `inert` (counted, so stacked sheets release it only when the last closes);
  * focus returns to the opener on close.
  */
-export function Sheet({ open, onClose, title, side = "center", children, footer }: SheetProps) {
+export function Sheet({ open, onClose, title, side = "center", children }: SheetProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const desktop = useMediaQuery(DESKTOP_QUERY);
@@ -151,19 +131,6 @@ export function Sheet({ open, onClose, title, side = "center", children, footer 
   const keyboardFit = useKeyboardFit(open);
   // Read by the focus effect when the sheet opens (false only while hydrating, before any sheet can open).
   const coarse = useCoarsePointer();
-  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
-  const [footerClaims, setFooterClaims] = useState(0);
-  const footerSlot = useMemo<FooterSlot>(
-    () => ({
-      el: footerEl,
-      claim: () => {
-        setFooterClaims((n) => n + 1);
-        return () => setFooterClaims((n) => n - 1);
-      },
-    }),
-    [footerEl],
-  );
-  const hasFooter = footer != null || footerClaims > 0;
   // The bottom sheet's drag offset; the backdrop fades out as it nears the dismiss distance.
   // Enter/exit animate y in percent (a string), which leaves the backdrop to its own fade.
   const panelY = useMotionValue<number | string>(0);
@@ -336,10 +303,8 @@ export function Sheet({ open, onClose, title, side = "center", children, footer 
             dragTransition={reduced ? INSTANT_DRAG : undefined}
             onDragEnd={onDragEnd}
             // min(…, 100%): never taller than the container, which shrinks to the visible region
-            // when useKeyboardFit applies. The footer carries the safe-area padding when present.
-            className={`glass relative flex max-h-[min(90dvh,100%)] w-full flex-col rounded-b-none outline-none md:rounded-card md:pb-0 ${
-              hasFooter ? "" : "pb-[env(safe-area-inset-bottom)]"
-            } ${
+            // when useKeyboardFit applies.
+            className={`glass relative flex max-h-[min(90dvh,100%)] w-full flex-col rounded-b-none pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:pb-0 ${
               side === "right" ? "md:max-h-none md:max-w-md" : "md:max-w-lg"
             }`}
           >
@@ -373,17 +338,9 @@ export function Sheet({ open, onClose, title, side = "center", children, footer 
               onFocusCapture={(e) => {
                 if (isTextEntry(e.target)) revealSoon(e.target);
               }}
-              className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-1 ${hasFooter ? "pb-3" : "pb-5"}`}
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-1"
             >
-              <FooterSlotContext.Provider value={footerSlot}>{children}</FooterSlotContext.Provider>
-            </div>
-            <div
-              ref={setFooterEl}
-              data-sheet-footer
-              hidden={!hasFooter}
-              className="shrink-0 border-t border-line bg-surface/80 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-            >
-              {footer}
+              {children}
             </div>
           </motion.div>
         </div>

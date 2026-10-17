@@ -15,11 +15,9 @@ type ConfirmDialogProps = {
 /** Yes/no confirmation on top of Sheet; the confirm button takes focus on open (fine pointers). */
 export function ConfirmDialog({ open, title, body, confirmLabel, danger = false, onConfirm, onClose }: ConfirmDialogProps) {
   return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={title}
-      footer={
+    <Sheet open={open} onClose={onClose} title={title}>
+      <div className="flex flex-col gap-5">
+        <div className="text-muted">{body}</div>
         <div className={SHEET_ACTIONS}>
           <Button variant="ghost" onClick={onClose}>
             Cancel
@@ -28,9 +26,7 @@ export function ConfirmDialog({ open, title, body, confirmLabel, danger = false,
             {confirmLabel}
           </Button>
         </div>
-      }
-    >
-      <div className="text-muted">{body}</div>
+      </div>
     </Sheet>
   );
 }
