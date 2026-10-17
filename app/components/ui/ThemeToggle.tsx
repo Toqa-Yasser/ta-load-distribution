@@ -1,64 +1,61 @@
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef } from "react";
+import { useId, useState } from "react";
+import { EASE_OUT } from "~/lib/motion";
 import { useTheme } from "~/lib/theme";
 import { IconButton } from "./IconButton";
 
 const RAYS = [0, 45, 90, 135, 180, 225, 270, 315];
 
-/** Sun that morphs into a crescent moon: the core grows, a mask bites it, the rays retract. */
+/**
+ * Sun / moon theme switch. Both icons are always rendered in the same 20px box and CSS picks one
+ * through the `dark` variant ([data-theme=dark], set by the init script before first paint), so
+ * the right icon shows on the very first frame — no flash of the server's default while theme
+ * state syncs after hydration, and the markup never depends on the theme (no hydration mismatch).
+ * Only a user toggle animates: the icon pair is re-keyed and spins in (skipped under reduced
+ * motion). The label is text from state, which may lag a frame without anything visible changing.
+ */
 export function ThemeToggle() {
   const { resolved, setPref } = useTheme();
   const dark = resolved === "dark";
   const reduced = useReducedMotion();
-  // The first client render shows the server's default icon; snap (don't morph) to the
-  // real theme once state syncs after hydration, then animate real toggles only.
-  const live = useRef(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => (live.current = true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-  const t = { duration: reduced || !live.current ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] as const };
+  const maskId = `theme-moon-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  // 0 until the first click: the initial render never animates.
+  const [toggles, setToggles] = useState(0);
 
   return (
     <IconButton
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
       title={dark ? "Light theme" : "Dark theme"}
-      onClick={() => setPref(dark ? "light" : "dark")}
+      onClick={() => {
+        setToggles((n) => n + 1);
+        // Read the applied theme, not state: right even before state has synced.
+        const appliedDark = document.documentElement.dataset.theme === "dark";
+        setPref(appliedDark ? "light" : "dark");
+      }}
     >
-      <motion.svg
-        viewBox="0 0 24 24"
-        className="size-5"
-        initial={false}
-        animate={{ rotate: dark ? 40 : 90 }}
-        transition={t}
+      <motion.span
+        key={toggles}
+        className="grid size-5 place-items-center"
+        initial={toggles === 0 || reduced ? false : { rotate: -90, scale: 0.6 }}
+        animate={{ rotate: 0, scale: 1 }}
+        transition={{ duration: 0.45, ease: EASE_OUT }}
       >
-        <mask id="theme-toggle-moon">
-          <rect width="24" height="24" fill="white" />
-          <motion.circle initial={false} animate={{ cx: dark ? 17 : 30, cy: dark ? 7 : -4 }} transition={t} r="6" fill="black" />
-        </mask>
-        <motion.circle
-          cx="12"
-          cy="12"
-          fill="currentColor"
-          mask="url(#theme-toggle-moon)"
-          initial={false}
-          animate={{ r: dark ? 8 : 4.5 }}
-          transition={t}
-        />
-        <motion.g
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          initial={false}
-          animate={{ opacity: dark ? 0 : 1, scale: dark ? 0.5 : 1 }}
-          style={{ originX: "12px", originY: "12px" }}
-          transition={t}
-        >
-          {RAYS.map((deg) => (
-            <line key={deg} x1="12" y1="2.5" x2="12" y2="4.5" transform={`rotate(${deg} 12 12)`} />
-          ))}
-        </motion.g>
-      </motion.svg>
+        <svg data-icon="sun" aria-hidden viewBox="0 0 24 24" className="size-5 dark:hidden">
+          <circle cx="12" cy="12" r="4.5" fill="currentColor" />
+          <g stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            {RAYS.map((deg) => (
+              <line key={deg} x1="12" y1="2.5" x2="12" y2="4.5" transform={`rotate(${deg} 12 12)`} />
+            ))}
+          </g>
+        </svg>
+        <svg data-icon="moon" aria-hidden viewBox="0 0 24 24" className="hidden size-5 dark:block">
+          <mask id={maskId}>
+            <rect width="24" height="24" fill="white" />
+            <circle cx="17" cy="7" r="6" fill="black" />
+          </mask>
+          <circle cx="12" cy="12" r="8" fill="currentColor" mask={`url(#${maskId})`} transform="rotate(40 12 12)" />
+        </svg>
+      </motion.span>
     </IconButton>
   );
 }
