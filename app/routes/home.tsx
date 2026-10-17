@@ -44,21 +44,25 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
+      <header className="flex flex-col gap-4">
         <h1 className="text-display font-semibold">Dashboard</h1>
-        {tas.length > 0 && (
-          <div className="flex flex-col gap-3 md:flex-row md:gap-8">
-            {(turnSize === 0 ? TASK_KINDS.slice(0, 1) : TASK_KINDS).map((kind) => (
-              <TurnHeader
-                key={kind}
-                kind={kind}
-                turn={workspace.ledgers[kind].turn}
-                usedUnits={usedUnits(kind)}
-                turnSize={turnSize}
-              />
-            ))}
-          </div>
-        )}
+        {tas.length > 0 &&
+          (turnSize === 0 ? (
+            <TurnHeader kind="light" turn={1} usedUnits={0} turnSize={0} />
+          ) : (
+            // Two equal stat tiles, one per kind (each kind keeps its own turn).
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {TASK_KINDS.map((kind) => (
+                <TurnHeader
+                  key={kind}
+                  kind={kind}
+                  turn={workspace.ledgers[kind].turn}
+                  usedUnits={usedUnits(kind)}
+                  turnSize={turnSize}
+                />
+              ))}
+            </div>
+          ))}
       </header>
 
       {tas.length === 0 ? (

@@ -32,6 +32,14 @@ test("Timeline badges today and tomorrow only", () => {
   expect(within(row("Oct 18")).queryByText(/Today|Tomorrow/)).not.toBeInTheDocument();
 });
 
+test("the TA chip sits right after the kind badge, not at the far end of the row", () => {
+  render(<Timeline tasks={[task(["2026-10-16"], "heavy", "Exam")]} taById={taById} today="2026-10-16" />);
+  const badge = screen.getByText("Heavy", { selector: "[data-badge]" });
+  const owner = screen.getByText("Ahmed").closest("[data-badge]");
+  expect(owner).not.toBeNull();
+  expect(badge.nextElementSibling).toBe(owner);
+});
+
 test("Timeline rows carry the task's kind badge", () => {
   render(<Timeline tasks={[task(["2026-10-16"], "heavy", "Exam")]} taById={taById} today="2026-10-16" />);
   expect(screen.getByText("Heavy", { selector: "[data-badge]" })).toBeInTheDocument();

@@ -1,6 +1,7 @@
 import { addDays, format, parseISO } from "date-fns";
 import { motion, useReducedMotion } from "motion/react";
 import { KindBadge } from "~/components/tasks/KindBadge";
+import { Badge } from "~/components/ui/Badge";
 import type { ISODate, TA, Task, TaskKind } from "~/engine/types";
 import { fmtDate } from "~/lib/format";
 import { EASE_OUT } from "~/lib/motion";
@@ -32,14 +33,14 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
   const groups = [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <section aria-labelledby="timeline-title" className="glass flex flex-col gap-4 p-4">
+    <section aria-labelledby="timeline-title" className="glass flex flex-col gap-4 p-5">
       <h2 id="timeline-title" className="text-heading font-semibold">
         Coming up
       </h2>
       {groups.length === 0 ? (
         <p className="text-sm text-muted">Nothing in the next {days} days</p>
       ) : (
-        <ol className="relative flex flex-col gap-5 before:absolute before:bottom-2 before:left-[5px] before:top-2 before:w-0.5 before:rounded-full before:bg-ink/10">
+        <ol className="relative flex flex-col gap-4 before:absolute before:bottom-2 before:left-[5px] before:top-2 before:w-0.5 before:rounded-full before:bg-ink/10">
           {groups.map(([date, rows], i) => (
             <motion.li
               key={date}
@@ -52,23 +53,22 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
               <div className="flex items-center gap-2">
                 <span className="font-semibold tabular-nums">{fmtDate(date)}</span>
                 {(date === today || date === tomorrow) && (
-                  <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-xs font-semibold text-accent-ink">
+                  <Badge tone="accent" size="sm">
                     {date === today ? "Today" : "Tomorrow"}
-                  </span>
+                  </Badge>
                 )}
               </div>
               <ul className="mt-2 flex flex-col gap-2">
                 {rows.map((r) => (
-                  <li key={r.key} className="flex items-center gap-3 text-sm">
-                    <span className="flex min-w-0 flex-1 items-center gap-2">
-                      <span className="min-w-0 truncate">{r.title}</span>
-                      <KindBadge kind={r.kind} size="sm" />
-                    </span>
+                  // The TA chip follows the kind badge, so on wide screens it stays next to the task name.
+                  <li key={r.key} className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+                    <span className="min-w-0 truncate">{r.title}</span>
+                    <KindBadge kind={r.kind} size="sm" />
                     {r.ta && (
-                      <span className="flex shrink-0 items-center gap-2 rounded-lg bg-ink/5 px-2 py-0.5 text-xs font-medium">
+                      <Badge tone="plain" size="sm">
                         <span aria-hidden className="size-2 rounded-full" style={{ background: r.ta.color }} />
                         {r.ta.name}
-                      </span>
+                      </Badge>
                     )}
                   </li>
                 ))}

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { TACard } from "~/components/dashboard/TACard";
 
-test("TACard renders two gauges labelled Light and Heavy", () => {
+const renderCard = (nextDates: { date: string; titles: string[] }[] = []) =>
   render(
     <TACard
       ta={{ id: "A", name: "Ahmed", color: "#f00" } as any}
@@ -10,11 +10,38 @@ test("TACard renders two gauges labelled Light and Heavy", () => {
       used={{ light: 2, heavy: 1 }}
       counts={{ light: 3, heavy: 1 }}
       totalOccurrences={4}
-      nextDates={[]}
+      nextDates={nextDates}
       onSwap={() => {}}
     />,
   );
+
+test("TACard renders two gauges labelled Light and Heavy", () => {
+  renderCard();
   expect(screen.getByLabelText("Ahmed light: 50% used")).toBeInTheDocument();
   expect(screen.getByLabelText("Ahmed heavy: 25% used")).toBeInTheDocument();
   expect(screen.getByText("3 light · 1 heavy")).toBeInTheDocument();
+});
+
+test("the kind captions under the gauges are neutral, so the TA colour is the card's only colour", () => {
+  renderCard();
+  for (const kind of ["Light", "Heavy"]) {
+    const caption = screen.getByText(kind);
+    expect(caption.className).toContain("text-muted");
+    expect(caption.className).not.toMatch(/text-(light|heavy)\b/);
+  }
+});
+
+test("Swap is an icon button in the card header, before the gauges", () => {
+  renderCard();
+  const swap = screen.getByRole("button", { name: "Swap one of Ahmed's dates" });
+  const header = screen.getByRole("heading", { name: "Ahmed" }).closest("header")!;
+  expect(header).toContainElement(swap);
+  expect(swap).toHaveAttribute("title", "Swap a date");
+});
+
+test("each Next date chip names its tasks in a tooltip", () => {
+  renderCard([{ date: "2026-10-18", titles: ["Quiz", "Lab"] }]);
+  const chip = screen.getByText("Oct 18").closest("[data-badge]")!;
+  expect(chip).toHaveAttribute("title", "Quiz, Lab");
+  expect(within(chip as HTMLElement).getByText(": Quiz, Lab")).toHaveClass("sr-only");
 });

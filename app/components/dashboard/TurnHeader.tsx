@@ -1,15 +1,18 @@
 import { motion, useReducedMotion } from "motion/react";
+import { KindBadge } from "~/components/tasks/KindBadge";
+import { CountUp } from "~/components/ui/CountUp";
 import { KIND_LABEL, type TaskKind } from "~/engine/types";
 import { EASE_OUT, useMounted } from "~/lib/motion";
 
-type TurnHeaderProps = { kind: TaskKind; turn: number; usedUnits: number; turnSize: number };
+type TurnHeaderProps = { kind: TaskKind; turn: number; usedUnits: number; turnSize: number; className?: string };
 
 /**
- * "Light · Turn 2 · 5/8 units used" with a thin progress strip. The strip's width is not a transform,
- * so MotionConfig does not cover it: under prefers-reduced-motion (once mounted) it is set
- * directly as a style instead of tweened, like SplitBar.
+ * Stat tile for one kind's current turn: the kind and turn number, a big "used/turnSize" numeral
+ * and a full-width progress strip. The strip's width is not a transform, so MotionConfig does not
+ * cover it: under prefers-reduced-motion (once mounted) it is set directly as a style instead of
+ * tweened, like SplitBar.
  */
-export function TurnHeader({ kind, turn, usedUnits, turnSize }: TurnHeaderProps) {
+export function TurnHeader({ kind, turn, usedUnits, turnSize, className = "" }: TurnHeaderProps) {
   const reducedMotion = useReducedMotion();
   const reduced = useMounted() && reducedMotion;
 
@@ -18,11 +21,18 @@ export function TurnHeader({ kind, turn, usedUnits, turnSize }: TurnHeaderProps)
   const width = `${Math.min(1, Math.max(0, usedUnits / turnSize)) * 100}%`;
   const strip = `h-full rounded-full ${kind === "light" ? "bg-light" : "bg-heavy"}`;
   return (
-    <div className="flex max-w-md flex-col gap-2">
-      <p className="text-muted">
-        {KIND_LABEL[kind]} · Turn {turn} · {usedUnits}/{turnSize} {usedUnits === 1 ? "unit" : "units"} used
+    <div role="group" aria-label={`${KIND_LABEL[kind]} turn`} className={`glass flex min-w-0 flex-col gap-3 p-4 sm:p-5 ${className}`}>
+      <div className="flex items-center justify-between gap-2">
+        <KindBadge kind={kind} />
+        <span className="text-sm text-muted">Turn {turn}</span>
+      </div>
+      <p className="flex flex-wrap items-baseline gap-x-2">
+        <span data-testid="turn-numeral" className="font-display text-display font-semibold tabular-nums">
+          <CountUp value={usedUnits} />/{turnSize}
+        </span>
+        <span className="text-sm text-muted">{usedUnits === 1 ? "unit used" : "units used"}</span>
       </p>
-      <div aria-hidden className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
+      <div data-testid="turn-strip" aria-hidden className="h-2 w-full overflow-hidden rounded-full bg-ink/10">
         {reduced ? (
           <div className={strip} style={{ width }} />
         ) : (
