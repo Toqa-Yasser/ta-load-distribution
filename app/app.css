@@ -26,6 +26,12 @@
   color-scheme: light;
 }
 
+@media (width >= 48rem) {
+  :root {
+    --header-h: 4rem; /* 16px top gap on desktop */
+  }
+}
+
 [data-theme="dark"] {
   --bg: #0e0f14;
   --surface: rgba(26, 28, 38, 0.72); /* a touch lifted so cards hold their edge on the flat bg */

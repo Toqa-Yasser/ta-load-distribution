@@ -74,7 +74,7 @@ export function NavBar({ placement, className = "" }: { placement: "header" | "b
               <motion.span
                 {...press}
                 className={`relative isolate flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors ${
-                  isActive ? "text-ink" : "text-muted hover:text-ink"
+                  isActive ? "text-ink" : "text-ink/70 hover:text-ink"
                 }`}
               >
                 {isActive && (

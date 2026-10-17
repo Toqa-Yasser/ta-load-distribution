@@ -2,7 +2,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { createRoutesStub } from "react-router";
 import { ThemeProvider } from "~/lib/theme";
-import { CONTENT_COLUMN } from "../column";
 import { Header } from "../Header";
 
 const renderAt = (path: string) => {
@@ -34,17 +33,21 @@ test("aria-current on the active pill link", async () => {
   expect(current.map((a) => a.textContent)).toEqual(["Tasks"]);
 });
 
-test("the pill row uses the page content column: brand at the start, pages centred, actions at the end", async () => {
+test("the pills form one centred cluster on desktop: auto-width pills, 12px gaps, no grid", async () => {
   const { container } = renderAt("/");
   await screen.findByRole("banner");
-  const column = container.querySelector<HTMLElement>("[data-header-column]")!;
-  for (const c of CONTENT_COLUMN.split(" ")) expect(column.className.split(/\s+/)).toContain(c);
-  const [brand, pages, actions] = [...container.querySelectorAll<HTMLElement>("[data-pill]")].map((el) => el.className.split(/\s+/));
-  expect(brand).toContain("justify-self-start");
-  expect(pages).toContain("justify-self-center");
-  expect(actions).toContain("justify-self-end");
-  expect(pages).toContain("max-md:hidden");
-  expect(pages).not.toContain("hidden");
+  const row = container.querySelector<HTMLElement>("[data-header-row]")!;
+  const cls = row.className.split(/\s+/);
+  expect(cls).toEqual(expect.arrayContaining(["flex", "items-center", "gap-3", "md:justify-center"]));
+  // Mobile keeps brand at the start and actions at the end.
+  expect(cls).toContain("justify-between");
+  expect(row.className).not.toMatch(/grid|max-w-6xl/);
+  const pills = [...container.querySelectorAll<HTMLElement>("[data-pill]")].map((el) => el.className.split(/\s+/));
+  for (const pill of pills) {
+    expect(pill.some((c) => c.startsWith("justify-self") || c === "flex-1" || c.startsWith("w-"))).toBe(false);
+  }
+  expect(pills[1]).toContain("max-md:hidden");
+  expect(pills[1]).not.toContain("hidden");
 });
 
 test("the header height comes from the shared --header-h variable", async () => {
