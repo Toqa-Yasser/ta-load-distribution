@@ -9,7 +9,11 @@ export type Schedule =
   | { type: "daily" | "weekly" | "monthly"; start: ISODate; end: ISODate | null }
   | { type: "custom"; start: ISODate; count: number; gapDays: number; dates: ISODate[] };
 
-export interface Occurrence { id: string; date: ISODate; taId: string; turn: number }
+/** One TA covering one date, charged against the ledger of the turn it was dealt in. */
+export interface Seat { taId: string; turn: number }
+
+/** A date of a task; `seats` holds one entry per co-staffing TA, all distinct. */
+export interface Occurrence { id: string; date: ISODate; seats: Seat[] }
 
 export type TaskKind = "light" | "heavy";
 
@@ -30,6 +34,8 @@ export interface Task {
   notes?: string;
   createdAt: string;
   schedule: Schedule;
+  /** How many distinct TAs cover each date. */
+  taCount: number;
   occurrences: Occurrence[];
 }
 
@@ -41,6 +47,9 @@ export interface Workspace { semester: Semester; tas: TA[]; sections: Section[];
 
 export type OccurrenceRef = { taskId: string; occurrenceId: string };
 
+/** One specific TA's seat on an occurrence. */
+export type SeatRef = OccurrenceRef & { taId: string };
+
 export type Command =
   | { type: "addTA"; name: string }
   | { type: "renameTA"; taId: string; name: string }
@@ -50,14 +59,14 @@ export type Command =
   | { type: "setSectionSlot"; sectionId: string; slot: 0 | 1; taId: string | null }
   | { type: "removeSection"; sectionId: string }
   | { type: "setSemester"; semester: Semester }
-  | { type: "createTask"; kind: TaskKind; title: string; notes?: string; schedule: Schedule }
+  | { type: "createTask"; kind: TaskKind; title: string; notes?: string; schedule: Schedule; taCount?: number }
   /** `notes: null` clears the notes; omitting it keeps them. The kind cannot be changed. */
   | { type: "updateTask"; taskId: string; title?: string; notes?: string | null; schedule?: Schedule }
   | { type: "deleteTask"; taskId: string }
   | { type: "redistributeTask"; taskId: string }
   | { type: "redistributeAll" }
-  | { type: "reassignOccurrence"; ref: OccurrenceRef; taId: string }
-  | { type: "swapOccurrences"; a: OccurrenceRef; b: OccurrenceRef }
+  | { type: "reassignOccurrence"; ref: OccurrenceRef; from: string; taId: string }
+  | { type: "swapOccurrences"; a: SeatRef; b: SeatRef }
   | { type: "reset" };
 
 export class EngineError extends Error {
@@ -71,6 +80,13 @@ export class NoCapacityError extends EngineError {
   constructor() {
     super("Assign sections to at least one TA first.", "NO_CAPACITY");
     this.name = "NoCapacityError";
+  }
+}
+
+export class NotEnoughTAsError extends EngineError {
+  constructor(public readonly needed: number, public readonly available: number) {
+    super(`This task needs ${needed} TAs but only ${available} ${available === 1 ? "has" : "have"} sections.`, "NOT_ENOUGH_TAS");
+    this.name = "NotEnoughTAsError";
   }
 }
 
