@@ -3,24 +3,31 @@ import { useState } from "react";
 import { KindBadge } from "~/components/tasks/KindBadge";
 import { Button } from "~/components/ui/Button";
 import { Sheet } from "~/components/ui/Sheet";
-import type { Occurrence, OccurrenceRef, TA, Task } from "~/engine/types";
+import type { Occurrence, SeatRef, TA, Task } from "~/engine/types";
 import { useStepFocus } from "~/lib/focus";
 import { fmtDateLong } from "~/lib/format";
+import { swappableSeats } from "~/lib/swap";
 import { EASE_OUT, stepSlide, usePressMotion } from "~/lib/motion";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
 
 type SwapSheetProps = { open: boolean; onClose: () => void; ta: TA };
-type Group = { task: Task; occurrences: Occurrence[] };
+type Row = { occ: Occurrence; taId: string };
+type Group = { task: Task; rows: Row[] };
 
 const OPTION =
   "flex min-h-11 w-full items-center gap-3 rounded-field px-3 py-2 text-left text-sm transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent";
 
-/** Tasks with their occurrences matching `keep`, by date; tasks with none are dropped. */
-function groupByTask(tasks: Task[], keep: (o: Occurrence) => boolean): Group[] {
+/** Tasks with the rows `rowsOf` yields for each occurrence, by date; tasks with no rows are dropped. */
+function groupByTask(tasks: Task[], rowsOf: (task: Task, occ: Occurrence) => string[]): Group[] {
   return tasks
-    .map((task) => ({ task, occurrences: task.occurrences.filter(keep).sort((a, b) => a.date.localeCompare(b.date)) }))
-    .filter((g) => g.occurrences.length > 0);
+    .map((task) => ({
+      task,
+      rows: [...task.occurrences]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .flatMap((occ) => rowsOf(task, occ).map((taId) => ({ occ, taId }))),
+    }))
+    .filter((g) => g.rows.length > 0);
 }
 
 function OccurrenceList({
@@ -32,27 +39,27 @@ function OccurrenceList({
   groups: Group[];
   taById: Map<string, TA>;
   showOwner: boolean;
-  onPick: (ref: OccurrenceRef) => void;
+  onPick: (ref: SeatRef) => void;
 }) {
   const press = usePressMotion();
   return (
     <div className="flex flex-col gap-4">
-      {groups.map(({ task, occurrences }, gi) => (
+      {groups.map(({ task, rows }, gi) => (
         <section key={task.id} aria-label={task.title}>
           <div className="flex items-center gap-2 px-3 pb-1">
             <h3 className="min-w-0 truncate text-xs font-semibold uppercase tracking-wide text-muted">{task.title}</h3>
             <KindBadge kind={task.kind} size="sm" />
           </div>
           <ul>
-            {occurrences.map((o, oi) => {
-              const owner = taById.get(o.taId);
+            {rows.map(({ occ: o, taId }, oi) => {
+              const owner = taById.get(taId);
               return (
-                <li key={o.id}>
+                <li key={`${o.id}:${taId}`}>
                   <motion.button
                     type="button"
                     whileTap={press.whileTap}
                     data-autofocus={gi === 0 && oi === 0 ? true : undefined}
-                    onClick={() => onPick({ taskId: task.id, occurrenceId: o.id })}
+                    onClick={() => onPick({ taskId: task.id, occurrenceId: o.id, taId })}
                     className={OPTION}
                   >
                     <span className="min-w-0 flex-1 truncate">
@@ -77,24 +84,24 @@ function OccurrenceList({
 }
 
 /** Lives inside the Sheet, so the picked occurrence resets each time the sheet opens. */
-function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: OccurrenceRef, b: OccurrenceRef) => void; onCancel: () => void }) {
+function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: SeatRef, b: SeatRef) => void; onCancel: () => void }) {
   const { workspace, taById } = useWorkspace();
   const reduced = useReducedMotion();
-  const [first, setFirst] = useState<OccurrenceRef | null>(null);
+  const [first, setFirst] = useState<SeatRef | null>(null);
   const [dir, setDir] = useState(1);
   const stepFocus = useStepFocus();
 
-  const mine = groupByTask(workspace.tasks, (o) => o.taId === ta.id);
+  const mine = groupByTask(workspace.tasks, (_, o) => (o.seats.some((s) => s.taId === ta.id) ? [ta.id] : []));
   const step = first === null ? 0 : 1;
   const firstTask = first && workspace.tasks.find((t) => t.id === first.taskId);
   const firstOcc = firstTask?.occurrences.find((o) => o.id === first?.occurrenceId);
   // Only tasks of the same kind can be swapped (each kind keeps its own ledger).
-  const others = groupByTask(
-    workspace.tasks.filter((t) => t.kind === firstTask?.kind),
-    (o) => o.taId !== ta.id,
-  );
+  const others =
+    firstTask && firstOcc
+      ? groupByTask(workspace.tasks, (task, occ) => swappableSeats({ task: firstTask, occ: firstOcc, taId: ta.id }, { task, occ }))
+      : [];
 
-  const pickFirst = (ref: OccurrenceRef) => {
+  const pickFirst = (ref: SeatRef) => {
     setDir(1);
     stepFocus.request();
     setFirst(ref);
