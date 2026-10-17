@@ -9,6 +9,7 @@ import { ChevronLeftIcon, TasksIcon } from "~/components/ui/icons";
 import { Select } from "~/components/ui/Select";
 import { fmtDateLong, fmtScheduleSummary, plural } from "~/lib/format";
 import { shouldRevalidateRoot } from "~/lib/revalidate";
+import { stagger } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace, type RootLoaderData } from "~/lib/use-workspace";
@@ -98,7 +99,7 @@ export default function TaskDetail() {
   return (
     <div className="flex flex-col gap-6">
       <BackLink />
-      <header className="flex flex-col gap-3">
+      <header {...stagger(1, "rise", "flex flex-col gap-3")}>
         <div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="min-w-0 break-words text-display font-semibold">{task.title}</h1>
@@ -112,6 +113,7 @@ export default function TaskDetail() {
         <SplitBar occurrences={task.occurrences} tas={workspace.tas} legend />
       </header>
 
+      <div {...stagger(2)}>
       <Card className="overflow-hidden">
         <table className="w-full text-left">
           <thead className="border-b border-line text-sm text-muted">
@@ -152,6 +154,7 @@ export default function TaskDetail() {
           </tbody>
         </table>
       </Card>
+      </div>
     </div>
   );
 }

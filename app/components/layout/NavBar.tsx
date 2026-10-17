@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from "motion/react";
+import type { CSSProperties } from "react";
 import { NavLink } from "react-router";
 import { CalendarIcon, DashboardIcon, HistoryIcon, TasksIcon, TeamIcon } from "~/components/ui/icons";
 import { indicatorSpring, pressMotion } from "~/lib/motion";
@@ -16,7 +17,7 @@ const NAV_ITEMS: { to: string; label: string; end?: boolean; Icon: typeof Dashbo
  * `className` carries the shared pill styling, including its `flex`, so below md it is removed
  * with `max-md:hidden` rather than a `hidden`/`md:flex` pair that would fight that `flex`); `placement="bottom"` is the fixed tab bar below md.
  */
-export function NavBar({ placement, className = "" }: { placement: "header" | "bottom"; className?: string }) {
+export function NavBar({ placement, className = "", style }: { placement: "header" | "bottom"; className?: string; style?: CSSProperties }) {
   const reduced = useReducedMotion();
   const press = pressMotion(reduced);
   // Reduced motion: the active indicator snaps instead of sliding.
@@ -24,7 +25,7 @@ export function NavBar({ placement, className = "" }: { placement: "header" | "b
 
   if (placement === "header") {
     return (
-      <nav aria-label="Primary" data-pill="pages" className={`gap-0.5 px-0.5 max-md:hidden ${className}`}>
+      <nav aria-label="Primary" data-pill="pages" style={style} className={`gap-0.5 px-0.5 max-md:hidden ${className}`}>
         {NAV_ITEMS.map((item) => (
           <NavLink key={item.to} to={item.to} end={item.end} className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
             {({ isActive }) => (

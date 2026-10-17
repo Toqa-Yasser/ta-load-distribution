@@ -7,7 +7,7 @@ import { Card } from "~/components/ui/Card";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import type { Task } from "~/engine/types";
 import { fmtScheduleSummary, plural } from "~/lib/format";
-import { EASE_OUT, usePressMotion } from "~/lib/motion";
+import { overlayPop, usePressMotion } from "~/lib/motion";
 import { useWorkspace } from "~/lib/use-workspace";
 import { KindBadge } from "./KindBadge";
 import { SplitBar } from "./SplitBar";
@@ -119,10 +119,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
                   role="menu"
                   aria-label={`Actions for ${task.title}`}
                   onKeyDown={onMenuKeyDown}
-                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                  transition={{ duration: reduced ? 0 : 0.15, ease: EASE_OUT }}
+                  {...overlayPop(reduced, -4)}
                   className="absolute right-0 top-12 w-44 origin-top-right rounded-field border border-line bg-bg p-1 shadow-xl"
                 >
                   <motion.button

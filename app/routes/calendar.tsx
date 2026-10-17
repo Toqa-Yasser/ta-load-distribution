@@ -9,6 +9,7 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from "~/components/ui
 import { EmptyState } from "~/components/ui/EmptyState";
 import type { OccurrenceRef, Workspace } from "~/engine/types";
 import { fmtMonth, shiftMonth } from "~/lib/calendar";
+import { stagger } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { useRetained } from "~/lib/retain";
 import { useCommand } from "~/lib/use-command";
@@ -74,7 +75,7 @@ export default function Calendar() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header {...stagger(0, "rise", "flex flex-wrap items-center justify-between gap-3")}>
         <div>
           <h1 className="text-display font-semibold">Calendar</h1>
           <p className="mt-1 text-muted" aria-live="polite">
@@ -95,7 +96,7 @@ export default function Calendar() {
       </header>
 
       {workspace.tas.length > 0 && (
-        <ul aria-label="TAs" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <ul aria-label="TAs" {...stagger(1, "rise", "flex flex-wrap gap-x-4 gap-y-1 text-sm")}>
           {workspace.tas.map((ta) => (
             <li key={ta.id} className="flex items-center gap-2">
               <span aria-hidden className="size-2.5 rounded-full" style={{ background: ta.color }} />
@@ -122,6 +123,7 @@ export default function Calendar() {
           action={{ label: "New task", onClick: () => navigate("/tasks?new=1") }}
         />
       ) : (
+        <div {...stagger(2)}>
         <MonthGrid
           yearMonth={yearMonth}
           tasks={workspace.tasks}
@@ -131,6 +133,7 @@ export default function Calendar() {
           swapSource={swapSource}
           onSelect={onSelect}
         />
+        </div>
       )}
 
       {popover && shown && (

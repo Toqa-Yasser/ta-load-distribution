@@ -73,3 +73,12 @@ test("timers of toasts dropped from the stack or dismissed are cleared", () => {
   fireEvent.click(screen.getAllByRole("button", { name: "Dismiss" })[0]);
   expect(vi.getTimerCount()).toBe(2);
 });
+
+test("a success toast shows a check mark; under reduced motion it is drawn already, not drawn on", () => {
+  const toast = setup();
+  const check = toast.querySelector("[data-toast-check]");
+  expect(check).not.toBeNull();
+  const path = check!.querySelector("path")!;
+  // Reduced motion (mocked above): no pathLength tween, so no dash offset is left on the stroke.
+  expect(path.getAttribute("stroke-dashoffset") ?? "0").toMatch(/^0(px)?$/);
+});

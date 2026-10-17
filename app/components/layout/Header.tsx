@@ -3,6 +3,7 @@ import { BrandMark } from "~/components/ui/BrandMark";
 import { IconButton } from "~/components/ui/IconButton";
 import { SettingsIcon } from "~/components/ui/icons";
 import { ThemeToggle } from "~/components/ui/ThemeToggle";
+import { stagger } from "~/lib/motion";
 import { useOpenSettings } from "~/lib/settings";
 import { useScrolled } from "~/lib/use-scrolled";
 import { NavBar } from "./NavBar";
@@ -13,7 +14,7 @@ import { NavBar } from "./NavBar";
  * pages pill is centred as part of the group, not pinned to the viewport centre). Below md the
  * pages live in the bottom tab bar, so the row spreads brand to the start and actions to the end.
  * The header is fixed and --header-h tall (top gap + 48px pills); AppShell's <main> pads by the
- * same variable.
+ * same variable. On load the pills fade down one after another (stagger, CSS only).
  */
 export function Header() {
   const openSettings = useOpenSettings();
@@ -25,7 +26,7 @@ export function Header() {
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-30 h-(--header-h) pt-3 md:pt-4">
       <div data-header-row className="flex items-center justify-between gap-3 px-4 md:justify-center md:px-6">
-        <div data-pill="brand" className={`${pill} pointer-events-auto`}>
+        <div data-pill="brand" {...stagger(0, "down", `${pill} pointer-events-auto`)}>
           <Link
             to="/"
             className="flex h-full items-center gap-2 rounded-full pl-1.5 pr-4 transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -34,8 +35,8 @@ export function Header() {
             <span className="whitespace-nowrap font-display text-base font-semibold tracking-tight">TA Load</span>
           </Link>
         </div>
-        <NavBar placement="header" className={`${pill} pointer-events-auto`} />
-        <div data-pill="actions" className={`${pill} pointer-events-auto gap-0.5 px-0.5`}>
+        <NavBar placement="header" {...stagger(1, "down", `${pill} pointer-events-auto`)} />
+        <div data-pill="actions" {...stagger(2, "down", `${pill} pointer-events-auto gap-0.5 px-0.5`)}>
           <ThemeToggle />
           <IconButton aria-label="Settings" title="Settings" aria-haspopup="dialog" onClick={openSettings}>
             <SettingsIcon />

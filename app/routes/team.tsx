@@ -9,6 +9,7 @@ import { EmptyState } from "~/components/ui/EmptyState";
 import { PersonIcon, SectionsIcon } from "~/components/ui/icons";
 import { turnSize } from "~/engine/capacity";
 import { plural } from "~/lib/format";
+import { stagger } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
@@ -49,7 +50,7 @@ export default function Team() {
       onDragCancel={() => setActiveId(null)}
     >
       <div className="flex flex-col gap-6">
-        <header>
+        <header {...stagger(0)}>
           <h1 className="text-display font-semibold">Team</h1>
           <p className="mt-1 text-muted">
             {plural(workspace.tas.length, "TA", "TAs")} · {plural(units, "unit", "units")} per turn
@@ -57,7 +58,7 @@ export default function Team() {
         </header>
 
         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[320px_minmax(0,1fr)]">
-          <section aria-labelledby="team-tas" className="glass flex flex-col gap-3 p-5">
+          <section aria-labelledby="team-tas" {...stagger(1, "rise", "glass flex flex-col gap-3 p-5")}>
             <h2 id="team-tas" className="text-heading font-semibold">
               TAs
             </h2>
@@ -81,7 +82,7 @@ export default function Team() {
             />
           </section>
 
-          <section aria-labelledby="team-sections" className="flex flex-col gap-2">
+          <section aria-labelledby="team-sections" {...stagger(2, "rise", "flex flex-col gap-2")}>
             <h2 id="team-sections" className="px-1 text-heading font-semibold">
               Sections
             </h2>

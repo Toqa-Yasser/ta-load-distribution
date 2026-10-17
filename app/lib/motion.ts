@@ -1,5 +1,5 @@
 import { useReducedMotion, type TargetAndTransition, type Transition, type Variants } from "motion/react";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
 
 /** Springy ease used for page and toast entrances. */
 export const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -29,6 +29,48 @@ export const stepSlide: Variants = {
 };
 
 export const indicatorSpring: Transition = { type: "spring", stiffness: 500, damping: 38 };
+
+/* ---------- Page-load choreography ---------- */
+
+/** Delay between consecutive content blocks (CSS: --stagger × 40ms in app.css). */
+export const STAGGER_STEP_MS = 40;
+/** Blocks after the 8th enter together with it, so a long list never waits long. */
+export const STAGGER_MAX = 8;
+
+type StaggerProps = { className: string; style: CSSProperties & { "--stagger": number } };
+
+/**
+ * Props for the i-th block of a page's entrance: a CSS keyframe class (.enter-rise, or
+ * .enter-down for the header pills) delayed by --stagger steps. It is plain CSS, so it plays from
+ * the server-rendered markup without waiting for hydration, needs no reduced-motion branch in
+ * the markup (app.css drops the animation under prefers-reduced-motion) and only fills
+ * backwards, so motion's own inline opacity/transform keep working afterwards. Spread it; any
+ * classes of your own go in `className`: `<li {...stagger(i, "rise", "flex gap-2")} />`.
+ */
+export function stagger(i: number, direction: "rise" | "down" = "rise", className = ""): StaggerProps {
+  const step = Math.min(Math.max(0, Math.floor(i)), STAGGER_MAX - 1);
+  const enter = direction === "down" ? "enter-down" : "enter-rise";
+  return { className: className ? `${enter} ${className}` : enter, style: { "--stagger": step } };
+}
+
+/* ---------- Sheets and menus ---------- */
+
+/** The one transition every sheet, dialog and menu uses for its fade/pop. */
+export const overlayTransition: Transition = { duration: 0.2, ease: EASE_OUT };
+/** Slide-in panels (bottom sheet, right-hand slide-over). */
+export const overlaySpring: Transition = { type: "spring", stiffness: 420, damping: 40 };
+
+const POP_STILL = { opacity: 1, scale: 1, y: 0 };
+
+/**
+ * Fade + slight scale for a dialog or menu that pops in from `y` px away. Under reduced motion
+ * every state is the resting one, so nothing (opacity included) animates.
+ */
+export function overlayPop(reduced: boolean | null, y: number) {
+  return reduced
+    ? { initial: POP_STILL, animate: POP_STILL, exit: POP_STILL, transition: { duration: 0 } }
+    : { initial: { opacity: 0, scale: 0.96, y }, animate: POP_STILL, exit: { opacity: 0, scale: 0.96, y }, transition: overlayTransition };
+}
 
 export const hoverLift = { y: -1 };
 export const tapPress = { scale: 0.96 };

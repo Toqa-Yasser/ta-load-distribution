@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useDragControls, useReducedMotion, type Inerti
 import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
-import { EASE_OUT } from "~/lib/motion";
+import { overlayPop, overlaySpring, overlayTransition } from "~/lib/motion";
 import { IconButton } from "./IconButton";
 import { CloseIcon } from "./icons";
 
@@ -153,27 +153,22 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
 
   if (!mounted) return null;
 
-  const fade = { duration: reduced ? 0 : 0.2 };
+  const fade = reduced ? { duration: 0 } : overlayTransition;
   const right = desktop && side === "right";
   const panelMotion = right
     ? {
         initial: { x: "110%" },
         animate: { x: 0 },
         exit: { x: "110%" },
-        transition: reduced ? { duration: 0 } : { type: "spring" as const, stiffness: 420, damping: 42 },
+        transition: reduced ? { duration: 0 } : overlaySpring,
       }
     : desktop
-    ? {
-        initial: { opacity: 0, scale: 0.96, y: 8 },
-        animate: { opacity: 1, scale: 1, y: 0 },
-        exit: { opacity: 0, scale: 0.96, y: 8 },
-        transition: { duration: reduced ? 0 : 0.24, ease: EASE_OUT },
-      }
+    ? overlayPop(reduced, 8)
     : {
         initial: { y: "100%" },
         animate: { y: 0 },
         exit: { y: "100%" },
-        transition: reduced ? { duration: 0 } : { type: "spring" as const, stiffness: 420, damping: 40 },
+        transition: reduced ? { duration: 0 } : overlaySpring,
       };
 
   return createPortal(

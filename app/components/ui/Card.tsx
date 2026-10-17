@@ -56,7 +56,7 @@ export function Card({ children, className = "", interactive = false }: CardProp
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
       style={{ rotateX, rotateY, transformPerspective: 900 }}
-      className={`glass relative ${tilting ? "will-change-transform" : ""} ${className}`}
+      className={`glass card-lift relative ${tilting ? "will-change-transform" : ""} ${className}`}
     >
       {children}
       <motion.div

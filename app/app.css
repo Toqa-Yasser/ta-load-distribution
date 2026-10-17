@@ -106,6 +106,18 @@
   [aria-disabled="true"] {
     cursor: not-allowed;
   }
+  /* Focus rings draw in (width and colour) rather than snapping on. :where() keeps this below any
+     animate-* utility, so an element with its own animation simply keeps it. */
+  :where(:focus-visible) {
+    animation: focus-ring-in 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes focus-ring-in {
+  from {
+    outline-width: 0;
+    outline-color: transparent;
+  }
 }
 
 html {
@@ -137,6 +149,17 @@ h3 {
     border-radius: var(--radius-card);
     box-shadow: var(--shadow);
   }
+  /* Hover lift for clickable cards: 1px up and the raised shadow (mouse/trackpad only). The lift
+     uses the `translate` property, so it composes with motion's tilt `transform`. */
+  .card-lift {
+    transition: translate 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+  }
+  @media (hover: hover) {
+    .card-lift:hover {
+      translate: 0 -1px;
+      box-shadow: var(--shadow-raised);
+    }
+  }
   /* Phones: a lighter blur is far cheaper to composite while scrolling. */
   @media (width < 48rem) {
     .glass {
@@ -152,6 +175,30 @@ h3 {
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse 90% 55% at 50% 0%, var(--glow), transparent 70%);
+}
+
+/* ---------- Page-load choreography ---------- */
+/* stagger(i) in lib/motion.ts: blocks rise in 40ms apart (header pills fade down). `backwards`
+   only holds the start state during the delay, so nothing is pinned once the entrance ends. */
+.enter-rise,
+.enter-down {
+  animation: enter-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--stagger, 0) * 40ms);
+}
+.enter-down {
+  animation-name: enter-down;
+}
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+@keyframes enter-down {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
 }
 
 /* ---------- Calendar swap targets ---------- */
@@ -188,5 +235,13 @@ h3 {
   .gauge-wave,
   .animate-swap-pulse {
     animation: none !important;
+  }
+  /* The entrance delay is not shortened by the rule above, so drop the entrance altogether. */
+  .enter-rise,
+  .enter-down {
+    animation: none !important;
+  }
+  .card-lift:hover {
+    translate: none;
   }
 }

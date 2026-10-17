@@ -8,6 +8,7 @@ import { Button } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { HistoryIcon } from "~/components/ui/icons";
 import { plural } from "~/lib/format";
+import { stagger } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { HISTORY_FETCHER_KEYS, useHistory } from "~/lib/use-history";
 import { getStore } from "~/server/store.server";
@@ -43,7 +44,7 @@ export default function History() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header {...stagger(0, "rise", "flex flex-wrap items-end justify-between gap-3")}>
         <div>
           <h1 className="text-display font-semibold">History</h1>
           <p className="mt-1 text-muted">{plural(snapshots.length, "snapshot", "snapshots")}</p>
@@ -53,7 +54,7 @@ export default function History() {
         </Button>
       </header>
 
-      <form onSubmit={onSave} className="glass flex flex-col gap-2 p-3 sm:flex-row sm:items-center">
+      <form onSubmit={onSave} {...stagger(1, "rise", "glass flex flex-col gap-2 p-3 sm:flex-row sm:items-center")}>
         <label htmlFor="snapshot-name" className="sr-only">
           Snapshot name
         </label>
@@ -78,7 +79,9 @@ export default function History() {
           action={{ label: "Name a snapshot", onClick: () => document.getElementById("snapshot-name")?.focus() }}
         />
       ) : (
-        <SnapshotList snapshots={snapshots} currentVersion={version} onRollback={rollback} />
+        <div {...stagger(2)}>
+          <SnapshotList snapshots={snapshots} currentVersion={version} onRollback={rollback} />
+        </div>
       )}
 
       <PasswordDialog

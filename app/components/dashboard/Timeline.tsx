@@ -1,22 +1,16 @@
 import { addDays, format, parseISO } from "date-fns";
-import { motion, useReducedMotion } from "motion/react";
 import { KindBadge } from "~/components/tasks/KindBadge";
 import { Badge } from "~/components/ui/Badge";
 import type { ISODate, TA, Task, TaskKind } from "~/engine/types";
 import { fmtDate } from "~/lib/format";
-import { EASE_OUT } from "~/lib/motion";
 
 type TimelineProps = { tasks: Task[]; taById: Map<string, TA>; today: ISODate; days?: number };
 type Row = { key: string; title: string; kind: TaskKind; ta: TA | undefined };
-
-const STAGGER = 0.05;
-const MAX_DELAY = 0.4;
 
 const shift = (iso: ISODate, n: number): ISODate => format(addDays(parseISO(iso), n), "yyyy-MM-dd");
 
 /** Occurrences from `today` up to (not including) `today + days`, grouped by date on a vertical line. */
 export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
-  const reduced = useReducedMotion();
   const end = shift(today, days);
   const tomorrow = shift(today, 1);
 
@@ -41,14 +35,8 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
         <p className="text-sm text-muted">Nothing in the next {days} days</p>
       ) : (
         <ol className="relative flex flex-col gap-4 before:absolute before:bottom-2 before:left-[5px] before:top-2 before:w-0.5 before:rounded-full before:bg-ink/10">
-          {groups.map(([date, rows], i) => (
-            <motion.li
-              key={date}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={reduced ? { duration: 0 } : { duration: 0.3, ease: EASE_OUT, delay: Math.min(i * STAGGER, MAX_DELAY) }}
-              className="relative pl-7"
-            >
+          {groups.map(([date, rows]) => (
+            <li key={date} className="relative pl-7">
               <span aria-hidden className="absolute left-0 top-1.5 size-3 rounded-full border-2 border-accent bg-bg" />
               <div className="flex items-center gap-2">
                 <span className="font-semibold tabular-nums">{fmtDate(date)}</span>
@@ -73,7 +61,7 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
                   </li>
                 ))}
               </ul>
-            </motion.li>
+            </li>
           ))}
         </ol>
       )}

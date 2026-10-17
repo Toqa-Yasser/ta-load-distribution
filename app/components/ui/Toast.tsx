@@ -39,10 +39,21 @@ export function Toaster() {
             }}
             className="glass pointer-events-auto flex w-full max-w-md items-center gap-3 py-2 pl-4 pr-2 text-sm"
           >
-            <span
-              aria-hidden
-              className={`size-2 shrink-0 rounded-full ${t.tone === "error" ? "bg-accent-2" : "bg-mint"}`}
-            />
+            {t.tone === "error" ? (
+              <span aria-hidden className="mx-2 size-2 shrink-0 rounded-full bg-accent-2" />
+            ) : (
+              // Success: a check mark that draws itself on (already drawn under reduced motion).
+              <span aria-hidden data-toast-check className="grid size-6 shrink-0 place-items-center rounded-full bg-light/15 text-light">
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
+                  <motion.path
+                    d="M5 12.5l4.5 4.5L19 7.5"
+                    initial={reduced ? false : { pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 0.35, delay: 0.12, ease: EASE_OUT }}
+                  />
+                </svg>
+              </span>
+            )}
             <span className="flex-1 py-2">{t.message}</span>
             {t.action && (
               <motion.button

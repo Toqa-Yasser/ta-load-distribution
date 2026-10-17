@@ -1,4 +1,3 @@
-import { motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/home";
@@ -11,6 +10,7 @@ import { EmptyState } from "~/components/ui/EmptyState";
 import { TeamIcon } from "~/components/ui/icons";
 import { turnSize as computeTurnSize } from "~/engine/capacity";
 import { TASK_KINDS, type TaskKind } from "~/engine/types";
+import { stagger } from "~/lib/motion";
 import { useRetained } from "~/lib/retain";
 import { routeMeta } from "~/lib/seo";
 import { useWorkspace } from "~/lib/use-workspace";
@@ -19,14 +19,9 @@ export function meta({ matches }: Route.MetaArgs) {
   return routeMeta(matches, { description: "Capacity gauges and upcoming task occurrences for every TA.", path: "/" });
 }
 
-const CARD_STAGGER = 0.05;
-const MAX_CARD_DELAY = 0.3;
-const cardSpring = { type: "spring" as const, stiffness: 320, damping: 26 };
-
 export default function Home() {
   const { workspace, today, capacities, taById } = useWorkspace();
   const navigate = useNavigate();
-  const reduced = useReducedMotion();
   // The TA id stays set after closing so the sheet can animate out with its content. Holding the
   // id (not the TA object) keeps the sheet's name current after a rename revalidates the data.
   const [swap, setSwap] = useState<{ taId: string; open: boolean } | null>(null);
@@ -44,7 +39,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-4">
+      <header {...stagger(0, "rise", "flex flex-col gap-4")}>
         <h1 className="text-display font-semibold">Dashboard</h1>
         {tas.length > 0 &&
           (turnSize === 0 ? (
@@ -76,12 +71,7 @@ export default function Home() {
         <>
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {tas.map((ta, i) => (
-              <motion.li
-                key={ta.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={reduced ? { duration: 0 } : { ...cardSpring, delay: Math.min(i * CARD_STAGGER, MAX_CARD_DELAY) }}
-              >
+              <li key={ta.id} {...stagger(1 + i)}>
                 <TACard
                   ta={ta}
                   capacity={capacities[ta.id] ?? 0}
@@ -91,10 +81,12 @@ export default function Home() {
                   nextDates={stats[ta.id]?.nextDates ?? []}
                   onSwap={() => setSwap({ taId: ta.id, open: true })}
                 />
-              </motion.li>
+              </li>
             ))}
           </ul>
-          <Timeline tasks={workspace.tasks} taById={taById} today={today} />
+          <div {...stagger(1 + tas.length)}>
+            <Timeline tasks={workspace.tasks} taById={taById} today={today} />
+          </div>
         </>
       )}
 

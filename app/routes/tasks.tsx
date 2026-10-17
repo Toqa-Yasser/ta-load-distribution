@@ -9,7 +9,7 @@ import { Fab } from "~/components/ui/Fab";
 import { PlusIcon, TasksIcon } from "~/components/ui/icons";
 import { isTaskKind, KIND_LABEL, type TaskKind } from "~/engine/types";
 import { plural } from "~/lib/format";
-import { indicatorSpring, usePressMotion } from "~/lib/motion";
+import { indicatorSpring, stagger, usePressMotion } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
@@ -55,7 +55,7 @@ export default function Tasks() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-end justify-between gap-4">
+      <header {...stagger(0, "rise", "flex items-end justify-between gap-4")}>
         <div>
           <h1 className="text-display font-semibold">Tasks</h1>
           <p className="mt-1 text-muted">
@@ -70,7 +70,11 @@ export default function Tasks() {
         </div>
       </header>
 
-      {allTasks.length > 0 && <KindFilter value={kindFilter} onChange={setKindFilter} />}
+      {allTasks.length > 0 && (
+        <div {...stagger(1)}>
+          <KindFilter value={kindFilter} onChange={setKindFilter} />
+        </div>
+      )}
 
       {allTasks.length === 0 ? (
         <EmptyState
@@ -89,7 +93,7 @@ export default function Tasks() {
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence initial={false}>
-            {tasks.map((task) => (
+            {tasks.map((task, i) => (
               <motion.li
                 key={task.id}
                 layout
@@ -97,7 +101,7 @@ export default function Tasks() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: reduced ? 0 : 0.2 }}
-                className="h-full"
+                {...stagger(2 + i, "rise", "h-full")}
               >
                 <TaskCard
                   task={task}
