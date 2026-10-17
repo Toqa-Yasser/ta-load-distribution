@@ -112,14 +112,14 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           <Section title="Appearance">
             {/* Native radios (arrow keys move and select, Tab enters at the checked one), drawn as a
                 segmented control; the input itself is visually hidden inside its label. */}
-            <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-2xl border border-line p-1">
+            <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-[18px] border border-line p-1">
               {THEMES.map((t) => {
                 const active = pref === t.value;
                 return (
                   // A plain label: motion's whileTap would give it a tabIndex, a second tab stop.
                   <label
                     key={t.value}
-                    className={`relative isolate flex min-h-11 items-center justify-center rounded-xl text-sm font-medium transition-[color,background-color,scale] active:scale-96 motion-reduce:active:scale-100 has-focus-visible:outline-2 has-focus-visible:outline-accent ${
+                    className={`relative isolate flex min-h-11 items-center justify-center rounded-field text-sm font-medium transition-[color,background-color,scale] active:scale-96 motion-reduce:active:scale-100 has-focus-visible:outline-2 has-focus-visible:outline-accent ${
                       active ? "text-ink" : "text-muted hover:bg-ink/5 hover:text-ink"
                     }`}
                   >
@@ -135,7 +135,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                       <motion.span
                         layoutId="settings-theme-pill"
                         transition={reduced ? { duration: 0 } : indicatorSpring}
-                        className="absolute inset-0 -z-10 rounded-xl border border-line bg-surface shadow-sm"
+                        className="absolute inset-0 -z-10 rounded-field border border-line bg-surface shadow-sm"
                       />
                     )}
                     {t.label}
@@ -146,7 +146,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           </Section>
 
           <Section title="Danger zone">
-            <div className="flex flex-col gap-3 rounded-2xl border border-accent-2/30 p-3">
+            <div className="flex flex-col gap-3 rounded-field border border-accent-2/30 p-3">
               <DangerRow
                 label="Redistribute everything"
                 body="Deal every task out again from scratch."

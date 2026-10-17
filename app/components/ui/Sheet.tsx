@@ -2,7 +2,9 @@ import { AnimatePresence, motion, useDragControls, useReducedMotion, type Inerti
 import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
-import { EASE_OUT, usePressMotion } from "~/lib/motion";
+import { EASE_OUT } from "~/lib/motion";
+import { IconButton } from "./IconButton";
+import { CloseIcon } from "./icons";
 
 type SheetProps = {
   open: boolean;
@@ -61,7 +63,6 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
   useEffect(() => setMounted(true), []);
   const desktop = useIsDesktop();
   const reduced = useReducedMotion();
-  const press = usePressMotion();
   const drag = useDragControls();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -210,7 +211,7 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             dragElastic={{ top: 0, bottom: 0.8 }}
             dragTransition={reduced ? INSTANT_DRAG : undefined}
             onDragEnd={onDragEnd}
-            className={`glass relative flex max-h-[90dvh] w-full flex-col rounded-b-none pb-[env(safe-area-inset-bottom)] outline-none md:rounded-[20px] md:pb-0 ${
+            className={`glass relative flex max-h-[90dvh] w-full flex-col rounded-b-none pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:pb-0 ${
               side === "right" ? "md:max-h-none md:max-w-md" : "md:max-w-lg"
             }`}
           >
@@ -227,20 +228,12 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
               </div>
             )}
             <div className="flex items-center gap-3 pl-5 pr-2 md:pt-2">
-              <h2 id={titleId} className="flex-1 py-2 text-lg font-semibold">
+              <h2 id={titleId} className="flex-1 py-2 text-heading font-semibold">
                 {title}
               </h2>
-              <motion.button
-                type="button"
-                aria-label="Close"
-                whileTap={press.whileTap}
-                onClick={onClose}
-                className="grid size-11 place-items-center rounded-xl text-muted hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </motion.button>
+              <IconButton aria-label="Close" className="text-muted" onClick={onClose}>
+                <CloseIcon size={16} />
+              </IconButton>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-1">{children}</div>
           </motion.div>

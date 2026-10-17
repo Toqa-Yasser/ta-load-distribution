@@ -6,6 +6,7 @@ import { TaskCard } from "~/components/tasks/TaskCard";
 import { Button } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { Fab } from "~/components/ui/Fab";
+import { PlusIcon, TasksIcon } from "~/components/ui/icons";
 import { isTaskKind, KIND_LABEL, type TaskKind } from "~/engine/types";
 import { plural } from "~/lib/format";
 import { indicatorSpring, usePressMotion } from "~/lib/motion";
@@ -56,7 +57,7 @@ export default function Tasks() {
     <div className="flex flex-col gap-6">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold md:text-4xl">Tasks</h1>
+          <h1 className="text-display font-semibold">Tasks</h1>
           <p className="mt-1 text-muted">
             {allTasks.length === 0 ? plural(0, "task", "tasks") : `${lightCount} light · ${heavyCount} heavy`}
           </p>
@@ -73,14 +74,14 @@ export default function Tasks() {
 
       {allTasks.length === 0 ? (
         <EmptyState
-          icon={<ChecklistIcon />}
+          icon={<TasksIcon />}
           title="No tasks yet"
           body="Create a task and preview who gets each date before you confirm."
           action={{ label: "New task", onClick: () => setSheet(true) }}
         />
       ) : tasks.length === 0 ? (
         <EmptyState
-          icon={<ChecklistIcon />}
+          icon={<TasksIcon />}
           title={`No ${kindFilter} tasks yet`}
           body={`Create a ${kindFilter} task, or look at every task.`}
           action={{ label: "Show all tasks", onClick: () => setKindFilter(null) }}
@@ -159,19 +160,3 @@ function KindFilter({ value, onChange }: { value: TaskKind | null; onChange: (ki
   );
 }
 
-function PlusIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function ChecklistIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="4" width="16" height="16" rx="4" />
-      <path d="M8.5 12.2l2.3 2.3 4.7-4.9" />
-    </svg>
-  );
-}

@@ -3,6 +3,8 @@ import { useState, type FormEvent } from "react";
 import { Button } from "~/components/ui/Button";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import { Field } from "~/components/ui/Field";
+import { IconButton } from "~/components/ui/IconButton";
+import { TrashIcon } from "~/components/ui/icons";
 import { INPUT_CLASS } from "~/components/ui/input";
 import type { TA } from "~/engine/types";
 import { plural } from "~/lib/format";
@@ -20,6 +22,9 @@ type TAListProps = {
   /** A command is in flight: the Add button is disabled so a double submit can't add twice. */
   pending?: boolean;
 };
+
+/** Id of the "New TA" name input, so an empty state can send focus to it. */
+export const NEW_TA_INPUT_ID = "new-ta-name";
 
 /** TA roster: add inline, tap a chip to rename, drag a chip onto a section slot. */
 export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onRemove, pending = false }: TAListProps) {
@@ -43,6 +48,7 @@ export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onR
         <div className="min-w-0 flex-1">
           <Field label="New TA">
             <input
+              id={NEW_TA_INPUT_ID}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Name"
@@ -66,7 +72,7 @@ export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onR
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.2 }}
-              className="flex items-center gap-1.5"
+              className="flex items-center gap-2"
             >
               <div className="min-w-0 flex-1">
                 {editingId === ta.id ? (
@@ -83,11 +89,9 @@ export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onR
                   <TAChip ta={ta} capacity={capacities[ta.id] ?? 0} onClick={() => setEditingId(ta.id)} />
                 )}
               </div>
-              <Button variant="ghost" icon aria-label={`Remove ${ta.name}`} title="Remove TA" onClick={() => setRemoving(ta)}>
-                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
-                </svg>
-              </Button>
+              <IconButton aria-label={`Remove ${ta.name}`} title="Remove TA" onClick={() => setRemoving(ta)}>
+                <TrashIcon />
+              </IconButton>
             </motion.li>
           ))}
         </AnimatePresence>

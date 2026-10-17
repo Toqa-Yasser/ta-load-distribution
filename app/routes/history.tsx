@@ -6,6 +6,7 @@ import { SnapshotList } from "~/components/history/SnapshotList";
 import { INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
+import { HistoryIcon } from "~/components/ui/icons";
 import { plural } from "~/lib/format";
 import { routeMeta } from "~/lib/seo";
 import { HISTORY_FETCHER_KEYS, useHistory } from "~/lib/use-history";
@@ -44,7 +45,7 @@ export default function History() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold md:text-4xl">History</h1>
+          <h1 className="text-display font-semibold">History</h1>
           <p className="mt-1 text-muted">{plural(snapshots.length, "snapshot", "snapshots")}</p>
         </div>
         <Button variant="danger" disabled={snapshots.length === 0} onClick={() => setDeleting(true)}>
@@ -71,9 +72,10 @@ export default function History() {
 
       {snapshots.length === 0 ? (
         <EmptyState
-          icon={<ClockIcon />}
+          icon={<HistoryIcon />}
           title="No history yet"
           body="Every change saves a snapshot here, so you can roll back. Save one by name before big changes."
+          action={{ label: "Name a snapshot", onClick: () => document.getElementById("snapshot-name")?.focus() }}
         />
       ) : (
         <SnapshotList snapshots={snapshots} currentVersion={version} onRollback={rollback} />
@@ -94,11 +96,3 @@ export default function History() {
   );
 }
 
-function ClockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" />
-      <path d="M12 8v4l2.8 1.8" />
-    </svg>
-  );
-}

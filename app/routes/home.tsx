@@ -8,6 +8,7 @@ import { TACard } from "~/components/dashboard/TACard";
 import { Timeline } from "~/components/dashboard/Timeline";
 import { TurnHeader } from "~/components/dashboard/TurnHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
+import { TeamIcon } from "~/components/ui/icons";
 import { turnSize as computeTurnSize } from "~/engine/capacity";
 import { TASK_KINDS, type TaskKind } from "~/engine/types";
 import { useRetained } from "~/lib/retain";
@@ -44,7 +45,7 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold md:text-4xl">Dashboard</h1>
+        <h1 className="text-display font-semibold">Dashboard</h1>
         {tas.length > 0 && (
           <div className="flex flex-col gap-3 md:flex-row md:gap-8">
             {(turnSize === 0 ? TASK_KINDS.slice(0, 1) : TASK_KINDS).map((kind) => (
@@ -62,7 +63,7 @@ export default function Home() {
 
       {tas.length === 0 ? (
         <EmptyState
-          icon={<PeopleIcon />}
+          icon={<TeamIcon />}
           title="No TAs yet"
           body="Add your TAs and give them sections on the Team page; their load shows up here."
           action={{ label: "Go to Team", onClick: () => navigate("/team") }}
@@ -98,12 +99,3 @@ export default function Home() {
   );
 }
 
-function PeopleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="8" r="3.5" />
-      <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
-      <path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-3-5.5" />
-    </svg>
-  );
-}

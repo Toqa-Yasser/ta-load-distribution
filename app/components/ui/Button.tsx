@@ -42,7 +42,7 @@ export function Button({
       {...(inert ? {} : press)}
       disabled={inert}
       aria-busy={loading || undefined}
-      className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed ${
+      className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-field font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed ${
         icon ? "size-11 p-0" : SIZES[size]
       } ${VARIANTS[variant]} ${className}`}
       {...rest}

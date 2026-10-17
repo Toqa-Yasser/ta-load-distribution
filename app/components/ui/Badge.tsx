@@ -1,25 +1,27 @@
 import type { ReactNode } from "react";
 
-export type BadgeTone = "neutral" | "accent" | "light" | "heavy" | "danger";
+export type BadgeTone = "neutral" | "plain" | "accent" | "light" | "heavy" | "danger";
 
-type BadgeProps = { tone?: BadgeTone; size?: "sm" | "md"; children: ReactNode };
+type BadgeProps = { tone?: BadgeTone; size?: "sm" | "md"; title?: string; className?: string; children: ReactNode };
 
 const TONE: Record<BadgeTone, string> = {
   neutral: "bg-ink/[0.06] text-muted",
+  plain: "bg-ink/[0.06] text-ink",
   accent: "bg-accent/15 text-accent-ink",
   light: "bg-light/15 text-light",
   heavy: "bg-heavy/15 text-heavy",
   danger: "bg-danger/12 text-danger-ink",
 };
 
-const SIZE = { sm: "h-5 px-2 text-[12px]", md: "h-6 px-2.5 text-[13px]" } as const;
+const SIZE = { sm: "h-5 gap-1 px-2 text-xs", md: "h-6 gap-1 px-3 text-xs" } as const;
 
-/** Small static pill label (not interactive). */
-export function Badge({ tone = "neutral", size = "md", children }: BadgeProps) {
+/** Small static pill label (not interactive): kinds, counts, dates, owners, "Today". */
+export function Badge({ tone = "neutral", size = "md", title, className = "", children }: BadgeProps) {
   return (
     <span
       data-badge
-      className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full font-semibold leading-none ${TONE[tone]} ${SIZE[size]}`}
+      title={title}
+      className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full font-semibold leading-none ${TONE[tone]} ${SIZE[size]} ${className}`}
     >
       {children}
     </span>

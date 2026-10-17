@@ -19,7 +19,7 @@ export function Field({ label, hint, error, children }: FieldProps) {
     [children.props["aria-describedby"], hint && !error && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-sm font-medium text-ink">
         {label}
       </label>

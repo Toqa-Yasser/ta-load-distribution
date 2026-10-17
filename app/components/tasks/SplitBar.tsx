@@ -58,7 +58,7 @@ export function SplitBar({ occurrences, tas, legend = false }: SplitBarProps) {
       {legend && parts.length > 0 && (
         <ul aria-hidden className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
           {parts.map(({ ta, n }) => (
-            <li key={ta.id} className="flex items-center gap-1.5">
+            <li key={ta.id} className="flex items-center gap-2">
               <span className="size-2.5 rounded-full" style={{ background: ta.color }} />
               {ta.name}
               <span className="font-semibold tabular-nums text-ink">{n}</span>

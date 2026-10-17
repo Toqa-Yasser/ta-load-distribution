@@ -94,3 +94,12 @@ test("pills are plain buttons, not toggle buttons", async () => {
   expect(pill(/^Quiz · Oct 5 · Ahmed · Light · swapping/)).not.toHaveAttribute("aria-pressed");
 });
 
+
+test("with no tasks the calendar shows an empty state that leads to a new task", async () => {
+  ws = { ...base(), tasks: [] };
+  renderAt("/calendar");
+  expect(await screen.findByRole("heading", { name: "Nothing scheduled yet" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "New task" })).toBeInTheDocument();
+  expect(screen.queryByRole("columnheader")).not.toBeInTheDocument();
+  expect(screen.queryByText("Mon")).not.toBeInTheDocument();
+});

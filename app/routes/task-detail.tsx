@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { data, isRouteErrorResponse, Link, useParams, type ShouldRevalidateFunction } from "react-router";
+import { data, isRouteErrorResponse, Link, useNavigate, useParams, type ShouldRevalidateFunction } from "react-router";
 import type { Route } from "./+types/task-detail";
 import { KindBadge } from "~/components/tasks/KindBadge";
 import { SplitBar } from "~/components/tasks/SplitBar";
 import { Card } from "~/components/ui/Card";
+import { EmptyState } from "~/components/ui/EmptyState";
+import { ChevronLeftIcon, TasksIcon } from "~/components/ui/icons";
 import { Select } from "~/components/ui/Select";
 import { fmtDateLong, fmtScheduleSummary, plural } from "~/lib/format";
 import { shouldRevalidateRoot } from "~/lib/revalidate";
@@ -38,24 +40,26 @@ function BackLink() {
   return (
     <Link
       to="/tasks"
-      className="inline-flex min-h-11 items-center gap-1.5 self-start rounded-xl px-2 text-sm font-medium text-muted transition-colors hover:bg-ink/5 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+      className="inline-flex min-h-11 items-center gap-2 self-start rounded-field px-2 text-sm font-medium text-muted transition-colors hover:bg-ink/5 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
     >
-      <svg aria-hidden viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 6l-6 6 6 6" />
-      </svg>
+      <ChevronLeftIcon />
       Tasks
     </Link>
   );
 }
 
 function NotFound() {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col gap-4">
       <BackLink />
-      <Card className="p-6">
-        <h1 className="text-2xl font-semibold">Task not found</h1>
-        <p className="mt-1 text-muted">It may have been deleted or undone.</p>
-      </Card>
+      <EmptyState
+        icon={<TasksIcon />}
+        titleAs="h1"
+        title="Task not found"
+        body="It may have been deleted or undone."
+        action={{ label: "Back to tasks", onClick: () => navigate("/tasks") }}
+      />
     </div>
   );
 }
@@ -97,7 +101,7 @@ export default function TaskDetail() {
       <header className="flex flex-col gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="min-w-0 break-words text-3xl font-semibold md:text-4xl">{task.title}</h1>
+            <h1 className="min-w-0 break-words text-display font-semibold">{task.title}</h1>
             <KindBadge kind={task.kind} />
           </div>
           <p className="mt-1 text-muted">

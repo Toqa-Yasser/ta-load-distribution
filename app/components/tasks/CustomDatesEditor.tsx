@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { FIELD_FOCUS, INPUT_CLASS } from "~/components/ui/input";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
+import { CloseIcon } from "~/components/ui/icons";
 import { customDates } from "~/engine/schedule";
 import type { ISODate } from "~/engine/types";
 import { fmtDate } from "~/lib/format";
@@ -82,7 +83,7 @@ function DateChip({ date, onEdit, onRemove }: { date: ISODate; onEdit: (next: IS
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: reduced ? 0 : 0.18 }}
-      className="flex items-center rounded-xl border border-line bg-surface"
+      className="flex items-center rounded-field border border-line bg-surface"
     >
       {editing ? (
         <input
@@ -92,7 +93,7 @@ function DateChip({ date, onEdit, onRemove }: { date: ISODate; onEdit: (next: IS
           defaultValue={date}
           onKeyDown={onKeyDown}
           onBlur={(e) => commit(e.currentTarget.value)}
-          className={`min-h-11 rounded-l-xl bg-transparent px-2 text-sm text-ink ${FIELD_FOCUS}`}
+          className={`min-h-11 rounded-l-field bg-transparent px-2 text-sm text-ink ${FIELD_FOCUS}`}
         />
       ) : (
         <motion.button
@@ -100,7 +101,7 @@ function DateChip({ date, onEdit, onRemove }: { date: ISODate; onEdit: (next: IS
           {...press}
           title="Edit date"
           onClick={() => setEditing(true)}
-          className="min-h-11 rounded-l-xl px-3 text-sm font-medium tabular-nums text-ink hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent"
+          className="min-h-11 rounded-l-field px-3 text-sm font-medium tabular-nums text-ink hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent"
         >
           {fmtDate(date)}
         </motion.button>
@@ -110,11 +111,9 @@ function DateChip({ date, onEdit, onRemove }: { date: ISODate; onEdit: (next: IS
         whileTap={press.whileTap}
         aria-label={`Remove ${fmtDate(date)}`}
         onClick={onRemove}
-        className="grid size-11 place-items-center rounded-r-xl text-muted hover:bg-ink/5 hover:text-danger-ink focus-visible:outline-2 focus-visible:outline-accent"
+        className="grid size-11 place-items-center rounded-r-field text-muted hover:bg-ink/5 hover:text-danger-ink focus-visible:outline-2 focus-visible:outline-accent"
       >
-        <svg aria-hidden viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+        <CloseIcon size={14} />
       </motion.button>
     </motion.li>
   );

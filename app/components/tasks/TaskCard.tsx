@@ -1,7 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router";
-import { Button } from "~/components/ui/Button";
+import { IconButton } from "~/components/ui/IconButton";
+import { KebabIcon } from "~/components/ui/icons";
 import { Card } from "~/components/ui/Card";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import type { Task } from "~/engine/types";
@@ -14,7 +15,7 @@ import { SplitBar } from "./SplitBar";
 type TaskCardProps = { task: Task; onRedistribute: () => void; onDelete: () => void };
 
 const MENU_ITEM =
-  "flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm font-medium transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent";
+  "flex min-h-11 w-full items-center rounded-[10px] px-3 text-left text-sm font-medium transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent";
 
 /** Task summary card; the whole card links to the task, the kebab menu (role=menu) offers Redistribute / Delete. */
 export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
@@ -79,13 +80,13 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
   return (
     // Raised while the menu is open so it paints over the neighbouring cards.
     <div className={`relative h-full ${menuOpen ? "z-20" : ""}`}>
-      <Card interactive className="flex h-full flex-col gap-3 p-4">
+      <Card interactive className="flex h-full flex-col gap-4 p-5">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1 pt-1">
             {/* Stretched link: its ::after covers the card, so the whole card navigates. */}
             <Link
               to={`/tasks/${task.id}`}
-              className="block truncate font-display text-lg font-semibold after:absolute after:inset-0 after:rounded-[20px] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-accent"
+              className="block truncate font-display text-heading font-semibold after:absolute after:inset-0 after:rounded-card focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-accent"
             >
               {task.title}
             </Link>
@@ -95,10 +96,8 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
             </div>
           </div>
           <div ref={menuRef} className="relative z-10">
-            <Button
+            <IconButton
               ref={triggerRef}
-              variant="ghost"
-              icon
               aria-label={`Actions for ${task.title}`}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
@@ -111,12 +110,8 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
                 }
               }}
             >
-              <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="currentColor">
-                <circle cx="12" cy="5" r="1.8" />
-                <circle cx="12" cy="12" r="1.8" />
-                <circle cx="12" cy="19" r="1.8" />
-              </svg>
-            </Button>
+              <KebabIcon />
+            </IconButton>
             <AnimatePresence>
               {menuOpen && (
                 <motion.div
@@ -128,7 +123,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -4 }}
                   transition={{ duration: reduced ? 0 : 0.15, ease: EASE_OUT }}
-                  className="absolute right-0 top-12 w-44 origin-top-right rounded-xl border border-line bg-bg p-1 shadow-xl"
+                  className="absolute right-0 top-12 w-44 origin-top-right rounded-field border border-line bg-bg p-1 shadow-xl"
                 >
                   <motion.button
                     type="button"

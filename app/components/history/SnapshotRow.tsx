@@ -1,5 +1,6 @@
 import { format, formatDistance, parseISO } from "date-fns";
 import { motion, useReducedMotion } from "motion/react";
+import { Badge } from "~/components/ui/Badge";
 import { Button } from "~/components/ui/Button";
 import { EASE_OUT } from "~/lib/motion";
 import type { SnapshotMeta } from "~/server/store";
@@ -39,13 +40,13 @@ export function SnapshotRow({ snapshot, latest, now, onRollback }: SnapshotRowPr
             {snapshot.label}
           </span>
           {snapshot.kind === "manual" && snapshot.name && (
-            <span className="rounded-full bg-accent/12 px-2 py-0.5 text-xs font-semibold text-accent-ink">
+            <span className="rounded-full bg-accent/15 px-2 py-1 text-xs font-semibold leading-none text-accent-ink">
               <span className="sr-only">Manual snapshot: </span>
               {snapshot.name}
             </span>
           )}
           {latest && (
-            <span className="rounded-full border border-line px-2 py-0.5 text-xs font-medium text-muted">Latest change</span>
+            <Badge size="sm">Latest change</Badge>
           )}
         </div>
         <time dateTime={snapshot.createdAt} title={absolute} className="text-sm text-muted" suppressHydrationWarning>

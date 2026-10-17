@@ -39,7 +39,7 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
 
   if (error) {
     return (
-      <div role="alert" className="rounded-xl border border-accent-2/30 bg-accent-2/10 p-4 text-sm font-medium text-ink">
+      <div role="alert" className="rounded-field border border-accent-2/30 bg-accent-2/10 p-4 text-sm font-medium text-ink">
         {error}
       </div>
     );
@@ -49,7 +49,7 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
     return (
       <div aria-busy="true" aria-label="Loading preview" className="flex flex-col gap-2">
         {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className="h-11 animate-pulse rounded-xl bg-ink/5 motion-reduce:animate-none" />
+          <div key={i} className="h-11 animate-pulse rounded-field bg-ink/5 motion-reduce:animate-none" />
         ))}
       </div>
     );
@@ -74,7 +74,7 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
                 initial={reduced ? false : { opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={reduced ? { duration: 0 } : { duration: 0.25, ease: EASE_OUT, delay: Math.min(i * ROW_STAGGER, MAX_STAGGER) }}
-                className="flex min-h-11 items-center justify-between gap-3 rounded-xl px-3 odd:bg-ink/[0.03]"
+                className="flex min-h-11 items-center justify-between gap-3 rounded-field px-3 odd:bg-ink/[0.03]"
               >
                 <span className="tabular-nums">{fmtDate(o.date)}</span>
                 <span className="flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-sm">

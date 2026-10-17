@@ -1,6 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { EASE_OUT, pressMotion } from "~/lib/motion";
 import { useToastQueue } from "~/lib/toast";
+import { IconButton } from "./IconButton";
+import { CloseIcon } from "./icons";
 
 // The queue and its timers live in ~/lib/toast; re-exported so existing imports keep working.
 export { ToastProvider, useToast, type ToastInput } from "~/lib/toast";
@@ -50,22 +52,14 @@ export function Toaster() {
                   t.action!.onClick();
                   dismiss(t.id);
                 }}
-                className={`min-h-11 rounded-xl px-3 font-semibold text-accent-ink hover:bg-accent/10 ${FOCUS_RING}`}
+                className={`min-h-11 rounded-field px-3 font-semibold text-accent-ink hover:bg-accent/10 ${FOCUS_RING}`}
               >
                 {t.action.label}
               </motion.button>
             )}
-            <motion.button
-              type="button"
-              aria-label="Dismiss"
-              whileTap={press.whileTap}
-              onClick={() => dismiss(t.id)}
-              className={`grid size-11 place-items-center rounded-xl text-muted hover:bg-ink/5 ${FOCUS_RING}`}
-            >
-              <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </motion.button>
+            <IconButton aria-label="Dismiss" className="text-muted" onClick={() => dismiss(t.id)}>
+              <CloseIcon size={16} />
+            </IconButton>
           </motion.div>
         ))}
       </AnimatePresence>

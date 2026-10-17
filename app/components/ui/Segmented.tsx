@@ -23,7 +23,7 @@ export function Segmented<T extends string>({
   const reduced = useReducedMotion();
   const press = usePressMotion();
   return (
-    <div role="radiogroup" aria-label={label} aria-describedby={describedBy} className={`grid gap-1 rounded-2xl border border-line bg-ink/[0.03] p-1 ${className}`}>
+    <div role="radiogroup" aria-label={label} aria-describedby={describedBy} className={`grid gap-1 rounded-[18px] border border-line bg-ink/[0.03] p-1 ${className}`}>
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -34,7 +34,7 @@ export function Segmented<T extends string>({
             aria-checked={active}
             {...press}
             onClick={() => onChange(o.value)}
-            className={`relative isolate min-h-11 rounded-xl px-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
+            className={`relative isolate min-h-11 rounded-field px-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
               active ? "text-ink" : "text-muted hover:text-ink"
             }`}
           >
@@ -42,7 +42,7 @@ export function Segmented<T extends string>({
               <motion.span
                 layoutId={layoutId}
                 transition={reduced ? { duration: 0 } : indicatorSpring}
-                className="absolute inset-0 -z-10 rounded-xl border border-line bg-surface shadow-sm"
+                className="absolute inset-0 -z-10 rounded-field border border-line bg-surface shadow-sm"
               />
             )}
             {o.label}

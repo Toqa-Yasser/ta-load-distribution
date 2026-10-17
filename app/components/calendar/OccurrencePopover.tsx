@@ -18,7 +18,7 @@ type OccurrencePopoverProps = {
 };
 
 const LINK =
-  "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 font-medium text-ink transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-field px-4 font-medium text-ink transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 /**
  * Sheet for one occurrence (bottom sheet on mobile, dialog on desktop): reassign it to
@@ -30,7 +30,7 @@ export function OccurrencePopover({ open, task, occ, tas, onReassign, onStartSwa
   return (
     <Sheet open={open} onClose={onClose} title={`${task.title} · ${fmtDateLong(occ.date)}`}>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <label htmlFor={selectId} className="text-sm font-medium">
             Assigned TA
           </label>

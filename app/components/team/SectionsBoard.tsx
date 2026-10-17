@@ -34,6 +34,9 @@ type SectionsBoardProps = {
   withinDnd?: boolean;
 };
 
+/** Id of the "New section" name input, so an empty state can send focus to it. */
+export const NEW_SECTION_INPUT_ID = "new-section-name";
+
 /** Stable id so dnd-kit's aria-describedby ids match between SSR and hydration. */
 export const TEAM_DND_ID = "team-dnd";
 
@@ -99,6 +102,7 @@ export function SectionsBoard({
         <div className="min-w-0 flex-1">
           <Field label="New section">
             <input
+              id={NEW_SECTION_INPUT_ID}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="e.g. Section 1"

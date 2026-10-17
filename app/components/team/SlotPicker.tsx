@@ -22,7 +22,7 @@ export function SlotPicker({ open, title, tas, currentTaId, onPick, onClose }: S
       {tas.length === 0 ? (
         <p className="py-4 text-sm text-muted">Add a TA first, then come back to fill this slot.</p>
       ) : (
-        <ul className="flex flex-col gap-1.5">
+        <ul className="flex flex-col gap-2">
           {tas.map((ta, i) => {
             const current = ta.id === currentTaId;
             return (
@@ -33,7 +33,7 @@ export function SlotPicker({ open, title, tas, currentTaId, onPick, onClose }: S
                   data-autofocus={i === 0 ? true : undefined}
                   aria-pressed={current}
                   onClick={() => onPick(ta.id)}
-                  className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left font-medium transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent ${
+                  className={`flex min-h-11 w-full items-center gap-3 rounded-field px-3 text-left font-medium transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent ${
                     current ? "bg-accent/10 text-accent-ink" : "text-ink"
                   }`}
                 >

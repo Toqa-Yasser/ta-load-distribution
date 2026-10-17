@@ -14,7 +14,7 @@ type SwapSheetProps = { open: boolean; onClose: () => void; ta: TA };
 type Group = { task: Task; occurrences: Occurrence[] };
 
 const OPTION =
-  "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent";
+  "flex min-h-11 w-full items-center gap-3 rounded-field px-3 py-2 text-left text-sm transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-accent";
 
 /** Tasks with their occurrences matching `keep`, by date; tasks with none are dropped. */
 function groupByTask(tasks: Task[], keep: (o: Occurrence) => boolean): Group[] {
@@ -60,7 +60,7 @@ function OccurrenceList({
                       {fmtDateLong(o.date)}
                     </span>
                     {showOwner && owner && (
-                      <span className="flex shrink-0 items-center gap-1.5 text-muted">
+                      <span className="flex shrink-0 items-center gap-2 text-muted">
                         <span aria-hidden className="size-2.5 rounded-full" style={{ background: owner.color }} />
                         {owner.name}
                       </span>

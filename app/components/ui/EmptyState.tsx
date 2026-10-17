@@ -8,6 +8,8 @@ type EmptyStateProps = {
   title: string;
   body: ReactNode;
   action?: { label: string; onClick: () => void };
+  /** Heading level for the title, so it follows the page outline (h2 under a page's h1). */
+  titleAs?: "h1" | "h2" | "h3";
 };
 
 /**
@@ -15,14 +17,14 @@ type EmptyStateProps = {
  * visible; one that appears later on the client fades and rises in. Under reduced motion
  * MotionConfig makes the rise instant.
  */
-export function EmptyState({ icon, title, body, action }: EmptyStateProps) {
+export function EmptyState({ icon, title, body, action, titleAs: Title = "h2" }: EmptyStateProps) {
   const animateIn = useHydrated();
   return (
     <motion.div
       initial={animateIn ? { opacity: 0, y: 10 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: EASE_OUT }}
-      className="mx-auto flex max-w-sm flex-col items-center gap-3 px-6 py-12 text-center"
+      className="mx-auto flex max-w-sm flex-col items-center gap-3 px-6 py-8 text-center"
     >
       <motion.div
         aria-hidden
@@ -33,10 +35,10 @@ export function EmptyState({ icon, title, body, action }: EmptyStateProps) {
       >
         {icon}
       </motion.div>
-      <h3 className="text-lg font-semibold">{title}</h3>
+      <Title className="font-display text-heading font-semibold">{title}</Title>
       <div className="text-sm text-muted">{body}</div>
       {action && (
-        <Button className="mt-2" onClick={action.onClick}>
+        <Button className="mt-1" onClick={action.onClick}>
           {action.label}
         </Button>
       )}

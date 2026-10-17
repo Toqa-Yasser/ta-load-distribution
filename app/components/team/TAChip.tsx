@@ -1,5 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import { motion } from "motion/react";
+import { Badge } from "~/components/ui/Badge";
 import type { TA } from "~/engine/types";
 import { usePressMotion } from "~/lib/motion";
 
@@ -13,20 +14,17 @@ type TAChipProps = {
 };
 
 const CHIP =
-  "flex min-h-11 w-full min-w-0 items-center gap-2.5 rounded-xl border border-line bg-surface px-3 text-left text-ink";
+  "flex min-h-11 w-full min-w-0 items-center gap-2 rounded-field border border-line bg-surface px-3 text-left text-ink";
 
 function ChipFace({ ta, capacity }: { ta: TA; capacity: number }) {
   return (
     <>
       <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: ta.color }} />
       <span className="min-w-0 flex-1 truncate font-medium">{ta.name}</span>
-      <span
-        title={`Capacity ${capacity}`}
-        className="grid min-w-7 place-items-center rounded-lg bg-ink/5 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-muted"
-      >
+      <Badge size="sm" title={`Capacity ${capacity}`} className="tabular-nums">
         <span className="sr-only">capacity </span>
         {capacity}
-      </span>
+      </Badge>
     </>
   );
 }

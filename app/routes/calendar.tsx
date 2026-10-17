@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import type { Route } from "./+types/calendar";
 import { MonthGrid } from "~/components/calendar/MonthGrid";
 import { OccurrencePopover } from "~/components/calendar/OccurrencePopover";
 import { Button } from "~/components/ui/Button";
+import { IconButton } from "~/components/ui/IconButton";
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from "~/components/ui/icons";
+import { EmptyState } from "~/components/ui/EmptyState";
 import type { OccurrenceRef, Workspace } from "~/engine/types";
 import { fmtMonth, shiftMonth } from "~/lib/calendar";
 import { routeMeta } from "~/lib/seo";
@@ -29,6 +32,7 @@ export default function Calendar() {
   const { workspace, today, taById } = useWorkspace();
   const { submit } = useCommand();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const m = params.get("m");
   const yearMonth = m && MONTH.test(m) ? m : today.slice(0, 7);
   // The ref stays set after closing so the sheet can animate out with its content.
@@ -69,31 +73,31 @@ export default function Calendar() {
   const closePopover = () => setPopover((p) => p && { ...p, open: false });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold md:text-4xl">Calendar</h1>
+          <h1 className="text-display font-semibold">Calendar</h1>
           <p className="mt-1 text-muted" aria-live="polite">
             {fmtMonth(yearMonth)}
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" icon aria-label="Previous month" onClick={() => goTo(shiftMonth(yearMonth, -1))}>
-            <Chevron d="M15 6l-6 6 6 6" />
-          </Button>
+          <IconButton aria-label="Previous month" onClick={() => goTo(shiftMonth(yearMonth, -1))}>
+            <ChevronLeftIcon />
+          </IconButton>
           <Button variant="ghost" size="sm" onClick={() => goTo(today.slice(0, 7))}>
             Today
           </Button>
-          <Button variant="ghost" icon aria-label="Next month" onClick={() => goTo(shiftMonth(yearMonth, 1))}>
-            <Chevron d="M9 6l6 6-6 6" />
-          </Button>
+          <IconButton aria-label="Next month" onClick={() => goTo(shiftMonth(yearMonth, 1))}>
+            <ChevronRightIcon />
+          </IconButton>
         </div>
       </header>
 
       {workspace.tas.length > 0 && (
         <ul aria-label="TAs" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {workspace.tas.map((ta) => (
-            <li key={ta.id} className="flex items-center gap-1.5">
+            <li key={ta.id} className="flex items-center gap-2">
               <span aria-hidden className="size-2.5 rounded-full" style={{ background: ta.color }} />
               {ta.name}
             </li>
@@ -110,15 +114,24 @@ export default function Calendar() {
         </div>
       )}
 
-      <MonthGrid
-        yearMonth={yearMonth}
-        tasks={workspace.tasks}
-        taById={taById}
-        today={today}
-        selected={popover?.open ? popover.ref : null}
-        swapSource={swapSource}
-        onSelect={onSelect}
-      />
+      {workspace.tasks.length === 0 ? (
+        <EmptyState
+          icon={<CalendarIcon />}
+          title="Nothing scheduled yet"
+          body="Create a task and its dates show up here, coloured by TA."
+          action={{ label: "New task", onClick: () => navigate("/tasks?new=1") }}
+        />
+      ) : (
+        <MonthGrid
+          yearMonth={yearMonth}
+          tasks={workspace.tasks}
+          taById={taById}
+          today={today}
+          selected={popover?.open ? popover.ref : null}
+          swapSource={swapSource}
+          onSelect={onSelect}
+        />
+      )}
 
       {popover && shown && (
         <OccurrencePopover
@@ -141,19 +154,3 @@ export default function Calendar() {
   );
 }
 
-function Chevron({ d }: { d: string }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      className="size-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d={d} />
-    </svg>
-  );
-}

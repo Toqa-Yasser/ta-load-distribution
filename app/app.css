@@ -70,6 +70,23 @@
   --font-sans: "Inter", ui-sans-serif, sans-serif;
 }
 
+/*
+ * Visual system. Spacing uses Tailwind's 4px steps from one scale: 1 / 2 / 3 / 4 / 6 / 8
+ * (4 / 8 / 12 / 16 / 24 / 32px); cards pad 20px (p-5). Type: display 32 / title 24 / heading 20,
+ * body 16 (text-base) / 14 (text-sm), caption 12 (text-xs). Radii: cards 20 (.glass, rounded-card),
+ * fields and buttons 14 (rounded-field), pills 999 (rounded-full).
+ */
+@theme {
+  --text-display: 2rem;
+  --text-display--line-height: 1.15;
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.25;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.35;
+  --radius-card: 20px;
+  --radius-field: 14px;
+}
+
 @layer base {
   /* Tailwind v4 preflight leaves buttons on the default arrow (v3 used a pointer). */
   button:not(:disabled),
@@ -117,7 +134,7 @@ h3 {
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     backdrop-filter: blur(16px) saturate(140%);
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: var(--radius-card);
     box-shadow: var(--shadow);
   }
   /* Phones: a lighter blur is far cheaper to composite while scrolling. */

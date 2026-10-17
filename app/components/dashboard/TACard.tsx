@@ -21,7 +21,7 @@ export function TACard({ ta, capacity, used, counts, totalOccurrences, nextDates
     <Card interactive className="flex h-full flex-col gap-4 p-4">
       <div className="flex items-center gap-2">
         <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: ta.color }} />
-        <h2 className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{ta.name}</h2>
+        <h2 className="min-w-0 flex-1 truncate font-display text-heading font-semibold">{ta.name}</h2>
         <span className="shrink-0 rounded-lg bg-ink/5 px-2 py-0.5 text-xs font-semibold text-muted">
           {plural(capacity, "section", "sections")}
         </span>
@@ -31,7 +31,7 @@ export function TACard({ ta, capacity, used, counts, totalOccurrences, nextDates
       <div className="@container">
         <div className="flex flex-col items-center justify-center gap-4 @[220px]:flex-row @[220px]:gap-6">
           {TASK_KINDS.map((kind) => (
-            <div key={kind} className="flex flex-col items-center gap-1.5">
+            <div key={kind} className="flex flex-col items-center gap-2">
               <Gauge
                 value={capacity ? Math.min(used[kind], capacity) / capacity : 0}
                 color={ta.color}
@@ -59,7 +59,7 @@ export function TACard({ ta, capacity, used, counts, totalOccurrences, nextDates
         </div>
         <div className="col-span-2">
           <dt className="text-muted">Next</dt>
-          <dd className="mt-1 flex min-h-6 flex-wrap gap-1.5">
+          <dd className="mt-1 flex min-h-6 flex-wrap gap-2">
             {nextDates.length === 0 ? (
               <span className="text-muted">Nothing upcoming</span>
             ) : (

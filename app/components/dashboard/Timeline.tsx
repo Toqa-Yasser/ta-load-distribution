@@ -33,7 +33,7 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
 
   return (
     <section aria-labelledby="timeline-title" className="glass flex flex-col gap-4 p-4">
-      <h2 id="timeline-title" className="text-lg font-semibold">
+      <h2 id="timeline-title" className="text-heading font-semibold">
         Coming up
       </h2>
       {groups.length === 0 ? (
@@ -57,7 +57,7 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
                   </span>
                 )}
               </div>
-              <ul className="mt-2 flex flex-col gap-1.5">
+              <ul className="mt-2 flex flex-col gap-2">
                 {rows.map((r) => (
                   <li key={r.key} className="flex items-center gap-3 text-sm">
                     <span className="flex min-w-0 flex-1 items-center gap-2">
@@ -65,7 +65,7 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
                       <KindBadge kind={r.kind} size="sm" />
                     </span>
                     {r.ta && (
-                      <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-ink/5 px-2 py-0.5 text-xs font-medium">
+                      <span className="flex shrink-0 items-center gap-2 rounded-lg bg-ink/5 px-2 py-0.5 text-xs font-medium">
                         <span aria-hidden className="size-2 rounded-full" style={{ background: r.ta.color }} />
                         {r.ta.name}
                       </span>
