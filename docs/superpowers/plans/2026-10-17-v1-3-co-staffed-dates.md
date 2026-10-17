@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Exact copy from the spec: `"This task needs 3 TAs but only 2 have sections."` (singular `"… but only 1 has sections."`; code `NOT_ENOUGH_TAS`), `"TAs per date must be a whole number of at least 1."`, `"A TA can't hold the same date twice."`, snapshot label `Upgraded to co-staffed dates`, history label `Added heavy task "X" for 2 TAs`, stepper hints `Each date is covered by this many TAs together. Every one of them counts it toward their load.` / `Give more TAs sections to co-staff dates.`, summary suffix ` · 2 TAs per date`.
-- `taCount === 1` behaviour is byte-for-byte today's: single-TA pills, labels, deals and ledgers do not change. Existing tests change only in fixture shape, except the distribute test for a TA whose capacity shrank below their current-turn usage, where the carry now applies.
+- `taCount === 1` behaviour is byte-for-byte today's: single-TA pills, labels, deals and ledgers do not change. Existing tests change only in fixture shape.
 - The engine (`app/engine`) imports nothing from `lib`, `components` or `server` (`boundaries.test.ts`).
 - ≥44px targets, reduced-motion safe, hydration-safe, tokens only, mutations via `useCommand`.
 - No AI-attribution trailers or tool mentions in commits or files.

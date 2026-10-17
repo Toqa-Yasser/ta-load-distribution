@@ -52,17 +52,14 @@ For each pending occurrence in date order:
    `redistributeTask`, `redistributeAll`, `setSemester`) name the task instead:
    `"Lab" needs 2 TAs on each date but only 1 has sections.` Both checks run once,
    before any occurrence is dealt, so a failed deal changes nothing.
-2. If every eligible TA has `used ≥ capacity` → `turn++`, `used[ta] = max(0, used[ta] − capacity[ta])`
-   for every TA (overshoot carries forward). For 1-TA tasks overshoot never happens, so this equals
-   today's reset, with one exception: a TA whose current-turn usage already exceeds a capacity that
-   shrank mid-turn now carries the excess instead of having it forgotten ("Redistribute everything"
-   resets the ledgers if that is unwanted). Carried units are not tied to a seat, so deleting or
-   redistributing the task that caused the overshoot does not release them; they clear at the next
-   rollover or on "Redistribute everything". The check runs once per occurrence, before its first pick.
-3. Pick `taCount − seats.length` TAs one at a time: among eligible TAs not already seated on this
-   occurrence, take the highest `remainingFraction`; ties → `pick(tied, rng)`. Each pick does
-   `used[ta]++` and appends `{ taId, turn }`. A pick may take a TA whose `used ≥ capacity` when every
-   other TA is seated or full (overshoot).
+2. Pick `taCount − seats.length` TAs one at a time. Before each pick, if every eligible TA not
+   already seated on this occurrence has `used ≥ capacity` → `turn++`, `used = {}` (today's reset).
+   The check runs per seat, not per date, so a co-staffed date never pushes a TA beyond their
+   capacity: when the last TA with room has taken a seat, the date's remaining seats open the next
+   turn and carry its turn number. For 1-TA tasks this is exactly today's once-per-date check.
+3. Among eligible TAs not already seated on this occurrence, take the highest `remainingFraction`;
+   ties → `pick(tied, rng)`. Each pick does `used[ta]++` and appends `{ taId, turn }`. `used` never
+   exceeds capacity, so the ledger invariant (`used[ta]` = current-turn seats held) has no exceptions.
 4. Output occurrence = `{ id, date, seats: [...kept, ...picked] }`.
 
 With `taCount === 1` and no kept seats, steps 1–4 reproduce today's algorithm exactly. The existing
@@ -161,7 +158,7 @@ each TA is charged a unit, and that the count is fixed at creation.
 ## 5. Tests
 
 **Engine** (`app/engine/__tests__`): a 2-TA deal seats distinct TAs with the highest remaining
-fractions; overshoot carries across a rollover; `eligible < taCount` throws `NotEnoughTAsError` with
+fractions; a seat with nobody left to take it opens the next turn and usage never exceeds the turn size; `eligible < taCount` throws `NotEnoughTAsError` with
 the exact message and `eligible === 0` still throws `NoCapacityError`; a failed deal leaves the
 workspace unchanged; `refund` releases every current-turn seat; `removeTA` refills only the removed
 TA's seats with a distinct TA and is rejected when a seat cannot be refilled; `swapOccurrences`

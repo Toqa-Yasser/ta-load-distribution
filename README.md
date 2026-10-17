@@ -23,9 +23,8 @@ covers. Every change is snapshotted, so you can undo or roll back.
 Each TA's **capacity** is the number of section slots they hold, and a **turn** is the sum of all
 capacities. Occurrences are dealt in date order, one unit each. Every occurrence goes to the TA with
 the **highest remaining fraction** of their capacity in this turn (`(capacity - used) / capacity`).
-**Ties are broken at random**. When everyone is full, the turn ends and usage **resets** for the next
-turn, except that any units a TA was dealt beyond their capacity (which co-staffing can require)
-carry into the next turn. So a TA with two sections gets twice as many dates as a TA with one, and nobody falls behind. The rule runs separately per task kind (light and heavy), and both kinds share section capacity.
+**Ties are broken at random**. When everyone who could take the next seat is full, the turn ends and
+usage **resets** for the next turn, so a turn is never over-full even when a date needs several TAs. So a TA with two sections gets twice as many dates as a TA with one, and nobody falls behind. The rule runs separately per task kind (light and heavy), and both kinds share section capacity.
 
 ### TAs per date
 
