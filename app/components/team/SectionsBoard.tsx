@@ -7,7 +7,7 @@ import {
   type DragEndEvent,
   type ScreenReaderInstructions,
 } from "@dnd-kit/core";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "~/components/ui/Button";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
@@ -77,6 +77,7 @@ export function SectionsBoard({
   pending = false,
   withinDnd = false,
 }: SectionsBoardProps) {
+  const reduced = useReducedMotion();
   const [draft, setDraft] = useState("");
   const [picking, setPicking] = useState<{ sectionId: string; slot: 0 | 1 } | null>(null);
   const [removing, setRemoving] = useState<Section | null>(null);
@@ -125,7 +126,7 @@ export function SectionsBoard({
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: reduced ? 0 : 0.2 }}
             >
               <SectionCard
                 section={section}

@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState, type FormEvent } from "react";
 import { Button } from "~/components/ui/Button";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
@@ -28,6 +28,7 @@ export const NEW_TA_INPUT_ID = "new-ta-name";
 
 /** TA roster: add inline, tap a chip to rename, drag a chip onto a section slot. */
 export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onRemove, pending = false }: TAListProps) {
+  const reduced = useReducedMotion();
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [removing, setRemoving] = useState<TA | null>(null);
@@ -71,7 +72,7 @@ export function TAList({ tas, capacities, occurrenceCounts, onAdd, onRename, onR
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -12 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: reduced ? 0 : 0.2 }}
               className="flex items-center gap-2"
             >
               <div className="min-w-0 flex-1">
