@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { createRoutesStub, data } from "react-router";
-import { CommandToasts } from "~/components/layout/CommandToasts";
 import { emptyWorkspace } from "~/engine/empty";
 import type { Workspace } from "~/engine/types";
 import { ToastProvider } from "~/lib/toast";
@@ -13,7 +12,7 @@ const ws: Workspace = {
   tasks: [{ id: "t", title: "Quiz", kind: "heavy", createdAt: "", schedule: { type: "one-time", date: "2026-10-20" },
     occurrences: [{ id: "o", date: "2026-10-20", taId: "A", turn: 1 }] }],
 };
-vi.mock("~/lib/use-workspace", () => ({ useWorkspace: () => ({ workspace: ws, today: "2026-10-17", taById: new Map() }) }));
+vi.mock("~/lib/use-workspace", () => ({ useWorkspace: () => ({ workspace: ws, today: "2026-10-17", taById: new Map(ws.tas.map((t) => [t.id, t])) }) }));
 
 test("the loader responds 404 for a task that does not exist", async () => {
   const thrown = await Promise.resolve(loader({ params: { taskId: "missing" } } as never)).catch((e) => e);
@@ -49,22 +48,10 @@ test("the detail page shows the kind badge", async () => {
   expect(await screen.findByText("Heavy", { selector: "[data-badge]" })).toBeInTheDocument();
 });
 
-test("the reassign select keeps the picked TA until the command settles", async () => {
-  let resolve!: (v: unknown) => void;
-  const action = vi.fn(() => new Promise((r) => (resolve = r)));
-  const Stub = createRoutesStub([
-    { path: "/tasks/:taskId", Component: () => <CommandToasts><TaskDetail /></CommandToasts> },
-    { path: "/api/command", action },
-  ]);
+test("each occurrence shows its TA as text, with nothing to reassign", async () => {
+  const Stub = createRoutesStub([{ path: "/tasks/:taskId", Component: TaskDetail as never }]);
   render(<ToastProvider><Stub initialEntries={["/tasks/t"]} /></ToastProvider>);
-  const select = (await screen.findByRole("combobox", { name: /TA for/ })) as HTMLSelectElement;
-  expect(select.value).toBe("A");
-  fireEvent.change(select, { target: { value: "B" } });
-  expect(select.value).toBe("B");
-  await waitFor(() => expect(action).toHaveBeenCalled());
-  await act(() => new Promise((r) => setTimeout(r, 30)));
-  expect(select.value).toBe("B");
-  // The (mocked) workspace never changes, so once settled the select shows the saved TA again.
-  await act(async () => resolve({ ok: true, version: 2, snapshotId: 1, label: "Reassigned" }));
-  await waitFor(() => expect(select.value).toBe("A"));
+  const row = (await screen.findByRole("cell", { name: "Ahmed" })).closest("tr")!;
+  expect(row).toHaveTextContent("Ahmed");
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
 });

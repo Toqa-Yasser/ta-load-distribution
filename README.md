@@ -12,7 +12,7 @@ covers. Every change is snapshotted, so you can undo or roll back.
 - **Team**: add, rename and remove TAs; create sections and drag (or tap) TAs into each section's two slots.
 - **Tasks**: light or heavy (each kind has its own fairness counter); three-step creation (name → schedule → preview of who gets each date) with one-time, daily,
   weekly, monthly or custom schedules; redistribute or delete a task; a task detail page.
-- **Calendar**: month grid of every occurrence; reassign a date to another TA or swap two dates.
+- **Calendar**: month grid of every occurrence; swap two dates between TAs.
 - **History**: a snapshot per change, with rollback, toast Undo, and a password-protected "delete history".
 - **Settings**: semester dates, light/dark/system theme, "redistribute everything" and "reset everything".
 - Mobile-first: bottom tabs, centred pop-in dialogs, ≥44px targets, and every animation turned off

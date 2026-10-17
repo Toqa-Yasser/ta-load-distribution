@@ -78,7 +78,7 @@ goes to B or C. Use an injectable seeded RNG so tests are deterministic.
 | deleteTask | refund: for each occurrence with `turn === ledger.turn`, `used[ta]−−` (min 0) |
 | redistributeTask | refund (as above) → `assign` again |
 | redistributeAll | `ledger = {turn:1, used:{}}`; re-run createTask assignment for all tasks in `createdAt` order |
-| reassignOccurrence(occ, newTa) | occ keeps its turn; only if occ.turn === current turn: `used[old]−−` (min 0), `used[new]++`. Past-turn occurrences leave the ledger alone, so reassigning back always restores it |
+| reassignOccurrence(occ, newTa) | engine-only (no UI sends it since v1.2): occ keeps its turn; only if occ.turn === current turn: `used[old]−−` (min 0), `used[new]++` |
 | swapOccurrences(a, b) | trade `taId`s; ledger unchanged |
 | setSemester | if `end` moved earlier, truncate occurrences past it (refund those) |
 | reset | fresh empty workspace |
@@ -127,8 +127,8 @@ Pages:
 3. **Tasks** — cards list (title, schedule summary, occurrence count, per-TA mini split bar,
    Redistribute / Delete). "New task" bottom-sheet (mobile) / modal (desktop), 3 steps with
    slide transitions: *Name → Schedule → Preview & confirm*. Custom schedule step: count + gap +
-   start → editable date chips. `/tasks/:id`: occurrence list with reassign dropdown.
-4. **Calendar** — month grid, occurrence pills colored by TA, tap → popover: reassign / swap
+   start → editable date chips. `/tasks/:id`: read-only occurrence list (date, TA).
+4. **Calendar** — month grid, occurrence pills colored by TA, tap → popover: assigned TA (read-only) / swap
    (swap mode highlights the other occurrences; tap one to complete). Prev/next month animated.
 5. **History** — timeline of snapshots (label, time, kind, name). Actions: Rollback (confirm),
    Save named snapshot (input), Delete history (password dialog → server check). Current version marker.

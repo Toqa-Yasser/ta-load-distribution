@@ -92,12 +92,14 @@ test("swap mode ignores same-TA and cross-kind targets, then swaps a valid one",
   await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
 });
 
-test("re-picking the current TA in the popover sends nothing", async () => {
+test("the popover names the assigned TA but offers no way to reassign", async () => {
   renderAt("/calendar?m=2026-10");
   fireEvent.click(await screen.findByRole("button", { name: /^Quiz · Oct 5/ }));
-  fireEvent.change(await screen.findByRole("combobox", { name: "Assigned TA" }), { target: { value: "A" } });
-  await act(() => new Promise((r) => setTimeout(r, 30)));
-  expect(action).not.toHaveBeenCalled();
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog).toHaveTextContent("Assigned TA");
+  expect(dialog).toHaveTextContent("Ahmed");
+  expect(screen.queryByRole("combobox", { name: "Assigned TA" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Swap with…" })).toBeInTheDocument();
 });
 
 test("pills are plain buttons, not toggle buttons", async () => {

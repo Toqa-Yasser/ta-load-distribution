@@ -145,10 +145,6 @@ export default function Calendar() {
           occ={shown.occ}
           tas={workspace.tas}
           onClose={closePopover}
-          onReassign={(taId) => {
-            submit({ type: "reassignOccurrence", ref: popover.ref, taId });
-            closePopover();
-          }}
           onStartSwap={() => {
             setSwapSource(popover.ref);
             closePopover();

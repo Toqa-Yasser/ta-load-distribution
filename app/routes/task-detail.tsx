@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { data, isRouteErrorResponse, Link, useNavigate, useParams, type ShouldRevalidateFunction } from "react-router";
 import type { Route } from "./+types/task-detail";
 import { KindBadge } from "~/components/tasks/KindBadge";
@@ -6,12 +5,10 @@ import { SplitBar } from "~/components/tasks/SplitBar";
 import { Card } from "~/components/ui/Card";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { ChevronLeftIcon, TasksIcon } from "~/components/ui/icons";
-import { Select } from "~/components/ui/Select";
 import { fmtDateLong, fmtScheduleSummary, plural } from "~/lib/format";
 import { shouldRevalidateRoot } from "~/lib/revalidate";
 import { stagger } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
-import { useCommand } from "~/lib/use-command";
 import { useWorkspace, type RootLoaderData } from "~/lib/use-workspace";
 import { getStore } from "~/server/store.server";
 import { loadWorkspace } from "~/server/workspace.server";
@@ -73,28 +70,12 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
 export default function TaskDetail() {
   const { taskId } = useParams();
-  const { workspace } = useWorkspace();
-  const { submit } = useCommand();
-  // occurrence id -> the TA just picked, shown until that command settles (after revalidation).
-  const [picked, setPicked] = useState<ReadonlyMap<string, { taId: string; key: string }>>(new Map());
+  const { workspace, taById } = useWorkspace();
   const task = workspace.tasks.find((t) => t.id === taskId);
 
   // The loader 404s an unknown id; this covers the root data dropping the task (delete, undo)
   // between the loader's check and this render.
   if (!task) return <NotFound />;
-
-  const reassign = (occurrenceId: string, taId: string) => {
-    let key = "";
-    const settle = () =>
-      setPicked((m) => {
-        if (m.get(occurrenceId)?.key !== key) return m; // a newer pick for this row is in flight
-        const next = new Map(m);
-        next.delete(occurrenceId);
-        return next;
-      });
-    key = submit({ type: "reassignOccurrence", ref: { taskId: task.id, occurrenceId }, taId }, { onSettled: settle });
-    setPicked((m) => new Map(m).set(occurrenceId, { taId, key }));
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -127,26 +108,17 @@ export default function TaskDetail() {
             </tr>
           </thead>
           <tbody>
+            {/* Who holds each date is read-only here: dates change hands only by swapping. */}
             {task.occurrences.map((o) => {
-              const label = fmtDateLong(o.date);
+              const ta = taById.get(o.taId);
               return (
                 <tr key={o.id} className="border-b border-line last:border-b-0">
-                  <td className="px-4 py-2 tabular-nums">{label}</td>
-                  <td className="w-1/2 px-4 py-2">
-                    <Select
-                      aria-label={`TA for ${label}`}
-                      value={picked.get(o.id)?.taId ?? o.taId}
-                      onChange={(e) => {
-                        // Re-picking the shown TA is a no-op; send nothing.
-                        if (e.target.value !== (picked.get(o.id)?.taId ?? o.taId)) reassign(o.id, e.target.value);
-                      }}
-                    >
-                      {workspace.tas.map((ta) => (
-                        <option key={ta.id} value={ta.id}>
-                          {ta.name}
-                        </option>
-                      ))}
-                    </Select>
+                  <td className="px-4 py-3 tabular-nums">{fmtDateLong(o.date)}</td>
+                  <td className="w-1/2 px-4 py-3">
+                    <span className="inline-flex items-center gap-2">
+                      <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: ta?.color ?? "var(--muted)" }} />
+                      <span className={ta ? undefined : "text-muted"}>{ta?.name ?? "Unassigned"}</span>
+                    </span>
                   </td>
                 </tr>
               );
