@@ -23,12 +23,14 @@
   --glare: rgba(255, 255, 255, 0.55);
   --scrim: rgba(16, 14, 20, 0.45); /* modal backdrop: must darken in both themes, so not --ink */
   --header-h: 3.5rem; /* fixed header: 12px top gap + 44px pills; <main> pads by it */
+  --tabbar-h: 3.5rem; /* bottom tab bar content (safe area extra); FAB, toasts and <main> clear it */
   color-scheme: light;
 }
 
 @media (width >= 48rem) {
   :root {
     --header-h: 4rem; /* 16px top gap + 48px pills on desktop */
+    --tabbar-h: 0px; /* no tab bar from md */
   }
 }
 

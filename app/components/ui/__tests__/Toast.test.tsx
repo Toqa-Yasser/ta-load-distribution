@@ -82,3 +82,10 @@ test("a success toast shows a check mark; under reduced motion it is drawn alrea
   // Reduced motion (mocked above): no pathLength tween, so no dash offset is left on the stroke.
   expect(path.getAttribute("stroke-dashoffset") ?? "0").toMatch(/^0(px)?$/);
 });
+
+test("toast clears the tab bar", () => {
+  const container = setup().parentElement!;
+  const cls = container.className.split(/\s+/);
+  expect(cls).toContain("max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+1.5rem)]");
+  expect(cls).toContain("md:bottom-6");
+});

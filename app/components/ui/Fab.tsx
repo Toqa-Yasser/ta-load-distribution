@@ -33,7 +33,7 @@ export function Fab({ label, onClick, children, className = "" }: FabProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: present ? 1 : 0 }}
       transition={{ duration: reduced ? 0 : 0.2, ease: EASE_OUT }}
-      className={`fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 grid size-14 place-items-center rounded-2xl bg-accent text-white shadow-[0_10px_30px_-8px_var(--accent)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:hidden ${className}`}
+      className={`fixed bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+0.75rem+0.75rem)] right-4 z-40 grid size-14 place-items-center rounded-2xl bg-accent text-white shadow-[0_10px_30px_-8px_var(--accent)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:hidden ${className}`}
     >
       {children}
     </motion.button>,

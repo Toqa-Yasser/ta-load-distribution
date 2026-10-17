@@ -44,6 +44,9 @@ test("mobile header pills are 44px and the main offset is header + 16px", async 
   const main = container.querySelector<HTMLElement>("main")!.className.split(/\s+/);
   expect(main).toContain("pt-[calc(var(--header-h)+1rem)]");
   expect(main).toContain("md:pt-[calc(var(--header-h)+2rem)]");
+  // Below md it clears the floating tab bar (12px offset + bar + safe area) by 16px; desktop keeps 48px.
+  expect(main).toContain("pb-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+1.75rem)]");
+  expect(main).toContain("md:pb-12");
 });
 
 test("active tab renders the sliding indicator with aria-current", async () => {
@@ -66,6 +69,6 @@ test("tab items have press feedback props", async () => {
     expect(link.querySelector("span")!.className).toContain("text-[11px]");
   }
   // Bar content is 56px tall and only the safe area pads below it.
-  expect(nav.className).toContain("h-[calc(3.5rem+env(safe-area-inset-bottom))]");
+  expect(nav.className).toContain("h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]");
   expect(nav.className).toContain("pb-[env(safe-area-inset-bottom)]");
 });

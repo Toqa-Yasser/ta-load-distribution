@@ -56,8 +56,8 @@ export function NavBar({ placement, className = "", style }: { placement: "heade
   return (
     <nav
       aria-label="Primary"
-      // 56px of tabs; the safe area pads below them (border-box, so the height includes it).
-      className="glass fixed inset-x-3 bottom-3 z-40 flex h-[calc(3.5rem+env(safe-area-inset-bottom))] justify-around px-1 pb-[env(safe-area-inset-bottom)] md:hidden"
+      // --tabbar-h (56px) of tabs; the safe area pads below them (border-box, so the height includes it).
+      className="glass fixed inset-x-3 bottom-3 z-40 flex h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] justify-around px-1 pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {NAV_ITEMS.map((item) => (
         <NavLink key={item.to} to={item.to} end={item.end} className="flex-1 rounded-2xl focus-visible:outline-2 focus-visible:outline-accent">
