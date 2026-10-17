@@ -96,6 +96,8 @@ export function overlayPop(reduced: boolean | null, y: number) {
 
 export const hoverLift = { y: -1 };
 export const tapPress = { scale: 0.96 };
+/** Deeper press for the bottom tab bar items. */
+export const tabPress = { scale: 0.94 };
 
 const STILL: TargetAndTransition = {};
 

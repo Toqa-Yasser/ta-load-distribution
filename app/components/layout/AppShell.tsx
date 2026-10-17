@@ -41,8 +41,8 @@ export function AppShell() {
               animate="enter"
               exit="exit"
               transition={reduced ? { duration: 0 } : pageTransition}
-              // Clears the fixed header (--header-h) plus a 24px gap (32px from md).
-              className={`${CONTENT_COLUMN} pb-28 pt-[calc(var(--header-h)+1.5rem)] md:pb-12 md:pt-[calc(var(--header-h)+2rem)]`}
+              // Clears the fixed header (--header-h) plus a 16px gap (32px from md).
+              className={`${CONTENT_COLUMN} pb-28 pt-[calc(var(--header-h)+1rem)] md:pb-12 md:pt-[calc(var(--header-h)+2rem)]`}
             >
               {outlet}
             </motion.main>

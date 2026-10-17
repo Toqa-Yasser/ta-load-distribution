@@ -13,13 +13,13 @@ import { NavBar } from "./NavBar";
  * is as wide as its content, 12px apart, and the group as a whole is centred in the viewport (the
  * pages pill is centred as part of the group, not pinned to the viewport centre). Below md the
  * pages live in the bottom tab bar, so the row spreads brand to the start and actions to the end.
- * The header is fixed and --header-h tall (top gap + 48px pills); AppShell's <main> pads by the
- * same variable. On load the pills fade down one after another (stagger, CSS only).
+ * The header is fixed and --header-h tall (12px top gap + 44px pills below md, 16px + 48px from
+ * md); AppShell's <main> pads by the same variable. On load the pills fade down one after another (stagger, CSS only).
  */
 export function Header() {
   const openSettings = useOpenSettings();
   const scrolled = useScrolled();
-  const pill = `glass flex h-12 items-center rounded-full transition-shadow duration-300 ${
+  const pill = `glass flex h-11 items-center md:h-12 rounded-full transition-shadow duration-300 ${
     scrolled ? "shadow-[var(--shadow-raised)]" : ""
   }`;
 
