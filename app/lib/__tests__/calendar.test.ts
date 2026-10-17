@@ -9,10 +9,10 @@ test("monthCells starts on Monday and covers 42 days", () => {
 
 test("occurrencesByDate groups by date in task order", () => {
   const tasks = [
-    { id: "t1", title: "A", createdAt: "", schedule: { type: "one-time", date: "x" }, occurrences: [
-      { id: "1", date: "2026-10-05", taId: "A", turn: 1 }, { id: "2", date: "2026-10-06", taId: "A", turn: 1 }] },
-    { id: "t2", title: "B", createdAt: "", schedule: { type: "one-time", date: "x" }, occurrences: [
-      { id: "3", date: "2026-10-05", taId: "B", turn: 1 }] },
+    { id: "t1", title: "A", createdAt: "", taCount: 1, schedule: { type: "one-time", date: "x" }, occurrences: [
+      { id: "1", date: "2026-10-05", seats: [{ taId: "A", turn: 1 }] }, { id: "2", date: "2026-10-06", seats: [{ taId: "A", turn: 1 }] }] },
+    { id: "t2", title: "B", createdAt: "", taCount: 1, schedule: { type: "one-time", date: "x" }, occurrences: [
+      { id: "3", date: "2026-10-05", seats: [{ taId: "B", turn: 1 }] }] },
   ];
   const map = occurrencesByDate(tasks as any);
   expect(map.get("2026-10-05")?.map((e) => e.occ.id)).toEqual(["1", "3"]);

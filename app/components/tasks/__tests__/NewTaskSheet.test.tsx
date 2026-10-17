@@ -19,8 +19,8 @@ const ws: Workspace = { ...emptyWorkspace(), tas: [{ id: "A", name: "Ahmed", col
 vi.mock("~/lib/use-workspace", () => ({ useWorkspace: () => ({ workspace: ws, today: "2026-10-17", taById: new Map() }) }));
 
 const previewOf = (title: string): Workspace => {
-  const task: Task = { id: "n", title, kind: "light", createdAt: "", schedule: { type: "one-time", date: "2026-10-20" },
-    occurrences: [{ id: "o", date: "2026-10-20", taId: "A", turn: 1 }] };
+  const task: Task = { id: "n", title, kind: "light", createdAt: "", taCount: 1, schedule: { type: "one-time", date: "2026-10-20" },
+    occurrences: [{ id: "o", date: "2026-10-20", seats: [{ taId: "A", turn: 1 }] }] };
   return { ...ws, tasks: [task] };
 };
 

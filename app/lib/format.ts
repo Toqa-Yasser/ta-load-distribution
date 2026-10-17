@@ -1,5 +1,5 @@
 import { format, parseISO } from "date-fns";
-import type { ISODate, Schedule } from "~/engine/types";
+import type { ISODate, Schedule, Task } from "~/engine/types";
 
 /** "Oct 20" */
 export function fmtDate(iso: ISODate): string {
@@ -29,6 +29,12 @@ export function fmtScheduleSummary(s: Schedule): string {
       return `Custom · ${n} ${n === 1 ? "date" : "dates"}`;
     }
   }
+}
+
+/** The schedule summary, plus how many TAs cover each date when more than one does. */
+export function fmtTaskSummary(task: Pick<Task, "schedule" | "taCount">): string {
+  const base = fmtScheduleSummary(task.schedule);
+  return task.taCount > 1 ? `${base} · ${task.taCount} TAs per date` : base;
 }
 
 /** "1 occurrence", "3 occurrences" */

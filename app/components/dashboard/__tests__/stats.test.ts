@@ -6,7 +6,7 @@ test("taStats reports used per kind and counts per kind", () => {
   ws.tas = [{ id: "A", name: "Ahmed", color: "#f00" }, { id: "B", name: "Bo", color: "#0f0" }] as any;
   ws.ledgers.light.used = { A: 3 };
   ws.ledgers.heavy.used = { A: 1, B: 2 };
-  const occ = (id: string, taId: string, date: string) => ({ id, date, taId, turn: 1 });
+  const occ = (id: string, taId: string, date: string) => ({ id, date, seats: [{ taId, turn: 1 }] });
   ws.tasks = [
     { id: "t1", title: "Q", kind: "light", occurrences: [occ("1", "A", "2026-10-20"), occ("2", "A", "2026-10-21"), occ("3", "A", "2026-10-22")] },
     { id: "t2", title: "P", kind: "heavy", occurrences: [occ("4", "A", "2026-10-23"), occ("5", "B", "2026-10-24")] },
@@ -23,7 +23,7 @@ test("taStats reports used per kind and counts per kind", () => {
 test("taStats keeps at most three distinct upcoming dates, ascending, and ignores unknown TAs", () => {
   const ws = emptyWorkspace();
   ws.tas = [{ id: "A", name: "Ahmed", color: "#f00" }] as any;
-  const occ = (id: string, taId: string, date: string) => ({ id, date, taId, turn: 1 });
+  const occ = (id: string, taId: string, date: string) => ({ id, date, seats: [{ taId, turn: 1 }] });
   ws.tasks = [
     { id: "t1", title: "Q", kind: "light", occurrences: [
       occ("1", "A", "2026-10-30"), occ("2", "A", "2026-10-18"), occ("3", "A", "2026-10-16"),
@@ -38,7 +38,7 @@ test("taStats keeps at most three distinct upcoming dates, ascending, and ignore
 test("each upcoming date lists the TA's task titles on that day, in task order, without repeats", () => {
   const ws = emptyWorkspace();
   ws.tas = [{ id: "A", name: "Ahmed", color: "#f00" }, { id: "B", name: "Bo", color: "#0f0" }] as any;
-  const occ = (id: string, taId: string, date: string) => ({ id, date, taId, turn: 1 });
+  const occ = (id: string, taId: string, date: string) => ({ id, date, seats: [{ taId, turn: 1 }] });
   ws.tasks = [
     { id: "t1", title: "Quiz", kind: "light", occurrences: [occ("1", "A", "2026-10-18"), occ("2", "A", "2026-10-18"), occ("3", "B", "2026-10-19")] },
     { id: "t2", title: "Lab", kind: "heavy", occurrences: [occ("4", "A", "2026-10-18"), occ("5", "A", "2026-10-20")] },
@@ -49,4 +49,18 @@ test("each upcoming date lists the TA's task titles on that day, in task order, 
     { date: "2026-10-20", titles: ["Lab"] },
   ]);
   expect(s.B.nextDates).toEqual([{ date: "2026-10-19", titles: ["Quiz"] }]);
+});
+
+test("taStats counts seats", () => {
+  const ws = emptyWorkspace();
+  ws.tas = [{ id: "A", name: "Ahmed", color: "#f00" }, { id: "B", name: "Bo", color: "#0f0" }] as any;
+  ws.tasks = [
+    { id: "t1", title: "Lab", kind: "heavy", occurrences: [{ id: "1", date: "2026-10-20", seats: [{ taId: "A", turn: 1 }, { taId: "B", turn: 1 }] }] },
+  ] as any;
+  const s = taStats(ws, "2026-10-17");
+  for (const id of ["A", "B"]) {
+    expect(s[id].totalOccurrences).toBe(1);
+    expect(s[id].counts).toEqual({ light: 0, heavy: 1 });
+    expect(s[id].nextDates).toEqual([{ date: "2026-10-20", titles: ["Lab"] }]);
+  }
 });

@@ -54,7 +54,7 @@ export default function Team() {
 
   const occurrenceCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const task of workspace.tasks) for (const o of task.occurrences) counts[o.taId] = (counts[o.taId] ?? 0) + 1;
+    for (const task of workspace.tasks) for (const o of task.occurrences) for (const s of o.seats) counts[s.taId] = (counts[s.taId] ?? 0) + 1;
     return counts;
   }, [workspace]);
   const units = useMemo(() => turnSize(workspace), [workspace]);

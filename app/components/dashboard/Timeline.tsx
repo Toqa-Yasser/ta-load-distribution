@@ -5,7 +5,7 @@ import type { ISODate, TA, Task, TaskKind } from "~/engine/types";
 import { fmtDate } from "~/lib/format";
 
 type TimelineProps = { tasks: Task[]; taById: Map<string, TA>; today: ISODate; days?: number };
-type Row = { key: string; title: string; kind: TaskKind; ta: TA | undefined };
+type Row = { key: string; title: string; kind: TaskKind; tas: TA[] };
 
 const shift = (iso: ISODate, n: number): ISODate => format(addDays(parseISO(iso), n), "yyyy-MM-dd");
 
@@ -20,7 +20,7 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
       // ISO yyyy-MM-dd strings compare chronologically.
       if (o.date < today || o.date >= end) continue;
       const rows = byDate.get(o.date) ?? [];
-      rows.push({ key: `${task.id}:${o.id}`, title: task.title, kind: task.kind, ta: taById.get(o.taId) });
+      rows.push({ key: `${task.id}:${o.id}`, title: task.title, kind: task.kind, tas: o.seats.flatMap((s) => taById.get(s.taId) ?? []) });
       byDate.set(o.date, rows);
     }
   }
@@ -52,12 +52,12 @@ export function Timeline({ tasks, taById, today, days = 14 }: TimelineProps) {
                   <li key={r.key} className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
                     <span className="min-w-0 truncate">{r.title}</span>
                     <KindBadge kind={r.kind} size="sm" />
-                    {r.ta && (
-                      <Badge tone="plain" size="sm">
-                        <span aria-hidden className="size-2 rounded-full" style={{ background: r.ta.color }} />
-                        {r.ta.name}
+                    {r.tas.map((ta) => (
+                      <Badge key={ta.id} tone="plain" size="sm">
+                        <span aria-hidden className="size-2 rounded-full" style={{ background: ta.color }} />
+                        {ta.name}
                       </Badge>
-                    )}
+                    ))}
                   </li>
                 ))}
               </ul>

@@ -7,7 +7,7 @@ import type { Task } from "~/engine/types";
 
 vi.mock("~/lib/use-workspace", () => ({ useWorkspace: () => ({ workspace: emptyWorkspace() }) }));
 
-const task: Task = { id: "t", title: "Quiz", kind: "light", createdAt: "", schedule: { type: "one-time", date: "2026-10-20" }, occurrences: [] };
+const task: Task = { id: "t", title: "Quiz", kind: "light", createdAt: "", taCount: 1, schedule: { type: "one-time", date: "2026-10-20" }, occurrences: [] };
 
 test("Redistribute asks for confirmation before dealing the task out again", () => {
   const onRedistribute = vi.fn();
@@ -109,4 +109,13 @@ describe("pressing the kebab or a menu item does not press the card", () => {
     await press(screen.getByRole("link", { name: "Quiz" }));
     expect(card.style.transform).toContain("scale(0.98)");
   });
+});
+
+test("the subtitle uses fmtTaskSummary", () => {
+  render(
+    <MemoryRouter>
+      <TaskCard task={{ ...task, taCount: 2 }} onRedistribute={() => {}} onDelete={() => {}} />
+    </MemoryRouter>,
+  );
+  expect(screen.getByText("One-time · Oct 20 · 2 TAs per date")).toBeInTheDocument();
 });
