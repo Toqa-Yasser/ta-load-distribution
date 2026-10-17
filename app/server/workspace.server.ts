@@ -14,7 +14,7 @@ const MAX_ATTEMPTS = 3;
 type SaveResult = { workspace: Workspace; version: number; snapshotId: number };
 type CommandResult = SaveResult & { label: string };
 
-const UPGRADE_SNAPSHOT_LABEL = "Upgraded to task kinds";
+const UPGRADE_SNAPSHOT_LABEL = "Upgraded to co-staffed dates";
 
 function conflict(): EngineError {
   return new EngineError("Someone else saved at the same time. Please retry.", "CONFLICT");

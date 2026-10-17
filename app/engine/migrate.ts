@@ -45,18 +45,38 @@ function isSection(value: unknown): boolean {
   );
 }
 
+function isSeat(value: unknown): boolean {
+  return isObject(value) && isString(value.taId) && typeof value.turn === "number";
+}
+
+function hasIdAndDate(value: unknown): value is Doc {
+  return isObject(value) && isString(value.id) && isString(value.date);
+}
+
 function isOccurrence(value: unknown): boolean {
-  return (
-    isObject(value) &&
-    isString(value.id) &&
-    isString(value.date) &&
-    isString(value.taId) &&
-    typeof value.turn === "number"
-  );
+  return hasIdAndDate(value) && Array.isArray(value.seats) && value.seats.length > 0 && value.seats.every(isSeat);
+}
+
+/** A v1.1 occurrence (one TA, no seats) or one already holding seats. */
+function isV11Occurrence(value: unknown): boolean {
+  return hasIdAndDate(value) && ("seats" in value ? isOccurrence(value) : isSeat(value));
+}
+
+function hasTaCount(value: Doc): boolean {
+  return typeof value.taCount === "number" && Number.isInteger(value.taCount) && value.taCount >= 1;
 }
 
 function isCurrentTask(value: Doc): boolean {
-  return isTaskKind(value.kind) && Array.isArray(value.occurrences) && value.occurrences.every(isOccurrence);
+  return (
+    isTaskKind(value.kind) &&
+    hasTaCount(value) &&
+    Array.isArray(value.occurrences) &&
+    value.occurrences.every(isOccurrence)
+  );
+}
+
+function isV11Task(value: Doc): boolean {
+  return isTaskKind(value.kind) && Array.isArray(value.occurrences) && value.occurrences.every(isV11Occurrence);
 }
 
 export function isCurrentWorkspace(doc: unknown): doc is Workspace {
@@ -80,20 +100,53 @@ function isLegacyWorkspace(doc: unknown): doc is Doc & { tasks: Doc[]; ledger: L
   return hasCommonShape(doc) && !("ledgers" in doc) && isLedger(doc.ledger);
 }
 
+/** v1.1 documents: `ledgers` and task kinds, but one TA per occurrence and no `taCount`. */
+function isV11Workspace(doc: unknown): doc is Doc & { tasks: Doc[] } {
+  return (
+    hasCommonShape(doc) &&
+    !("ledger" in doc) &&
+    isObject(doc.ledgers) &&
+    isLedger(doc.ledgers.light) &&
+    isLedger(doc.ledgers.heavy) &&
+    doc.tas.every(isTA) &&
+    doc.sections.every(isSection) &&
+    doc.tasks.every(isV11Task)
+  );
+}
+
+function upgradeV10(doc: Doc & { tasks: Doc[]; ledger: Ledger }): Doc {
+  const { ledger, ...rest } = doc;
+  return {
+    ...rest,
+    tasks: doc.tasks.map((t) => ({ ...t, kind: isTaskKind(t.kind) ? t.kind : "light" })),
+    ledgers: { light: ledger, heavy: { turn: 1, used: {} } },
+  };
+}
+
+function upgradeV11(doc: Doc & { tasks: Doc[] }): Workspace {
+  return {
+    ...doc,
+    tasks: doc.tasks.map((t) => ({
+      ...t,
+      taCount: hasTaCount(t) ? t.taCount : 1,
+      occurrences: (t.occurrences as Doc[]).map((o) => {
+        if ("seats" in o) return o;
+        const { taId, turn, ...rest } = o;
+        return { ...rest, seats: [{ taId, turn }] };
+      }),
+    })),
+  } as unknown as Workspace;
+}
+
 /**
  * Brings a stored document up to the current shape. A current document is returned as-is (same
- * reference); a v1.0 document keeps any valid task kinds, the other tasks become light, and its
- * ledger becomes the light ledger. Pure.
+ * reference). A v1.0 document keeps any valid task kinds, the other tasks become light, and its
+ * ledger becomes the light ledger; a v1.1 document gets one seat per occurrence and `taCount: 1`
+ * on tasks without one. Pure.
  */
 export function upgradeWorkspace(doc: unknown): Workspace {
   if (isCurrentWorkspace(doc)) return doc;
-  if (isLegacyWorkspace(doc)) {
-    const { ledger, ...rest } = doc;
-    return {
-      ...rest,
-      tasks: doc.tasks.map((t) => ({ ...t, kind: isTaskKind(t.kind) ? t.kind : "light" })),
-      ledgers: { light: ledger, heavy: { turn: 1, used: {} } },
-    } as unknown as Workspace;
-  }
+  const v11 = isLegacyWorkspace(doc) ? upgradeV10(doc) : doc;
+  if (isV11Workspace(v11)) return upgradeV11(v11);
   throw new ValidationError("Unrecognised workspace document.");
 }

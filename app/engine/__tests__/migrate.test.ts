@@ -16,13 +16,65 @@ function legacy() {
   };
 }
 
+/** A v1.1 document: `ledgers`, task kinds, one TA per occurrence, no `taCount`. */
+function v11() {
+  const { ledger, tasks, ...rest } = legacy();
+  return {
+    ...rest,
+    tasks: tasks.map((t) => ({ ...t, kind: "light" })),
+    ledgers: { light: ledger, heavy: { turn: 1, used: {} } },
+  };
+}
+
+test("v1.1 document upgrades to seats and taCount 1", () => {
+  const doc = v11();
+  const out = upgradeWorkspace(doc);
+  expect(out.tasks[0].occurrences).toEqual([{ id: "occ_1", date: "2026-10-05", seats: [{ taId: "ta_1", turn: 1 }] }]);
+  expect("taId" in out.tasks[0].occurrences[0]).toBe(false);
+  expect("turn" in out.tasks[0].occurrences[0]).toBe(false);
+  expect(out.tasks[0].taCount).toBe(1);
+  expect(out.ledgers).toEqual(doc.ledgers);
+  expect(doc).toEqual(v11());
+  expect(isCurrentWorkspace(doc)).toBe(false);
+  expect(isCurrentWorkspace(out)).toBe(true);
+});
+
+test("v1.0 document upgrades through the whole chain", () => {
+  const out = upgradeWorkspace(legacy());
+  expect(out.tasks[0].kind).toBe("light");
+  expect(out.tasks[0].taCount).toBe(1);
+  expect(out.tasks[0].occurrences).toEqual([{ id: "occ_1", date: "2026-10-05", seats: [{ taId: "ta_1", turn: 1 }] }]);
+  expect(out.ledgers).toEqual({ light: { turn: 1, used: { ta_1: 1 } }, heavy: { turn: 1, used: {} } });
+  expect("ledger" in out).toBe(false);
+  expect(isCurrentWorkspace(out)).toBe(true);
+});
+
+test("mixed v1.1 document accepts tasks already in the new shape", () => {
+  const base = v11();
+  const t = base.tasks[0];
+  const doc = {
+    ...base,
+    tasks: [
+      t,
+      { ...t, id: "task_2", taCount: 2, occurrences: [{ id: "occ_2", date: "2026-10-06", seats: [{ taId: "ta_1", turn: 1 }, { taId: "ta_2", turn: 1 }] }] },
+      { ...t, id: "task_3", occurrences: [{ id: "occ_3", date: "2026-10-07", seats: [{ taId: "ta_1", turn: 1 }] }] },
+    ],
+  };
+  const out = upgradeWorkspace(doc);
+  expect(out.tasks.map((x) => x.taCount)).toEqual([1, 2, 1]);
+  expect(out.tasks[0].occurrences[0].seats).toEqual([{ taId: "ta_1", turn: 1 }]);
+  expect(out.tasks[1].occurrences).toEqual(doc.tasks[1].occurrences);
+  expect(out.tasks[2].occurrences).toEqual(doc.tasks[2].occurrences);
+  expect(isCurrentWorkspace(out)).toBe(true);
+});
+
 test("legacy ledger + kindless tasks → light", () => {
   const doc = legacy();
   const out = upgradeWorkspace(doc);
   expect(out.tasks[0].kind).toBe("light");
   expect(out.ledgers).toEqual({ light: { turn: 1, used: { ta_1: 1 } }, heavy: { turn: 1, used: {} } });
   expect("ledger" in out).toBe(false);
-  expect(out.tasks[0].occurrences).toEqual(doc.tasks[0].occurrences);
+  expect(out.tasks[0].occurrences).toEqual([{ id: "occ_1", date: "2026-10-05", seats: [{ taId: "ta_1", turn: 1 }] }]);
   expect(isCurrentWorkspace(doc)).toBe(false);
   expect(isCurrentWorkspace(out)).toBe(true);
   // Pure: the input is not mutated.
@@ -110,13 +162,21 @@ describe("isCurrentWorkspace validates element shapes", () => {
     ["occurrence not an object", (ws) => ({ ...ws, tasks: [{ ...ws.tasks[0], occurrences: ["occ_1"] }] })],
     ["occurrence id not a string", (ws) => ({ ...ws, tasks: [{ ...ws.tasks[0], occurrences: [{ ...ws.tasks[0].occurrences[0], id: 1 }] }] })],
     ["occurrence date not a string", (ws) => ({ ...ws, tasks: [{ ...ws.tasks[0], occurrences: [{ ...ws.tasks[0].occurrences[0], date: 20261005 }] }] })],
-    ["occurrence taId not a string", (ws) => ({ ...ws, tasks: [{ ...ws.tasks[0], occurrences: [{ ...ws.tasks[0].occurrences[0], taId: null }] }] })],
-    ["occurrence turn not a number", (ws) => ({ ...ws, tasks: [{ ...ws.tasks[0], occurrences: [{ ...ws.tasks[0].occurrences[0], turn: "1" }] }] })],
+    ["occurrence seats missing", (ws) => ({ ...ws, tasks: [{ ...ws.tasks[0], occurrences: [{ id: "occ_1", date: "2026-10-05" }] }] })],
+    ["seats empty", (ws) => ({ ...ws, tasks: [{ ...ws.tasks[0], occurrences: [{ ...ws.tasks[0].occurrences[0], seats: [] }] }] })],
+    ["seat taId not a string", (ws) => ({ ...ws, tasks: [{ ...ws.tasks[0], occurrences: [{ ...ws.tasks[0].occurrences[0], seats: [{ taId: null, turn: 1 }] }] }] })],
+    ["seat turn not a number", (ws) => ({ ...ws, tasks: [{ ...ws.tasks[0], occurrences: [{ ...ws.tasks[0].occurrences[0], seats: [{ taId: "ta_1", turn: "1" }] }] }] })],
   ];
   test.each(cases)("rejects: %s", (_name, mutate) => {
     const doc = mutate(current());
     expect(isCurrentWorkspace(doc)).toBe(false);
     expect(() => upgradeWorkspace(doc)).toThrow(ValidationError);
+  });
+  test.each([["missing", undefined], ["0", 0], ["1.5", 1.5], ["a string", "2"]])("taCount %s is not current but upgrades to 1", (_name, taCount) => {
+    const ws = current();
+    const doc = { ...ws, tasks: [{ ...ws.tasks[0], taCount }] };
+    expect(isCurrentWorkspace(doc)).toBe(false);
+    expect(upgradeWorkspace(doc).tasks[0].taCount).toBe(1);
   });
   test("a well-formed document with null slots is accepted by reference", () => {
     const ws = current();
