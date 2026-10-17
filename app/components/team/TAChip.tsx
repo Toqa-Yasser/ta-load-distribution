@@ -14,7 +14,7 @@ type TAChipProps = {
 };
 
 const CHIP =
-  "flex min-h-11 w-full min-w-0 items-center gap-2 rounded-field border border-line bg-surface px-3 text-left text-ink";
+  "flex min-h-11 w-full min-w-0 items-center gap-2 rounded-field border border-line px-3 text-left text-ink";
 
 function ChipFace({ ta, capacity }: { ta: TA; capacity: number }) {
   return (
@@ -43,7 +43,7 @@ function DraggableChip({ ta, capacity, onClick }: Omit<TAChipProps, "draggable">
       onClick={onClick}
       title="Tap to rename, drag to a slot"
       // The DragOverlay follows the pointer; the source stays put (dimmed) so the list doesn't jump.
-      className={`${CHIP} cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] transition-[opacity,box-shadow] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:cursor-grabbing ${
+      className={`${CHIP} bg-surface cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] transition-[opacity,box-shadow] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:cursor-grabbing ${
         isDragging ? "opacity-40" : ""
       }`}
     >
@@ -54,8 +54,9 @@ function DraggableChip({ ta, capacity, onClick }: Omit<TAChipProps, "draggable">
 
 export function TAChip({ ta, capacity, draggable = true, onClick }: TAChipProps) {
   if (draggable) return <DraggableChip ta={ta} capacity={capacity} onClick={onClick} />;
+  // Opaque (the glass surface is translucent): the slot under it must not show through the name.
   return (
-    <div className={`${CHIP} cursor-grabbing shadow-xl ring-2 ring-accent/40`}>
+    <div className={`${CHIP} cursor-grabbing bg-[var(--bg)] shadow-xl ring-2 ring-accent/40`}>
       <ChipFace ta={ta} capacity={capacity} />
     </div>
   );
