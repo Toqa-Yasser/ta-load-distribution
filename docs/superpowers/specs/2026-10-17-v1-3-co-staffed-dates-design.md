@@ -48,13 +48,17 @@ For each pending occurrence in date order:
 1. `eligible` = TAs with capacity > 0. If `eligible.length === 0` → `NoCapacityError` (unchanged
    message). If `eligible.length < taCount` → `NotEnoughTAsError(taCount, eligible.length)`:
    `"This task needs 3 TAs but only 2 have sections."` (`"… but only 1 has sections."` for one), code
-   `NOT_ENOUGH_TAS`. Both checks run once,
+   `NOT_ENOUGH_TAS`. Paths that deal several tasks or act from outside the wizard (`removeTA`,
+   `redistributeTask`, `redistributeAll`, `setSemester`) name the task instead:
+   `"Lab" needs 2 TAs on each date but only 1 has sections.` Both checks run once,
    before any occurrence is dealt, so a failed deal changes nothing.
 2. If every eligible TA has `used ≥ capacity` → `turn++`, `used[ta] = max(0, used[ta] − capacity[ta])`
    for every TA (overshoot carries forward). For 1-TA tasks overshoot never happens, so this equals
    today's reset, with one exception: a TA whose current-turn usage already exceeds a capacity that
    shrank mid-turn now carries the excess instead of having it forgotten ("Redistribute everything"
-   resets the ledgers if that is unwanted). The check runs once per occurrence, before its first pick.
+   resets the ledgers if that is unwanted). Carried units are not tied to a seat, so deleting or
+   redistributing the task that caused the overshoot does not release them; they clear at the next
+   rollover or on "Redistribute everything". The check runs once per occurrence, before its first pick.
 3. Pick `taCount − seats.length` TAs one at a time: among eligible TAs not already seated on this
    occurrence, take the highest `remainingFraction`; ties → `pick(tied, rng)`. Each pick does
    `used[ta]++` and appends `{ taId, turn }`. A pick may take a TA whose `used ≥ capacity` when every
@@ -78,7 +82,7 @@ distribution tests pass with only fixture-shape changes.
 | `deleteTask` | `refund` over all seats. |
 | `redistributeTask`, `redistributeAll`, `setSemester` (extend) | re-deal / deal with each task's own `taCount`; may throw `NotEnoughTAsError`. `redistributeAll` fails atomically (workspace unchanged) if any task cannot be dealt. |
 | `setSemester` (truncate) | refund over dropped occurrences' seats. |
-| `removeTA` | For each kind: orphan seats = seats held by the TA. `refundSeats`, delete `used[taId]`, then refill each orphaned occurrence with `assignOccurrences({ …, occurrences: [{ id, date, seats: remainingSeats }], taCount: task.taCount })`, threading the kind's ledger. If any refill throws, the command throws and nothing changes. Section slots are cleared as today. |
+| `removeTA` | For each kind: orphan seats = seats held by the TA. `refundSeats`, delete `used[taId]`, then refill the orphaned occurrences one at a time in date order across tasks (each with its own `task.taCount`, `assignOccurrences({ …, occurrences: [{ id, date, seats: remainingSeats }], taCount })`), threading the kind's ledger — the same order today's single re-deal uses, so 1-TA tasks are refilled exactly as before. If any refill throws, the command throws and nothing changes. Section slots are cleared as today. |
 | `setSectionSlot`, `removeSection` | unchanged: existing assignments are never blocked by capacity changes; later deals may throw. |
 | `swapOccurrences` | `{ a: SeatRef; b: SeatRef }`. Rejected when: same occurrence (`"Pick two different occurrences to swap."`); different kinds (`"Only tasks of the same kind can be swapped."`); seat not found (`"Unknown occurrence."` / `"Unknown TA."`); `a.taId === b.taId` (no-op: returns `ws`); `b.taId` already seated on `a`'s occurrence or `a.taId` on `b`'s (`"A TA can't hold the same date twice."`). Effect: the two seats trade `taId` and `turn`; ledger untouched. |
 | `reassignOccurrence` | `{ ref: OccurrenceRef; from: string; taId: string }` — engine only, no UI sends it. Moves the seat held by `from` to `taId`; rejected if `taId` is already seated on the occurrence. Ledger rule unchanged (current-turn seat moves its unit). |
@@ -110,7 +114,7 @@ change. `readCommand` shape checks gain `taCount` and `SeatRef`.
 ## 4. UI
 
 ### 4.1 New task wizard
-- **Step 1** gains a "TAs per date" stepper (−, number, +) under the kind control. Range 1 …
+- **Step 1** gains a "TAs per date" stepper (−, number, +) with a visible "TAs per date" label, under the kind control. Range 1 …
   `max(1, eligibleCount(ws))`, default 1. Hint: "Each date is covered by this many TAs together.
   Every one of them counts it toward their load." When the cap is 1 the + is disabled and the hint
   reads "Give more TAs sections to co-staff dates." Component: `components/ui/Stepper.tsx`
@@ -135,9 +139,12 @@ change. `readCommand` shape checks gain `taCount` and `SeatRef`.
 - **Swap mode**: `swapSource: SeatRef`. A pill is a valid target when it is a different occurrence of
   the same kind and has at least one seat whose TA ≠ source TA and is not already seated on the
   source occurrence, and the source TA is not already seated on it. Pills with no valid seat are
-  dimmed (`ineligible`). Tapping a valid 1-seat pill swaps immediately. Tapping a valid multi-seat
-  pill opens the popover in "pick a seat" mode listing only the valid seats; picking one submits the
-  swap. The status bar text is unchanged.
+  dimmed (`ineligible`). Tapping a pill with exactly one valid seat swaps immediately (whether the
+  pill has one seat or several); a pill with two or more valid seats opens the popover in "pick a
+  seat" mode listing only those seats, and picking one submits the swap. When the source occurrence
+  has several seats the status bar names the moving seat: `Swapping Omar's seat — pick another heavy
+  occurrence`; for a single-seat source it is unchanged. A pick-mode popover closes when swap mode
+  ends underneath it.
 
 ### 4.4 Dashboard
 - **SwapSheet** step 1 lists the TA's seats (every date they sit on). Step 2 lists one row per valid
