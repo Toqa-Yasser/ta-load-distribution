@@ -4,7 +4,7 @@ import { EASE_OUT, useHydrated } from "~/lib/motion";
 import { usePendingGlobal } from "~/lib/use-pending";
 
 /** Pending must last this long before the bar appears, so quick navigations never flash it. */
-export const PROGRESS_DELAY_MS = 120;
+const PROGRESS_DELAY_MS = 120;
 const FADE_MS = 200;
 const START_PCT = 8;
 const HOLD_PCT = 80;
@@ -39,23 +39,25 @@ export function TopProgress() {
       }, PROGRESS_DELAY_MS);
       return () => clearTimeout(t);
     }
-    if (phaseRef.current !== "running") return;
-    setPhase("done");
+    if (phaseRef.current === "running") setPhase("done");
+  }, [pending]);
+
+  // Its own effect, keyed on the phase: a restart (done → running) or a reduced-motion toggle
+  // mid-fade replaces the timer instead of stranding the bar at 100%.
+  useEffect(() => {
+    if (phase !== "done") return;
     const t = setTimeout(() => setPhase("idle"), reduced ? 0 : FADE_MS);
     return () => clearTimeout(t);
-  }, [pending, reduced]);
+  }, [phase, reduced]);
 
   if (!hydrated || phase === "idle") return null;
 
   const done = phase === "done";
-  const className = "pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 bg-accent shadow-[0_0_8px_var(--accent)]";
-  const aria = {
-    role: "progressbar",
-    "aria-label": "Loading",
-    "aria-valuemin": 0,
-    "aria-valuemax": 100,
-    "aria-valuenow": done ? 100 : START_PCT,
-  } as const;
+  // z-[60]: above the sheet layer (z-50) and its backdrop.
+  const className = "pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 bg-accent shadow-[0_0_8px_var(--accent)]";
+  // Indeterminate: the width is a cue, not a measure, so there is no aria-valuenow (AppShell sets
+  // aria-busy on <main> while pending). data-phase is for tests and debugging.
+  const aria = { role: "progressbar", "aria-label": "Loading", "data-phase": phase } as const;
 
   if (reduced) return <div {...aria} className={className} style={{ width: done ? "100%" : `${HOLD_PCT}%` }} />;
 

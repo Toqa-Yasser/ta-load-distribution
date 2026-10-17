@@ -127,6 +127,41 @@ export function useStaggerOnMount(listFirstRender: RefObject<boolean>, i: number
   return entrance ?? { className };
 }
 
+/**
+ * stagger(i) for a block that can be display:none at some widths (the header pages pill below
+ * md). A CSS animation restarts whenever its element goes from display:none to shown, so the
+ * class is dropped once the first-paint entrance has ended or been cancelled, or at mount when
+ * none is running (hidden then, already finished, or reduced motion). Spread it, ref included.
+ * Native listeners: React has no animationcancel prop.
+ */
+export function useEntranceOnce<T extends HTMLElement>(
+  i: number,
+  direction: "rise" | "down",
+  className: string,
+): { ref: RefObject<T | null>; className: string; style?: CSSProperties } {
+  const ref = useRef<T>(null);
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || done) return;
+    if (typeof el.getAnimations === "function" && el.getAnimations().length === 0) {
+      setDone(true);
+      return;
+    }
+    // A child's own animation bubbling up does not end the pill's entrance.
+    const finish = (e: Event) => {
+      if (e.target === el) setDone(true);
+    };
+    el.addEventListener("animationend", finish);
+    el.addEventListener("animationcancel", finish);
+    return () => {
+      el.removeEventListener("animationend", finish);
+      el.removeEventListener("animationcancel", finish);
+    };
+  }, [done]);
+  return done ? { ref, className } : { ref, ...stagger(i, direction, className) };
+}
+
 /* ---------- Sheets and menus ---------- */
 
 /** The one transition every sheet, dialog and menu uses for its fade/pop. */
@@ -159,8 +194,8 @@ export function overlayPop(reduced: boolean | null, y: number) {
     : { initial: { opacity: 0, scale: 0.96, y }, animate: POP_STILL, exit: { opacity: 0, scale: 0.96, y }, transition: overlayTransition };
 }
 
-export const hoverLift = { y: -1 };
-export const tapPress = { scale: 0.96 };
+const hoverLift = { y: -1 };
+const tapPress = { scale: 0.96 };
 /** Deeper press for the bottom tab bar items. */
 export const tabPress = { scale: 0.94 };
 /** Gentler press for large tappable cards. */

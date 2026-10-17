@@ -4,7 +4,7 @@ import { BrandMark } from "~/components/ui/BrandMark";
 import { IconButton } from "~/components/ui/IconButton";
 import { SettingsIcon } from "~/components/ui/icons";
 import { ThemeToggle } from "~/components/ui/ThemeToggle";
-import { stagger } from "~/lib/motion";
+import { stagger, useEntranceOnce } from "~/lib/motion";
 import { useOpenSettings } from "~/lib/settings";
 import { useScrolled } from "~/lib/use-scrolled";
 import { NavBar } from "./NavBar";
@@ -22,10 +22,14 @@ export function Header() {
   const scrolled = useScrolled();
   const headerRef = useRef<HTMLElement>(null);
   // The brand mark pulses (CSS) until the first client effect: a cue that the page is still loading.
-  useEffect(() => headerRef.current?.querySelector(".brand-mark")?.removeAttribute("data-hydrating"), []);
+  useEffect(() => {
+    headerRef.current?.querySelector(".brand-mark")?.removeAttribute("data-hydrating");
+  }, []);
   const pill = `glass flex h-11 items-center md:h-12 rounded-full transition-shadow duration-300 ${
     scrolled ? "shadow-[var(--shadow-raised)]" : ""
   }`;
+  // Hidden below md: a plain stagger class would replay the entrance on every md crossing.
+  const pagesEntrance = useEntranceOnce<HTMLElement>(1, "down", `${pill} pointer-events-auto`);
 
   return (
     <header ref={headerRef} className="pointer-events-none fixed inset-x-0 top-0 z-30 h-(--header-h) pt-3 md:pt-4">
@@ -39,7 +43,7 @@ export function Header() {
             <span className="whitespace-nowrap font-display text-base font-semibold tracking-tight">TA Load</span>
           </Link>
         </div>
-        <NavBar placement="header" {...stagger(1, "down", `${pill} pointer-events-auto`)} />
+        <NavBar placement="header" {...pagesEntrance} />
         <div data-pill="actions" {...stagger(2, "down", `${pill} pointer-events-auto gap-0.5 px-0.5`)}>
           <ThemeToggle />
           <IconButton aria-label="Settings" title="Settings" aria-haspopup="dialog" onClick={openSettings}>

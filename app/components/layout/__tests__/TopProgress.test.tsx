@@ -41,9 +41,9 @@ test("progress bar shows after 120ms of pending and completes on idle", () => {
   tick(100);
   expect(bar()).toBeNull();
   tick(30);
-  expect(bar()).toHaveAttribute("aria-valuenow", "8");
+  expect(bar()).toHaveAttribute("data-phase", "running");
   setPending(view, "idle");
-  expect(bar()).toHaveAttribute("aria-valuenow", "100");
+  expect(bar()).toHaveAttribute("data-phase", "done");
   tick(250);
   expect(bar()).toBeNull();
 });
@@ -61,9 +61,9 @@ test("an errored fetcher still completes the bar", () => {
   const view = render(<TopProgress />);
   setPending(view, "idle", [{ state: "submitting" }]);
   tick(130);
-  expect(bar()).toHaveAttribute("aria-valuenow", "8");
+  expect(bar()).toHaveAttribute("data-phase", "running");
   setPending(view, "idle", [{ state: "idle", data: { ok: false } }]);
-  expect(bar()).toHaveAttribute("aria-valuenow", "100");
+  expect(bar()).toHaveAttribute("data-phase", "done");
   tick(250);
   expect(bar()).toBeNull();
 });
@@ -75,6 +75,43 @@ test("reduced motion renders a static bar", () => {
   tick(130);
   expect(bar()).toHaveStyle({ width: "80%" });
   setPending(view, "idle");
+  tick(5);
+  expect(bar()).toBeNull();
+});
+
+test("the bar is indeterminate (no aria-valuenow) and sits above sheet backdrops", () => {
+  const view = render(<TopProgress />);
+  setPending(view, "loading");
+  tick(130);
+  expect(bar()).not.toHaveAttribute("aria-valuenow");
+  expect(bar()!.className.split(/\s+/)).toContain("z-[60]");
+  expect(bar()!.className).not.toMatch(/(^|\s)z-50(\s|$)/);
+});
+
+test("pending again during the fade restarts the bar, and the old fade timer does not remove it", () => {
+  const view = render(<TopProgress />);
+  setPending(view, "loading");
+  tick(130);
+  setPending(view, "idle");
+  expect(bar()).toHaveAttribute("data-phase", "done");
+  tick(100);
+  setPending(view, "loading");
+  expect(bar()).toHaveAttribute("data-phase", "running");
+  tick(500);
+  expect(bar()).toHaveAttribute("data-phase", "running");
+  setPending(view, "idle");
+  tick(250);
+  expect(bar()).toBeNull();
+});
+
+test("toggling reduced motion mid-fade still clears the bar", () => {
+  const view = render(<TopProgress />);
+  setPending(view, "loading");
+  tick(130);
+  setPending(view, "idle");
+  tick(50);
+  motionMock.reduced = true;
+  view.rerender(<TopProgress />);
   tick(5);
   expect(bar()).toBeNull();
 });

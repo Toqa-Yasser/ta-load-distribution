@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { createRoutesStub } from "react-router";
 import { ThemeProvider } from "~/lib/theme";
 import { Header } from "../Header";
@@ -60,4 +60,40 @@ test("brand mark drops data-hydrating after mount", async () => {
   await screen.findByRole("banner");
   expect(container.querySelector(".brand-mark")).not.toBeNull();
   expect(container.querySelector("[data-hydrating]")).toBeNull();
+});
+
+describe("pages-pill entrance plays on the first paint only", () => {
+  const pagesPill = (c: HTMLElement) => c.querySelector<HTMLElement>('[data-pill="pages"]')!;
+  afterEach(() => {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).getAnimations;
+  });
+
+  test("the class is dropped once its own entrance ends, so an md crossing cannot replay it", async () => {
+    const { container } = renderAt("/");
+    await screen.findByRole("banner");
+    const pill = pagesPill(container);
+    expect(pill.className).toContain("enter-down");
+    // A child's animation bubbling up does not count.
+    fireEvent.animationEnd(pill.querySelector("a")!, { bubbles: true });
+    expect(pill.className).toContain("enter-down");
+    fireEvent.animationEnd(pill);
+    expect(pill.className).not.toContain("enter-down");
+    expect(pill.className).toContain("max-md:hidden");
+  });
+
+  test("a cancelled entrance (pill hidden mid-animation) also drops the class", async () => {
+    const { container } = renderAt("/");
+    await screen.findByRole("banner");
+    fireEvent(pagesPill(container), new Event("animationcancel"));
+    expect(pagesPill(container).className).not.toContain("enter-down");
+  });
+
+  test("a pill with no running entrance at mount (hidden below md, or already finished) drops it at once", async () => {
+    HTMLElement.prototype.getAnimations = () => [];
+    const { container } = renderAt("/");
+    await screen.findByRole("banner");
+    expect(pagesPill(container).className).not.toContain("enter-down");
+    // The always-visible pills keep their plain CSS entrance.
+    expect(container.querySelector('[data-pill="brand"]')!.className).toContain("enter-down");
+  });
 });

@@ -14,6 +14,7 @@ import {
 } from "~/lib/motion";
 import { OpenSettingsContext } from "~/lib/settings";
 import { UNDO_FETCHER_KEY, useHistory } from "~/lib/use-history";
+import { usePendingGlobal } from "~/lib/use-pending";
 import { Background } from "./Background";
 import { CommandToasts } from "./CommandToasts";
 import { CONTENT_COLUMN } from "./column";
@@ -42,6 +43,8 @@ export function AppShell() {
   const openSettings = useCallback(() => setSettingsOpen(true), []);
   // Toasts the result of every toast's Undo; mounted here so it outlives the page that showed it.
   useHistory(UNDO_FETCHER_KEY);
+  // Pairs with TopProgress (an indeterminate bar): assistive tech hears the page is updating.
+  const pending = usePendingGlobal();
 
   return (
     <OpenSettingsContext.Provider value={openSettings}>
@@ -57,6 +60,7 @@ export function AppShell() {
             <motion.main
               key={pathname}
               custom={dir}
+              aria-busy={pending || undefined}
               variants={variants}
               initial="initial"
               animate="enter"
