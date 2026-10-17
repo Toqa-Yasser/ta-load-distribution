@@ -44,6 +44,8 @@ test("StepName shows a TAs per date stepper capped at the eligible count with th
   const spin = screen.getByRole("spinbutton", { name: "TAs per date" });
   expect(spin).toHaveAttribute("aria-valuemax", "3");
   expect(screen.getByRole("group", { name: "TAs per date" })).toHaveAccessibleDescription(HINT_MANY);
+  expect(spin).toHaveAccessibleDescription(HINT_MANY);
+  expect(screen.getByText("TAs per date")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Increase" }));
   expect(onChange).toHaveBeenCalledWith({ kind: "light", title: "Quiz", notes: "", taCount: 2 });
 });

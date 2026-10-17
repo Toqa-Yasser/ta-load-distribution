@@ -117,5 +117,5 @@ test("the subtitle uses fmtTaskSummary", () => {
       <TaskCard task={{ ...task, taCount: 2 }} onRedistribute={() => {}} onDelete={() => {}} />
     </MemoryRouter>,
   );
-  expect(screen.getByText("One-time · Oct 20 · 2 TAs per date")).toBeInTheDocument();
+  expect(screen.getByText("One-time · Oct 20 · 2 TAs per date")).toHaveAttribute("title", "One-time · Oct 20 · 2 TAs per date");
 });
