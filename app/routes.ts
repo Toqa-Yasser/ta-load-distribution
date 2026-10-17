@@ -10,4 +10,5 @@ export default [
   route("api/command", "routes/api.command.tsx"),
   route("api/preview", "routes/api.preview.tsx"),
   route("api/history", "routes/api.history.tsx"),
+  route(".well-known/appspecific/com.chrome.devtools.json", "routes/well-known.devtools.tsx"),
 ] satisfies RouteConfig;
