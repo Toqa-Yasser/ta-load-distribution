@@ -51,7 +51,7 @@ export function AppShell() {
       {/* Toasts each command's result, so a toast survives the page that submitted it. */}
       <CommandToasts>
         {/* Made inert while a Sheet is open; sheets portal to <body>, outside it. */}
-        <div id={APP_ROOT_ID} className="relative min-h-dvh">
+        <div id={APP_ROOT_ID} className="relative min-h-dvh overflow-x-clip">
           <Background />
           <TopProgress />
           <Header />

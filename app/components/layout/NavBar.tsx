@@ -58,6 +58,7 @@ export function NavBar({ placement, className = "", ...navProps }: { placement: 
   return (
     <nav
       aria-label="Primary"
+      data-tabbar
       // --tabbar-h (56px) of tabs; the safe area pads below them (border-box, so the height includes it).
       className="glass fixed inset-x-3 bottom-3 z-40 flex h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] justify-around px-1 pb-[env(safe-area-inset-bottom)] md:hidden"
     >

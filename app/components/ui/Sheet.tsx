@@ -25,7 +25,7 @@ import {
 import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
 import { isTextEntry, useCoarsePointer } from "~/lib/pointer";
-import { backdropOpacityFor, overlayPop, overlaySpring, overlayTransition, sheetDragElastic, touchSpring } from "~/lib/motion";
+import { backdropOpacityFor, DESKTOP_QUERY, overlayPop, overlaySpring, overlayTransition, sheetDragElastic, touchSpring, useMediaQuery } from "~/lib/motion";
 import { IconButton } from "./IconButton";
 import { CloseIcon } from "./icons";
 
@@ -109,7 +109,6 @@ function revealSoon(el: HTMLElement) {
   requestAnimationFrame(() => el.scrollIntoView?.({ block: "nearest" }));
 }
 
-const DESKTOP_QUERY = "(min-width: 48rem)"; // Tailwind `md`
 const DISMISS_OFFSET = 120;
 const DISMISS_VELOCITY = 600;
 /** `type: false` makes motion jump straight to the target, so the release snaps back without a spring. */
@@ -130,19 +129,6 @@ function holdAppRootInert(): () => void {
   };
 }
 
-function useIsDesktop(): boolean {
-  const [desktop, setDesktop] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia?.(DESKTOP_QUERY);
-    if (!mq) return;
-    setDesktop(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setDesktop(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return desktop;
-}
-
 /**
  * Modal surface: a draggable bottom sheet below `md`, a centred dialog (or, with
  * `side="right"`, a right-hand slide-over) from `md` up.
@@ -155,7 +141,7 @@ function useIsDesktop(): boolean {
 export function Sheet({ open, onClose, title, side = "center", children, footer }: SheetProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const desktop = useIsDesktop();
+  const desktop = useMediaQuery(DESKTOP_QUERY);
   const reduced = useReducedMotion();
   const drag = useDragControls();
   const titleId = useId();

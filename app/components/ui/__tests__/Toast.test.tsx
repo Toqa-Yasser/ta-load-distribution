@@ -86,6 +86,6 @@ test("a success toast shows a check mark; under reduced motion it is drawn alrea
 test("toast clears the tab bar", () => {
   const container = setup().parentElement!;
   const cls = container.className.split(/\s+/);
-  expect(cls).toContain("max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+1.5rem)]");
+  expect(cls).toContain("max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+1.5rem+var(--fab-clear))]");
   expect(cls).toContain("md:bottom-6");
 });

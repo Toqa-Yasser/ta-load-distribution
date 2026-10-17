@@ -240,6 +240,9 @@ export function useMediaQuery(query: string): boolean {
   return useHydrated() && matches;
 }
 
+/** From Tailwind `md` (48rem) up. */
+export const DESKTOP_QUERY = "(min-width: 48rem)";
+
 /** Below Tailwind `md` (48rem). */
 export const PHONE_QUERY = "(max-width: 47.99rem)";
 

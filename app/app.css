@@ -24,6 +24,7 @@
   --scrim: rgba(16, 14, 20, 0.45); /* modal backdrop: must darken in both themes, so not --ink */
   --header-h: 3.5rem; /* fixed header: 12px top gap + 44px pills; <main> pads by it */
   --tabbar-h: 3.5rem; /* bottom tab bar content (safe area extra); FAB, toasts and <main> clear it */
+  --fab-clear: 0px; /* raised while a FAB is mounted so toasts stack above it */
   color-scheme: light;
 }
 
@@ -124,6 +125,22 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* A FAB (56px) plus a 12px gap: toasts sit above it instead of covering it. */
+:root:has(#fab-slot > *) {
+  --fab-clear: 4.25rem;
+}
+
+@media (pointer: coarse) {
+  html {
+    scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem);
+  }
+  /* interactive-widget=resizes-content lifts fixed bottom UI above the keyboard, over the field.
+     Hide it while an in-page field has focus (fields in sheets portal outside #app-root). */
+  :root:has(#app-root :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, [contenteditable=true]):focus) :is([data-tabbar], #fab-slot) {
+    display: none;
+  }
 }
 
 body {

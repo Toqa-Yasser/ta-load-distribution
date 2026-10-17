@@ -117,10 +117,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-6 pt-16">
+    <main className="mx-auto w-full max-w-2xl p-6 pt-16">
       <div className="glass p-6">
         <h1 className="text-display font-semibold">{message}</h1>
-        <p className="mt-2 text-muted">{details}</p>
+        <p className="mt-2 break-words text-muted">{details}</p>
         {stack && (
           <pre className="mt-4 w-full overflow-x-auto text-xs">
             <code>{stack}</code>
