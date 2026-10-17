@@ -38,7 +38,7 @@ test("tab bar and FAB hide while the keyboard is up (data-keyboard-open), not on
   // Outranks :root:has(#fab-slot > *), so the hidden FAB is no longer cleared by the toasts.
   expect(c).toContain(":root:has(#app-root[data-keyboard-open]) { --fab-clear: 0px; }");
   // Fields scrolled into view still clear the tab bar.
-  expect(c).toContain("scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem)");
+  expect(c).toContain("scroll-padding-bottom: calc(var(--tabbar-h) + 0.75rem + env(safe-area-inset-bottom) + 1rem)");
 });
 
 function renderShell() {
@@ -83,4 +83,8 @@ test("#app-root clips horizontal overflow", async () => {
   await screen.findByRole("banner");
   expect(document.getElementById("app-root")!.className.split(/\s+/)).toContain("overflow-x-clip");
   void fireEvent;
+});
+
+test("scroll-padding-bottom clears the floating tab bar top with the 12px offset and 1rem", () => {
+  expect(squash(css)).toContain("scroll-padding-bottom: calc(var(--tabbar-h) + 0.75rem + env(safe-area-inset-bottom) + 1rem);");
 });

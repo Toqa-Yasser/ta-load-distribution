@@ -6,7 +6,13 @@ import { Header } from "../Header";
 import { NavBar } from "../NavBar";
 
 const direction = vi.hoisted(() => ({ value: "up" as "up" | "down" }));
-vi.mock("~/lib/use-scroll-direction", () => ({ useScrollDirection: () => direction.value }));
+const scrollHookCalls = vi.hoisted(() => ({ n: 0 }));
+vi.mock("~/lib/use-scroll-direction", () => ({
+  useScrollDirection: () => {
+    scrollHookCalls.n++;
+    return direction.value;
+  },
+}));
 
 const HIDE_UP = "-translate-y-[calc(100%+12px)]";
 const HIDE_DOWN = "translate-y-[calc(100%+12px+env(safe-area-inset-bottom))]";
@@ -75,4 +81,11 @@ test("a focused control inside a hidden header brings it back", async () => {
   renderBars();
   const header = await screen.findByRole("banner");
   expect(classes(header)).toContain("has-[:focus-visible]:translate-y-0");
+});
+
+test("the header-placement nav does not subscribe to scroll direction", () => {
+  scrollHookCalls.n = 0;
+  const Stub = createRoutesStub([{ path: "*", Component: () => <NavBar placement="header" /> }]);
+  render(<Stub initialEntries={["/"]} />);
+  expect(scrollHookCalls.n).toBe(0);
 });

@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
+import type { TargetAndTransition, Transition } from "motion/react";
 import { NavLink } from "react-router";
 import { CalendarIcon, DashboardIcon, HistoryIcon, TasksIcon, TeamIcon } from "~/components/ui/icons";
 import { indicatorSpring, pressMotion, tabPress } from "~/lib/motion";
@@ -29,9 +30,6 @@ export function NavBar({ placement, className = "", ...navProps }: { placement: 
   const tabTap = reduced ? {} : tabPress;
   // Reduced motion: the active indicator snaps instead of sliding.
   const spring = reduced ? { duration: 0 } : indicatorSpring;
-  // Called for both placements (hook order); only the tab bar uses it.
-  const hidden = useScrollDirection() === "down";
-
   if (placement === "header") {
     return (
       <nav aria-label="Primary" data-pill="pages" {...navProps} className={`gap-0.5 px-0.5 max-md:hidden ${className}`}>
@@ -60,6 +58,15 @@ export function NavBar({ placement, className = "", ...navProps }: { placement: 
     );
   }
 
+  return <TabBar {...navProps} className={className} spring={spring} tabTap={tabTap} />;
+}
+
+/** The fixed bottom bar; the only part that subscribes to the scroll direction. */
+function TabBar({
+  spring,
+  tabTap,
+}: Omit<ComponentProps<"nav">, "children"> & { spring: Transition; tabTap: TargetAndTransition }) {
+  const hidden = useScrollDirection() === "down";
   return (
     <nav
       aria-label="Primary"

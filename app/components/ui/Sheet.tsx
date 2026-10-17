@@ -304,7 +304,12 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             onDragEnd={onDragEnd}
             // min(…, 100%): never taller than the container, which shrinks to the visible region
             // when useKeyboardFit applies.
-            className={`glass relative flex max-h-[min(90dvh,100%)] w-full flex-col rounded-b-none pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:pb-0 ${
+            // The safe-area padding goes while the container is fitted above the keyboard (it would
+            // be dead space between the sheet and the keys).
+            data-keyboard-fit={keyboardFit ? "" : undefined}
+            className={`glass relative flex max-h-[min(90dvh,100%)] w-full flex-col rounded-b-none outline-none md:rounded-card md:pb-0 ${
+              keyboardFit ? "pb-0" : "pb-[env(safe-area-inset-bottom)]"
+            } ${
               side === "right" ? "md:max-h-none md:max-w-md" : "md:max-w-lg"
             }`}
           >

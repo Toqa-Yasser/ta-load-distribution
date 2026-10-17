@@ -192,3 +192,24 @@ test("two-button action rows share one row class: equal flex shares that never w
   render(<ConfirmDialog open title="Remove?" body="x" confirmLabel="Remove" onConfirm={() => {}} onClose={() => {}} />);
   expect(screen.getByRole("button", { name: "Remove" }).parentElement!.className).toBe(SHEET_ACTIONS);
 });
+
+test("the panel drops its safe-area bottom padding while the keyboard fit is active", () => {
+  stubMatchMedia(["(pointer: coarse)"]);
+  const vv = { height: 500, scale: 1, offsetTop: 0, addEventListener() {}, removeEventListener() {} };
+  vi.stubGlobal("visualViewport", vv);
+  Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+  render(<Sheet open onClose={() => {}} title="New task"><p>x</p></Sheet>);
+  const panel = screen.getByRole("dialog");
+  expect(panel).toHaveAttribute("data-keyboard-fit");
+  expect(panel.className).not.toContain("pb-[env(safe-area-inset-bottom)]");
+});
+
+test("without a keyboard fit the panel keeps the safe-area bottom padding", () => {
+  stubMatchMedia(["(pointer: coarse)"]);
+  vi.stubGlobal("visualViewport", { height: 800, scale: 1, offsetTop: 0, addEventListener() {}, removeEventListener() {} });
+  Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+  render(<Sheet open onClose={() => {}} title="New task"><p>x</p></Sheet>);
+  const panel = screen.getByRole("dialog");
+  expect(panel).not.toHaveAttribute("data-keyboard-fit");
+  expect(panel.className).toContain("pb-[env(safe-area-inset-bottom)]");
+});

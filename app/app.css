@@ -146,7 +146,7 @@ html {
 
 @media (pointer: coarse) {
   html {
-    scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem);
+    scroll-padding-bottom: calc(var(--tabbar-h) + 0.75rem + env(safe-area-inset-bottom) + 1rem);
   }
 }
 
