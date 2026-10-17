@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { createRoutesStub } from "react-router";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { createRoutesStub, MemoryRouter } from "react-router";
+import { OccurrencePopover } from "~/components/calendar/OccurrencePopover";
 import { CommandToasts } from "~/components/layout/CommandToasts";
 import { emptyWorkspace } from "~/engine/empty";
 import type { Workspace } from "~/engine/types";
@@ -19,11 +20,11 @@ const base = (): Workspace => ({
   ...emptyWorkspace(),
   tas: [A, B],
   tasks: [
-    { id: "q", title: "Quiz", kind: "light", createdAt: "", schedule: { type: "one-time", date: "2026-10-05" }, occurrences: [
-      { id: "q1", date: "2026-10-05", taId: "A", turn: 1 }, { id: "q2", date: "2026-10-06", taId: "A", turn: 1 },
-      { id: "q3", date: "2026-10-07", taId: "B", turn: 1 }] },
-    { id: "e", title: "Exam", kind: "heavy", createdAt: "", schedule: { type: "one-time", date: "2026-10-08" }, occurrences: [
-      { id: "e1", date: "2026-10-08", taId: "B", turn: 1 }] },
+    { id: "q", title: "Quiz", kind: "light", createdAt: "", schedule: { type: "one-time", date: "2026-10-05" }, taCount: 1, occurrences: [
+      { id: "q1", date: "2026-10-05", seats: [{ taId: "A", turn: 1 }] }, { id: "q2", date: "2026-10-06", seats: [{ taId: "A", turn: 1 }] },
+      { id: "q3", date: "2026-10-07", seats: [{ taId: "B", turn: 1 }] }] },
+    { id: "e", title: "Exam", kind: "heavy", createdAt: "", schedule: { type: "one-time", date: "2026-10-08" }, taCount: 1, occurrences: [
+      { id: "e1", date: "2026-10-08", seats: [{ taId: "B", turn: 1 }] }] },
   ],
 });
 let ws = base();
@@ -43,10 +44,30 @@ vi.mock("~/lib/use-workspace", async () => {
   };
 });
 
-const action = vi.fn(async () => ({ ok: true, version: 2, snapshotId: 1, label: "Done" }));
+const C = { id: "C", name: "Carla", color: "#00f" };
+// A co-staffed light task: Oct 10 is Bassem + Carla, Oct 11 is Ahmed + Carla.
+const withLab = (): Workspace => {
+  const ws = base();
+  return {
+    ...ws,
+    tas: [A, B, C],
+    tasks: [...ws.tasks, { id: "l", title: "Lab", kind: "light", createdAt: "", schedule: { type: "one-time", date: "2026-10-10" }, taCount: 2,
+      occurrences: [
+        { id: "l1", date: "2026-10-10", seats: [{ taId: "B", turn: 1 }, { taId: "C", turn: 1 }] },
+        { id: "l2", date: "2026-10-11", seats: [{ taId: "A", turn: 1 }, { taId: "C", turn: 1 }] },
+      ] }],
+  };
+};
+
+const commands: unknown[] = [];
+const action = vi.fn(async ({ request }: { request: Request }) => {
+  commands.push(((await request.json()) as { command: unknown }).command);
+  return { ok: true, version: 2, snapshotId: 1, label: "Done" };
+});
 beforeEach(() => {
   ws = base();
   action.mockClear();
+  commands.length = 0;
 });
 
 function renderAt(url: string) {
@@ -57,9 +78,9 @@ function renderAt(url: string) {
   return render(<ToastProvider><Stub initialEntries={[url]} /></ToastProvider>);
 }
 const pill = (name: RegExp) => screen.getByRole("button", { name });
-const startSwapFrom = async (name: RegExp) => {
+const startSwapFrom = async (name: RegExp, taName = "Ahmed") => {
   fireEvent.click(await screen.findByRole("button", { name }));
-  fireEvent.click(await screen.findByRole("button", { name: "Swap with…" }));
+  fireEvent.click(await screen.findByRole("button", { name: `Swap ${taName}` }));
 };
 
 test("an invalid ?m= falls back to the current month", async () => {
@@ -99,7 +120,86 @@ test("the popover names the assigned TA but offers no way to reassign", async ()
   expect(dialog).toHaveTextContent("Assigned TA");
   expect(dialog).toHaveTextContent("Ahmed");
   expect(screen.queryByRole("combobox", { name: "Assigned TA" })).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Swap with…" })).toBeInTheDocument();
+  expect(dialog).not.toHaveTextContent("Assigned TAs");
+  expect(screen.getByRole("button", { name: "Swap Ahmed" })).toBeInTheDocument();
+});
+
+test("popover lists every seat with its own Swap button", async () => {
+  ws = withLab();
+  renderAt("/calendar?m=2026-10");
+  fireEvent.click(await screen.findByRole("button", { name: "Lab · Oct 10 · Bassem, Carla · Light" }));
+  const dialog = await screen.findByRole("dialog");
+  expect(within(dialog).getByText("Assigned TAs")).toBeInTheDocument();
+  expect(within(dialog).getAllByRole("listitem")).toHaveLength(2);
+  expect(within(dialog).getAllByRole("button", { name: /^Swap / }).map((b) => b.getAttribute("aria-label") ?? b.textContent))
+    .toEqual(["Swap Bassem", "Swap Carla"]);
+  expect(within(dialog).getByRole("link", { name: "Open task" })).toBeInTheDocument();
+});
+
+test("popover in pick mode lists only pickable seats and no Open task link", () => {
+  const lab = withLab().tasks[2];
+  const onPickSeat = vi.fn();
+  render(
+    <MemoryRouter>
+      <OccurrencePopover open task={lab} occ={lab.occurrences[0]} tas={[A, B, C]} mode="pick" pickable={["C"]}
+        onStartSwap={() => {}} onPickSeat={onPickSeat} onClose={() => {}} />
+    </MemoryRouter>,
+  );
+  const dialog = screen.getByRole("dialog", { name: /^Lab · / });
+  expect(dialog).toHaveTextContent("Swap with");
+  expect(within(dialog).getAllByRole("button", { name: /^Swap / }).map((b) => b.getAttribute("aria-label") ?? b.textContent))
+    .toEqual(["Swap Carla"]);
+  expect(within(dialog).queryByRole("link", { name: "Open task" })).not.toBeInTheDocument();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Swap Carla" }));
+  expect(onPickSeat).toHaveBeenCalledWith("C");
+});
+
+test("calendar swap: tapping a valid 1-seat pill submits swapOccurrences with both taIds", async () => {
+  renderAt("/calendar?m=2026-10");
+  await startSwapFrom(/^Quiz · Oct 5/);
+  fireEvent.click(pill(/^Quiz · Oct 7 · Bassem/));
+  await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+  expect(commands[0]).toEqual({
+    type: "swapOccurrences",
+    a: { taskId: "q", occurrenceId: "q1", taId: "A" },
+    b: { taskId: "q", occurrenceId: "q3", taId: "B" },
+  });
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
+test("a multi-seat pill with a single valid seat swaps at once", async () => {
+  ws = withLab();
+  renderAt("/calendar?m=2026-10");
+  await startSwapFrom(/^Lab · Oct 11/, "Ahmed");
+  // Oct 10 holds Bassem and Carla; Carla already sits on Oct 11, so only Bassem's seat can trade.
+  fireEvent.click(pill(/^Lab · Oct 10/));
+  await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+  expect(commands[0]).toEqual({
+    type: "swapOccurrences",
+    a: { taskId: "l", occurrenceId: "l2", taId: "A" },
+    b: { taskId: "l", occurrenceId: "l1", taId: "B" },
+  });
+});
+
+test("tapping a multi-seat pill opens the seat chooser and picking submits", async () => {
+  ws = withLab();
+  renderAt("/calendar?m=2026-10");
+  await startSwapFrom(/^Quiz · Oct 5/);
+  // Ahmed already sits on Lab Oct 11, so that pill is dimmed; Oct 10 has two seats to choose from.
+  expect(pill(/^Lab · Oct 11/).className).toContain("opacity-40");
+  fireEvent.click(pill(/^Lab · Oct 10 · Bassem, Carla/));
+  const dialog = await screen.findByRole("dialog", { name: /^Lab · / });
+  expect(dialog).toHaveTextContent("Swap with");
+  expect(within(dialog).queryByRole("link", { name: "Open task" })).not.toBeInTheDocument();
+  expect(action).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Swap Carla" }));
+  await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+  expect(commands[0]).toEqual({
+    type: "swapOccurrences",
+    a: { taskId: "q", occurrenceId: "q1", taId: "A" },
+    b: { taskId: "l", occurrenceId: "l1", taId: "C" },
+  });
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
 
 test("pills are plain buttons, not toggle buttons", async () => {

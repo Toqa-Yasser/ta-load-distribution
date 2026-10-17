@@ -12,8 +12,8 @@ const A = { id: "A", name: "Ahmed", color: "#f00" };
 let ws: Workspace = {
   ...emptyWorkspace(),
   tas: [A],
-  tasks: [{ id: "q", title: "Quiz", kind: "light", createdAt: "", schedule: { type: "one-time", date: "2026-10-05" },
-    occurrences: [{ id: "q1", date: "2026-10-05", taId: "A", turn: 1 }] }],
+  tasks: [{ id: "q", title: "Quiz", kind: "light", createdAt: "", schedule: { type: "one-time", date: "2026-10-05" }, taCount: 1,
+    occurrences: [{ id: "q1", date: "2026-10-05", seats: [{ taId: "A", turn: 1 }] }] }],
 };
 vi.mock("~/lib/use-workspace", () => ({
   useWorkspace: () => ({ workspace: ws, today: "2026-10-17", taById: new Map(ws.tas.map((t) => [t.id, t])) }),

@@ -1,7 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { useMemo, useState } from "react";
-import type { ISODate, OccurrenceRef, TA, Task } from "~/engine/types";
+import type { ISODate, OccurrenceRef, SeatRef, TA, Task } from "~/engine/types";
 import { monthCells, occurrencesByDate } from "~/lib/calendar";
+import type { SeatSource } from "~/lib/swap";
 import { EASE_OUT, stepSlide, useMounted } from "~/lib/motion";
 import { DayCell } from "./DayCell";
 
@@ -10,7 +11,7 @@ type MonthGridProps = {
   tasks: Task[];
   taById: Map<string, TA>;
   selected: OccurrenceRef | null;
-  swapSource: OccurrenceRef | null;
+  swapSource: SeatRef | null;
   onSelect: (ref: OccurrenceRef) => void;
   /** Ringed in the grid; from the loader, never the client clock. */
   today?: ISODate;
@@ -39,13 +40,11 @@ export function MonthGrid({ yearMonth, tasks, taById, selected, swapSource, onSe
 
   const byDate = useMemo(() => occurrencesByDate(tasks), [tasks]);
   const cells = useMemo(() => monthCells(yearMonth), [yearMonth]);
-  const { swapTaId, swapKind } = useMemo(() => {
-    if (!swapSource) return { swapTaId: null, swapKind: null };
+  const swapFrom = useMemo((): SeatSource | null => {
+    if (!swapSource) return null;
     const task = tasks.find((t) => t.id === swapSource.taskId);
-    return {
-      swapTaId: task?.occurrences.find((o) => o.id === swapSource.occurrenceId)?.taId ?? null,
-      swapKind: task?.kind ?? null,
-    };
+    const occ = task?.occurrences.find((o) => o.id === swapSource.occurrenceId);
+    return task && occ ? { task, occ, taId: swapSource.taId } : null;
   }, [tasks, swapSource]);
 
   return (
@@ -83,8 +82,7 @@ export function MonthGrid({ yearMonth, tasks, taById, selected, swapSource, onSe
                 taById={taById}
                 selected={selected}
                 swapSource={swapSource}
-                swapTaId={swapTaId}
-                swapKind={swapKind}
+                swapFrom={swapFrom}
                 onSelect={onSelect}
                 expanded={expanded === c.date}
                 onExpandedChange={(open) => setExpanded(open ? c.date : null)}

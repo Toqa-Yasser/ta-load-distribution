@@ -7,11 +7,12 @@ import { Button } from "~/components/ui/Button";
 import { IconButton } from "~/components/ui/IconButton";
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from "~/components/ui/icons";
 import { EmptyState } from "~/components/ui/EmptyState";
-import type { OccurrenceRef, Workspace } from "~/engine/types";
+import type { OccurrenceRef, SeatRef, Workspace } from "~/engine/types";
 import { fmtMonth, shiftMonth } from "~/lib/calendar";
 import { stagger } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { useRetained } from "~/lib/retain";
+import { swappableSeats } from "~/lib/swap";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
 
@@ -20,8 +21,6 @@ export function meta({ matches }: Route.MetaArgs) {
 }
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
-
-const sameRef = (a: OccurrenceRef, b: OccurrenceRef) => a.taskId === b.taskId && a.occurrenceId === b.occurrenceId;
 
 function lookup(workspace: Workspace, ref: OccurrenceRef) {
   const task = workspace.tasks.find((t) => t.id === ref.taskId);
@@ -37,8 +36,10 @@ export default function Calendar() {
   const m = params.get("m");
   const yearMonth = m && MONTH.test(m) ? m : today.slice(0, 7);
   // The ref stays set after closing so the sheet can animate out with its content.
-  const [popover, setPopover] = useState<{ ref: OccurrenceRef; open: boolean } | null>(null);
-  const [swapSource, setSwapSource] = useState<OccurrenceRef | null>(null);
+  // "pick" is the seat chooser for a swap onto a co-staffed date; `pickable` lists its valid seats.
+  const [popover, setPopover] = useState<{ ref: OccurrenceRef; open: boolean; mode: "view" | "pick" } | null>(null);
+  const [pickable, setPickable] = useState<string[]>([]);
+  const [swapSource, setSwapSource] = useState<SeatRef | null>(null);
 
   const goTo = (month: string) =>
     setParams(
@@ -50,18 +51,29 @@ export default function Calendar() {
       { replace: true, preventScrollReset: true },
     );
 
+  const swapWith = (b: SeatRef) => {
+    if (!swapSource) return;
+    submit({ type: "swapOccurrences", a: swapSource, b });
+    setSwapSource(null);
+  };
+
   const onSelect = (ref: OccurrenceRef) => {
     if (!swapSource) {
-      setPopover({ ref, open: true });
+      setPopover({ ref, open: true, mode: "view" });
       return;
     }
     const a = lookup(workspace, swapSource);
     const b = lookup(workspace, ref);
-    // Same occurrence or same TA: nothing would change, so send nothing. Other-kind pills are
-    // dimmed and the engine refuses cross-kind swaps, so ignore those too.
-    if (sameRef(swapSource, ref) || !a || !b || a.occ.taId === b.occ.taId || a.task.kind !== b.task.kind) return;
-    submit({ type: "swapOccurrences", a: swapSource, b: ref });
-    setSwapSource(null);
+    // Pills with no seat to trade (same occurrence, other kind, the source TA already on it) are
+    // dimmed and would change nothing or be refused, so send nothing.
+    const valid = a && b ? swappableSeats({ ...a, taId: swapSource.taId }, b) : [];
+    if (valid.length === 0) return;
+    if (valid.length === 1) {
+      swapWith({ ...ref, taId: valid[0] });
+      return;
+    }
+    setPickable(valid);
+    setPopover({ ref, open: true, mode: "pick" });
   };
 
   // Memoised: useRetained needs a stable reference. If the occurrence disappears while the
@@ -144,9 +156,15 @@ export default function Calendar() {
           task={shown.task}
           occ={shown.occ}
           tas={workspace.tas}
+          mode={popover.mode}
+          pickable={pickable}
           onClose={closePopover}
-          onStartSwap={() => {
-            setSwapSource(popover.ref);
+          onStartSwap={(taId) => {
+            setSwapSource({ ...popover.ref, taId });
+            closePopover();
+          }}
+          onPickSeat={(taId) => {
+            swapWith({ ...popover.ref, taId });
             closePopover();
           }}
         />

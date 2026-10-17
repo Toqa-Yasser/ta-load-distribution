@@ -1,6 +1,7 @@
-import type { ISODate, OccurrenceRef, TA, TaskKind } from "~/engine/types";
+import type { ISODate, OccurrenceRef, SeatRef, TA } from "~/engine/types";
 import type { DayEntry } from "~/lib/calendar";
 import { fmtDate } from "~/lib/format";
+import { swappableSeats, type SeatSource } from "~/lib/swap";
 import { OccurrencePill, type SwapRole } from "./OccurrencePill";
 
 type DayCellProps = {
@@ -10,11 +11,9 @@ type DayCellProps = {
   entries: DayEntry[];
   taById: Map<string, TA>;
   selected: OccurrenceRef | null;
-  swapSource: OccurrenceRef | null;
-  /** TA of the swap source; pills with the same TA cannot be swapped with it. */
-  swapTaId: string | null;
-  /** Kind of the swap source; only tasks of the same kind can be swapped with it. */
-  swapKind: TaskKind | null;
+  swapSource: SeatRef | null;
+  /** The swap source resolved (by MonthGrid); pills with no seat it may trade with are dimmed. */
+  swapFrom: SeatSource | null;
   onSelect: (ref: OccurrenceRef) => void;
   /** Showing every pill. Owned by MonthGrid, which collapses it whenever the month changes. */
   expanded?: boolean;
@@ -45,8 +44,7 @@ export function DayCell({
   taById,
   selected,
   swapSource,
-  swapTaId,
-  swapKind,
+  swapFrom,
   onSelect,
   expanded = false,
   onExpandedChange: setExpanded = () => {},
@@ -55,10 +53,10 @@ export function DayCell({
   const hiddenMobile = entries.length - MOBILE_MAX;
   const hiddenDesktop = entries.length - DESKTOP_MAX;
 
-  const roleOf = (ref: OccurrenceRef, taId: string, kind: TaskKind): SwapRole => {
+  const roleOf = (ref: OccurrenceRef, entry: DayEntry): SwapRole => {
     if (!swapSource) return null;
     if (same(swapSource, ref)) return "source";
-    return taId === swapTaId || kind !== swapKind ? "ineligible" : "target";
+    return swapFrom && swappableSeats(swapFrom, entry).length > 0 ? "target" : "ineligible";
   };
 
   return (
@@ -75,16 +73,17 @@ export function DayCell({
         <span aria-hidden>{day}</span>
       </span>
       <ul className={`flex flex-col gap-2 ${inMonth ? "" : "opacity-70"}`}>
-        {entries.map(({ task, occ }, i) => {
+        {entries.map((entry, i) => {
+          const { task, occ } = entry;
           const ref = { taskId: task.id, occurrenceId: occ.id };
           return (
             <li key={`${task.id}:${occ.id}`} className={expanded ? "" : visibility(i)}>
               <OccurrencePill
                 task={task}
                 occ={occ}
-                ta={taById.get(occ.taId)}
+                tas={occ.seats.map((s) => taById.get(s.taId))}
                 selected={same(selected, ref)}
-                swapRole={roleOf(ref, occ.taId, task.kind)}
+                swapRole={roleOf(ref, entry)}
                 onClick={() => onSelect(ref)}
               />
             </li>
