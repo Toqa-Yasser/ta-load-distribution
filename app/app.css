@@ -132,19 +132,21 @@ html {
   --fab-clear: 4.25rem;
 }
 
+/* While the on-screen keyboard is up (useKeyboardOpen; coarse pointers only), hide the fixed bottom
+   UI that interactive-widget=resizes-content would lift above the keyboard, over the field. Keyed on
+   the keyboard rather than focus, so the bar returns as soon as the keyboard closes even if the
+   field keeps focus (Android back). The hidden FAB no longer needs clearing by the toasts; this
+   outranks :root:has(#fab-slot > *). */
+#app-root[data-keyboard-open] :is([data-tabbar], #fab-slot) {
+  display: none;
+}
+:root:has(#app-root[data-keyboard-open]) {
+  --fab-clear: 0px;
+}
+
 @media (pointer: coarse) {
   html {
     scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem);
-  }
-  /* interactive-widget=resizes-content lifts fixed bottom UI above the keyboard, over the field.
-     Hide it while an in-page text field has focus (fields in sheets portal outside #app-root), and
-     drop the toast's FAB offset in the same rule: the hidden FAB no longer needs clearing.
-     Keep the input list in sync with isTextEntry in app/lib/pointer.ts. */
-  :root:has(#app-root :is(input:is([type=text],[type=search],[type=email],[type=url],[type=tel],[type=password],[type=number],[type=date],[type=time],[type=datetime-local],[type=month],[type=week],:not([type])), textarea, [contenteditable=true]):focus) {
-    --fab-clear: 0px;
-    & :is([data-tabbar], #fab-slot) {
-      display: none;
-    }
   }
 }
 

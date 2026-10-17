@@ -14,6 +14,7 @@ import {
 } from "~/lib/motion";
 import { OpenSettingsContext } from "~/lib/settings";
 import { UNDO_FETCHER_KEY, useHistory } from "~/lib/use-history";
+import { useKeyboardOpen } from "~/lib/use-keyboard-open";
 import { Background } from "./Background";
 import { CommandToasts } from "./CommandToasts";
 import { CONTENT_COLUMN } from "./column";
@@ -41,13 +42,15 @@ export function AppShell() {
   const openSettings = useCallback(() => setSettingsOpen(true), []);
   // Toasts the result of every toast's Undo; mounted here so it outlives the page that showed it.
   useHistory(UNDO_FETCHER_KEY);
+  // app.css hides the tab bar and FAB under this attribute (see useKeyboardOpen).
+  const keyboardOpen = useKeyboardOpen();
 
   return (
     <OpenSettingsContext.Provider value={openSettings}>
       {/* Toasts each command's result, so a toast survives the page that submitted it. */}
       <CommandToasts>
         {/* Made inert while a Sheet is open; sheets portal to <body>, outside it. */}
-        <div id={APP_ROOT_ID} className="relative min-h-dvh overflow-x-clip">
+        <div id={APP_ROOT_ID} data-keyboard-open={keyboardOpen || undefined} className="relative min-h-dvh overflow-x-clip">
           <Background />
           <Header />
           {/* `custom` reaches the exiting page too, so it leaves in the new direction. */}

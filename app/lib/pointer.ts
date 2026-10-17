@@ -13,7 +13,6 @@ export function useCoarsePointer(): boolean {
   return useMediaQuery(COARSE_POINTER_QUERY);
 }
 
-// Keep in sync with the text-input allow-list in the `(pointer: coarse)` block of app/app.css.
 const NON_TEXT_INPUTS = new Set(["button", "submit", "reset", "checkbox", "radio", "range", "color", "file", "image", "hidden"]);
 
 /** Controls that bring up the on-screen keyboard (or a picker) when focused. */

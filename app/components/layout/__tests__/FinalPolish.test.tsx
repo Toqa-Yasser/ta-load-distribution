@@ -26,16 +26,44 @@ test("toast stack clears the FAB via --fab-clear, defined in app.css", () => {
   expect(c).toMatch(/:root:has\(#fab-slot > \*\) \{ --fab-clear: 4\.25rem;/);
 });
 
-const TEXT_INPUTS =
-  "input:is([type=text],[type=search],[type=email],[type=url],[type=tel],[type=password],[type=number],[type=date],[type=time],[type=datetime-local],[type=month],[type=week],:not([type]))";
-const FOCUS = `:root:has(#app-root :is(${TEXT_INPUTS}, textarea, [contenteditable=true]):focus)`;
+const kb = vi.hoisted(() => ({ open: false }));
+vi.mock("~/lib/use-keyboard-open", () => ({ useKeyboardOpen: () => kb.open }));
 
-test("tab bar hides under an in-page text field on coarse pointers; sheets unaffected", () => {
+test("tab bar and FAB hide while the keyboard is up (data-keyboard-open), not on focus", () => {
   const c = squash(css);
-  expect(c).toContain("@media (pointer: coarse)");
-  // One combined rule: hiding the bar/FAB and dropping the toast's FAB offset share a condition.
-  expect(c).toContain(`${FOCUS} { --fab-clear: 0px; & :is([data-tabbar], #fab-slot) { display: none; } }`);
-  for (const t of ["button", "file", "checkbox", "radio", "range", "submit"]) expect(c).not.toContain(`[type=${t}]`);
+  // No focus-based rule left: an Android back press closes the keyboard but keeps the focus.
+  expect(c).not.toMatch(/:focus\) \{ --fab-clear/);
+  expect(c).not.toContain("[contenteditable=true]):focus");
+  expect(c).toContain("#app-root[data-keyboard-open] :is([data-tabbar], #fab-slot) { display: none; }");
+  // Outranks :root:has(#fab-slot > *), so the hidden FAB is no longer cleared by the toasts.
+  expect(c).toContain(":root:has(#app-root[data-keyboard-open]) { --fab-clear: 0px; }");
+  // Fields scrolled into view still clear the tab bar.
+  expect(c).toContain("scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem)");
+});
+
+function renderShell() {
+  const Stub = createRoutesStub([
+    {
+      id: "root",
+      path: "/",
+      Component: AppShell,
+      loader: () => ({ workspace: emptyWorkspace(), version: 1, today: "2026-10-17", appUrl: "https://x.edu" }),
+      children: [{ path: "*", Component: () => <h1>Page</h1> }],
+    },
+  ]);
+  return render(<ThemeProvider><ToastProvider><Stub initialEntries={["/team"]} /></ToastProvider></ThemeProvider>);
+}
+
+test("#app-root carries data-keyboard-open only while the keyboard is up", async () => {
+  kb.open = true;
+  const first = renderShell();
+  await screen.findByRole("banner");
+  expect(document.getElementById("app-root")).toHaveAttribute("data-keyboard-open");
+  first.unmount();
+  kb.open = false;
+  renderShell();
+  await screen.findByRole("banner");
+  expect(document.getElementById("app-root")).not.toHaveAttribute("data-keyboard-open");
   const Stub = createRoutesStub([{ path: "*", Component: () => <NavBar placement="bottom" /> }]);
   const { container } = render(<Stub initialEntries={["/"]} />);
   expect(container.querySelector("nav[data-tabbar]")).not.toBeNull();
