@@ -51,8 +51,10 @@ For each pending occurrence in date order:
    `NOT_ENOUGH_TAS`. Both checks run once,
    before any occurrence is dealt, so a failed deal changes nothing.
 2. If every eligible TA has `used ≥ capacity` → `turn++`, `used[ta] = max(0, used[ta] − capacity[ta])`
-   for every TA (overshoot carries forward; for 1-TA tasks overshoot never happens, so this equals
-   today's reset). The check runs once per occurrence, before its first pick.
+   for every TA (overshoot carries forward). For 1-TA tasks overshoot never happens, so this equals
+   today's reset, with one exception: a TA whose current-turn usage already exceeds a capacity that
+   shrank mid-turn now carries the excess instead of having it forgotten ("Redistribute everything"
+   resets the ledgers if that is unwanted). The check runs once per occurrence, before its first pick.
 3. Pick `taCount − seats.length` TAs one at a time: among eligible TAs not already seated on this
    occurrence, take the highest `remainingFraction`; ties → `pick(tied, rng)`. Each pick does
    `used[ta]++` and appends `{ taId, turn }`. A pick may take a TA whose `used ≥ capacity` when every
