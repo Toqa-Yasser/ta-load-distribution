@@ -4,8 +4,8 @@ import { team } from "./fixtures";
 
 /**
  * The ledger invariant: `ledgers[kind].used[ta]` counts the seats `ta` holds in the current turn
- * across every task of that kind. The one sanctioned excess is carry: units a TA was dealt beyond
- * capacity (co-staffing can require it) move into the next turn without a seat of that turn.
+ * across every task of that kind, with no exceptions: a seat that would push a TA beyond capacity
+ * starts the next turn instead.
  */
 function currentTurnSeats(ws: Workspace, kind: TaskKind): Record<string, number> {
   const turn = ws.ledgers[kind].turn;
@@ -79,17 +79,10 @@ test("reassigning a current-turn seat and a past-turn seat keeps the ledger equa
   expectLedgerMatchesSeats(out, "light");
 });
 
-test("a removeTA refill that rolls the turn over never under-counts, and only carry exceeds the recount", () => {
+test("a removeTA refill that rolls the turn over keeps the ledger equal to the recount", () => {
   const { ws, id, ctx } = pairAcrossRollover();
   const out = reduce(ws, { type: "removeTA", taId: id("D") }, ctx);
   // D held a seat on most dates; refilling them on A1 B2 C2 (5 units a turn) fills turn 2 and opens turn 3.
   expect(out.ledgers.light.turn).toBe(3);
-  const recount = currentTurnSeats(out, "light");
-  for (const ta of out.tas) expect(out.ledgers.light.used[ta.id] ?? 0).toBeGreaterThanOrEqual(recount[ta.id] ?? 0);
-  // Carry: refilling Oct 3 in turn 2, B already sat on the date and C was full, so A was seated
-  // beyond its single unit (overshoot). At the rollover that excess carried into turn 3: A starts
-  // it with 1 unit used and no turn-3 seat behind it. Everyone else matches the recount exactly.
-  expect(out.ledgers.light.used[id("A")]).toBe(1);
-  expect(recount[id("A")] ?? 0).toBe(0);
-  for (const name of ["B", "C"]) expect(out.ledgers.light.used[id(name)] ?? 0).toBe(recount[id(name)] ?? 0);
+  expectLedgerMatchesSeats(out, "light");
 });
