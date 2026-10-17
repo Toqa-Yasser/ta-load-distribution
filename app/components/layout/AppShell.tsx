@@ -20,6 +20,7 @@ import { CONTENT_COLUMN } from "./column";
 import { Header } from "./Header";
 import { NavBar } from "./NavBar";
 import { SettingsPanel } from "./SettingsPanel";
+import { TopProgress } from "./TopProgress";
 
 export function AppShell() {
   const { pathname } = useLocation();
@@ -49,6 +50,7 @@ export function AppShell() {
         {/* Made inert while a Sheet is open; sheets portal to <body>, outside it. */}
         <div id={APP_ROOT_ID} className="relative min-h-dvh">
           <Background />
+          <TopProgress />
           <Header />
           {/* `custom` reaches the exiting page too, so it leaves in the new direction. */}
           <AnimatePresence mode="wait" initial={false} custom={dir}>

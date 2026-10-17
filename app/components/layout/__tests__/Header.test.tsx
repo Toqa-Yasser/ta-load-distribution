@@ -54,3 +54,10 @@ test("the header height comes from the shared --header-h variable", async () => 
   renderAt("/");
   expect((await screen.findByRole("banner")).className).toContain("h-(--header-h)");
 });
+
+test("brand mark drops data-hydrating after mount", async () => {
+  const { container } = renderAt("/");
+  await screen.findByRole("banner");
+  expect(container.querySelector(".brand-mark")).not.toBeNull();
+  expect(container.querySelector("[data-hydrating]")).toBeNull();
+});

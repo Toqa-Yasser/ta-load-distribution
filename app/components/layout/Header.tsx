@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { BrandMark } from "~/components/ui/BrandMark";
 import { IconButton } from "~/components/ui/IconButton";
@@ -19,12 +20,15 @@ import { NavBar } from "./NavBar";
 export function Header() {
   const openSettings = useOpenSettings();
   const scrolled = useScrolled();
+  const headerRef = useRef<HTMLElement>(null);
+  // The brand mark pulses (CSS) until the first client effect: a cue that the page is still loading.
+  useEffect(() => headerRef.current?.querySelector(".brand-mark")?.removeAttribute("data-hydrating"), []);
   const pill = `glass flex h-11 items-center md:h-12 rounded-full transition-shadow duration-300 ${
     scrolled ? "shadow-[var(--shadow-raised)]" : ""
   }`;
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-30 h-(--header-h) pt-3 md:pt-4">
+    <header ref={headerRef} className="pointer-events-none fixed inset-x-0 top-0 z-30 h-(--header-h) pt-3 md:pt-4">
       <div data-header-row className="flex items-center justify-between gap-3 px-4 md:justify-center md:px-6">
         <div data-pill="brand" {...stagger(0, "down", `${pill} pointer-events-auto`)}>
           <Link

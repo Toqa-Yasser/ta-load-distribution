@@ -212,6 +212,16 @@ h3 {
   }
 }
 
+/* ---------- Pre-hydration pulse ---------- */
+/* The header brand mark carries data-hydrating in the server markup; Header removes it on mount. */
+.brand-mark[data-hydrating] {
+  animation: brand-pulse 1.2s ease-in-out infinite;
+}
+@keyframes brand-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
 /* ---------- Gauge liquid ---------- */
 /* Wave paths are two periods (200 user units) wide; sliding one period loops seamlessly. */
 .gauge-wave {
@@ -235,7 +245,8 @@ h3 {
   }
   /* A near-zero duration on an infinite animation would strobe; hold these still instead. */
   .gauge-wave,
-  .animate-swap-pulse {
+  .animate-swap-pulse,
+  .brand-mark[data-hydrating] {
     animation: none !important;
   }
   /* The entrance delay is not shortened by the rule above, so drop the entrance altogether. */
