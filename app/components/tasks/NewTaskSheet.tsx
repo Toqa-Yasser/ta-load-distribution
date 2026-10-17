@@ -13,7 +13,7 @@ import { StepName } from "./StepName";
 import { StepPreview } from "./StepPreview";
 import { scheduleDates, StepSchedule } from "./StepSchedule";
 
-type NewTaskSheetProps = { open: boolean; onClose: () => void };
+type NewTaskSheetProps = { open: boolean; onClose: () => void; initialKind?: TaskKind };
 type CreateTask = Extract<Command, { type: "createTask" }>;
 type PreviewResult = { ok: true; workspace: Workspace } | { ok: false; message: string };
 type Step = 0 | 1 | 2;
@@ -44,12 +44,12 @@ function StepDots({ step }: { step: Step }) {
  * Confirm keeps the sheet open until the create command settles: success closes it (the shell
  * toasts with Undo), a failure is shown here instead of in a toast.
  */
-function Wizard({ open, onDone, onCancel }: { open: boolean; onDone: () => void; onCancel: () => void }) {
+function Wizard({ open, initialKind, onDone, onCancel }: { open: boolean; initialKind: TaskKind; onDone: () => void; onCancel: () => void }) {
   const { today, workspace } = useWorkspace();
   const reduced = useReducedMotion();
   const [state, setState] = useState<{ step: Step; kind: TaskKind; title: string; notes: string; schedule: Schedule }>({
     step: 0,
-    kind: "light",
+    kind: initialKind,
     title: "",
     notes: "",
     schedule: { type: "weekly", start: today, end: null },
@@ -189,10 +189,10 @@ function Wizard({ open, onDone, onCancel }: { open: boolean; onDone: () => void;
 }
 
 /** Three-step task creation (name → schedule → preview of who gets each date). */
-export function NewTaskSheet({ open, onClose }: NewTaskSheetProps) {
+export function NewTaskSheet({ open, onClose, initialKind = "light" }: NewTaskSheetProps) {
   return (
     <Sheet open={open} onClose={onClose} title="New task">
-      <Wizard open={open} onCancel={onClose} onDone={onClose} />
+      <Wizard open={open} initialKind={initialKind} onCancel={onClose} onDone={onClose} />
     </Sheet>
   );
 }

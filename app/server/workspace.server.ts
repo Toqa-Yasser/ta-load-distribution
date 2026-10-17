@@ -87,7 +87,10 @@ function asCommandError<T>(fn: () => T): T {
   try {
     return fn();
   } catch (e) {
-    if (e instanceof TypeError) throw new ValidationError(INVALID_COMMAND_MESSAGE);
+    if (e instanceof TypeError) {
+      console.error(e);
+      throw new ValidationError(INVALID_COMMAND_MESSAGE);
+    }
     throw e;
   }
 }

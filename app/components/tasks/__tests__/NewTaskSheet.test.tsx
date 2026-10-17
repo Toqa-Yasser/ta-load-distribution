@@ -152,3 +152,9 @@ test.each([
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.getAllByText(toastText)).toHaveLength(1);
 });
+
+test("initialKind pre-selects that kind in step one", async () => {
+  const Stub = createRoutesStub([{ path: "/", Component: () => <NewTaskSheet open initialKind="heavy" onClose={() => {}} /> }]);
+  render(<ToastProvider><Stub initialEntries={["/"]} /></ToastProvider>);
+  expect(await screen.findByRole("radio", { name: /heavy/i })).toBeChecked();
+});

@@ -113,7 +113,7 @@ export default function Tasks() {
         <PlusIcon />
       </Fab>
 
-      <NewTaskSheet open={sheetOpen} onClose={() => setSheet(false)} />
+      <NewTaskSheet open={sheetOpen} initialKind={kindFilter ?? "light"} onClose={() => setSheet(false)} />
     </div>
   );
 }
@@ -158,7 +158,6 @@ const FILTERS: { value: TaskKind | null; label: string }[] = [
 function KindFilter({ value, onChange }: { value: TaskKind | null; onChange: (kind: TaskKind | null) => void }) {
   const press = usePressMotion();
   const reduced = useReducedMotion();
-  const listFirstRender = useFirstRender();
   return (
     <div role="group" aria-label="Filter by kind" className="flex flex-wrap gap-2">
       {FILTERS.map((f) => {

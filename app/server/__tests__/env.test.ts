@@ -1,6 +1,6 @@
 import { getEnv } from "~/server/env.server";
 
-const KEYS = ["NODE_ENV", "VERCEL", "DATA_STORE", "SUPABASE_URL", "SUPABASE_SECRET_KEY", "APP_URL"] as const;
+const KEYS = ["NODE_ENV", "VERCEL", "DATA_STORE", "SUPABASE_URL", "SUPABASE_SECRET_KEY", "APP_URL", "VERCEL_PROJECT_PRODUCTION_URL"] as const;
 let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
@@ -51,4 +51,13 @@ test("APP_URL defaults to the local dev origin and drops a trailing slash", () =
   expect(getEnv().APP_URL).toBe("http://localhost:5173");
   process.env.APP_URL = "https://load.example.edu/";
   expect(getEnv().APP_URL).toBe("https://load.example.edu");
+});
+
+test("APP_URL falls back to the Vercel production URL, then localhost; explicit APP_URL wins", () => {
+  process.env.NODE_ENV = "test";
+  expect(getEnv().APP_URL).toBe("http://localhost:5173");
+  process.env.VERCEL_PROJECT_PRODUCTION_URL = "app.vercel.app";
+  expect(getEnv().APP_URL).toBe("https://app.vercel.app");
+  process.env.APP_URL = "https://custom.example/";
+  expect(getEnv().APP_URL).toBe("https://custom.example");
 });

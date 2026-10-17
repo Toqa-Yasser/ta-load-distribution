@@ -70,7 +70,9 @@ export default function Calendar() {
   const shown = useRetained(current);
   // Closed for good (adjusted during render), so it can't spring back open if an undo restores it.
   if (popover?.open && current === null) setPopover({ ...popover, open: false });
-  const swapping = swapSource && lookup(workspace, swapSource);
+  const swapping = swapSource ? lookup(workspace, swapSource) : null;
+  // The swap source vanished (deleted elsewhere, undone): leave swap mode rather than dim everything.
+  if (swapSource && swapping === null) setSwapSource(null);
   const closePopover = () => setPopover((p) => p && { ...p, open: false });
 
   return (

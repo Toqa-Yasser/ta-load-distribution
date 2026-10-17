@@ -36,6 +36,7 @@ export function getEnv(): Env {
     SUPABASE_SECRET_KEY,
     HISTORY_DELETE_PASSWORD: process.env.HISTORY_DELETE_PASSWORD || undefined,
     DATA_STORE,
-    APP_URL: (process.env.APP_URL || DEFAULT_APP_URL).replace(/\/+$/, ""),
+    APP_URL: (process.env.APP_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : DEFAULT_APP_URL)).replace(/\/+$/, ""),
   };
 }

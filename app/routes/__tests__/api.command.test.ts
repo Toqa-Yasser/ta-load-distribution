@@ -17,9 +17,12 @@ test("rejects a malformed command with 400", async () => {
     expect(await res.json()).toMatchObject({ ok: false, message: "Invalid command." });
   }
   // A known type with malformed fields: describe() hits `undefined.trim()` (a TypeError).
+  const spy = vi.spyOn(console, "error").mockImplementation(() => {});
   const res = await post({ command: { type: "renameTA", taId: "nope" } });
   expect(res.status).toBe(400);
   expect(await res.json()).toMatchObject({ ok: false, message: "Invalid command." });
+  expect(spy).toHaveBeenCalledTimes(1);
+  spy.mockRestore();
 });
 test("api.command returns 500 JSON on unexpected errors", async () => {
   const spy = vi.spyOn(console, "error").mockImplementation(() => {});

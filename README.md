@@ -10,7 +10,7 @@ covers. Every change is snapshotted, so you can undo or roll back.
 - **Dashboard**: the current turn, a liquid gauge per TA (used / capacity), upcoming dates, and a
   two-step swap of one TA's date with another's.
 - **Team**: add, rename and remove TAs; create sections and drag (or tap) TAs into each section's two slots.
-- **Tasks**: three-step creation (name → schedule → preview of who gets each date) with one-time, daily,
+- **Tasks**: light or heavy (each kind has its own fairness counter); three-step creation (name → schedule → preview of who gets each date) with one-time, daily,
   weekly, monthly or custom schedules; redistribute or delete a task; a task detail page.
 - **Calendar**: month grid of every occurrence; reassign a date to another TA or swap two dates.
 - **History**: a snapshot per change, with rollback, toast Undo, and a password-protected "delete history".
@@ -24,7 +24,7 @@ Each TA's **capacity** is the number of section slots they hold, and a **turn** 
 capacities. Occurrences are dealt in date order, one unit each. Every occurrence goes to the TA with
 the **highest remaining fraction** of their capacity in this turn (`(capacity - used) / capacity`).
 **Ties are broken at random**. When everyone is full, the turn ends and all usage **resets** for the next
-turn. So a TA with two sections gets twice as many dates as a TA with one, and nobody falls behind.
+turn. So a TA with two sections gets twice as many dates as a TA with one, and nobody falls behind. The rule runs separately per task kind (light and heavy), and both kinds share section capacity.
 
 ## Local development
 
@@ -48,7 +48,7 @@ Nothing is sent to the browser.
 | `HISTORY_DELETE_PASSWORD` | Password required to delete the snapshot history                         |
 | `DATA_STORE`              | Optional: `memory` or `supabase`. Defaults to `supabase` when `SUPABASE_URL` is set, and always in production |
 | `APP_TIMEZONE`            | Optional IANA timezone for "today" (e.g. `Africa/Cairo`, the default)    |
-| `APP_URL`                 | Public origin for canonical and Open Graph URLs (`og:url`, `og:image`). Defaults to `http://localhost:5173`; set it to the production URL on Vercel |
+| `APP_URL`                 | Public origin for canonical and Open Graph URLs (`og:url`, `og:image`). Falls back to `https://$VERCEL_PROJECT_PRODUCTION_URL` on Vercel, else `http://localhost:5173`; set it to the production URL on Vercel |
 
 ## Supabase setup
 
