@@ -9,6 +9,7 @@ import { Toaster } from "~/components/ui/Toast";
 import { UNREADABLE_WORKSPACE_MESSAGE } from "~/lib/errors";
 import { shouldRevalidateRoot } from "~/lib/revalidate";
 import { absoluteUrl, DEFAULT_APP_URL, SITE_DESCRIPTION, SITE_NAME } from "~/lib/seo";
+import { VIEWPORT_CONTENT } from "~/lib/viewport";
 import { THEME_INIT_SCRIPT, ThemeProvider } from "~/lib/theme";
 import { ToastProvider } from "~/lib/toast";
 import type { RootLoaderData } from "~/lib/use-workspace";
@@ -70,7 +71,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="viewport" content={VIEWPORT_CONTENT} />
         <meta name="color-scheme" content="light dark" />
         <Meta />
         <Links />

@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/Button";
-import { Sheet } from "~/components/ui/Sheet";
+import { Sheet, SheetFooter } from "~/components/ui/Sheet";
 import type { Command, Schedule, TaskKind, Workspace } from "~/engine/types";
 import { messageOf } from "~/lib/errors";
 import { useStepFocus } from "~/lib/focus";
@@ -170,20 +170,22 @@ function Wizard({ open, initialKind, onDone, onCancel }: { open: boolean; initia
         </p>
       )}
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="ghost" disabled={creating} onClick={step === 0 ? onCancel : () => go((step - 1) as Step)}>
-          {step === 0 ? "Cancel" : "Back"}
-        </Button>
-        {step < 2 ? (
-          <Button disabled={!valid} onClick={next}>
-            Next
+      <SheetFooter>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+          <Button variant="ghost" disabled={creating} onClick={step === 0 ? onCancel : () => go((step - 1) as Step)}>
+            {step === 0 ? "Cancel" : "Back"}
           </Button>
-        ) : (
-          <Button disabled={!previewWs} loading={loading || creating} onClick={confirm}>
-            Confirm
-          </Button>
-        )}
-      </div>
+          {step < 2 ? (
+            <Button disabled={!valid} onClick={next}>
+              Next
+            </Button>
+          ) : (
+            <Button disabled={!previewWs} loading={loading || creating} onClick={confirm}>
+              Confirm
+            </Button>
+          )}
+        </div>
+      </SheetFooter>
     </div>
   );
 }

@@ -8,9 +8,23 @@ import {
   type InertiaOptions,
   type PanInfo,
 } from "motion/react";
-import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
+import { isCoarsePointer, isTextEntry } from "~/lib/pointer";
 import { backdropOpacityFor, overlayPop, overlaySpring, overlayTransition, sheetDragElastic, touchSpring } from "~/lib/motion";
 import { IconButton } from "./IconButton";
 import { CloseIcon } from "./icons";
@@ -22,7 +36,56 @@ type SheetProps = {
   /** Desktop placement: a centred dialog (default) or a full-height slide-over from the right. */
   side?: "center" | "right";
   children: ReactNode;
+  /**
+   * Actions pinned below the scrolling body, so they stay in view when the on-screen keyboard
+   * shrinks the sheet. Content whose state lives inside the body can use <SheetFooter> instead.
+   */
+  footer?: ReactNode;
 };
+
+type FooterSlot = { el: HTMLElement | null; claim: () => () => void };
+const FooterSlotContext = createContext<FooterSlot | null>(null);
+
+/** Renders its children into the enclosing Sheet's footer (see Sheet's `footer`). */
+export function SheetFooter({ children }: { children: ReactNode }) {
+  const slot = useContext(FooterSlotContext);
+  const claim = slot?.claim;
+  // Sheets render only on the client, so the layout effect never runs on the server.
+  useLayoutEffect(() => claim?.(), [claim]);
+  return slot?.el ? createPortal(children, slot.el) : null;
+}
+
+/**
+ * Where the visual viewport is smaller than the layout viewport (iOS Safari with the keyboard up,
+ * which ignores `interactive-widget`), the sheet's container is fitted to the visible region.
+ * Elsewhere (and when pinch-zoomed) it stays `inset-0`.
+ */
+function useKeyboardFit(open: boolean): CSSProperties | undefined {
+  const [fit, setFit] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (!open || !vv) return;
+    const update = () => {
+      const covered = window.innerHeight - vv.height;
+      const zoomed = Math.abs(vv.scale - 1) > 0.01;
+      setFit(!zoomed && (covered > 1 || vv.offsetTop > 1) ? { top: vv.offsetTop, height: vv.height } : null);
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+      setFit(null);
+    };
+  }, [open]);
+  return fit ? { top: fit.top, height: fit.height, bottom: "auto" } : undefined;
+}
+
+/** After the keyboard (or a step change) settles, bring the focused field back into view. */
+function revealSoon(el: HTMLElement) {
+  requestAnimationFrame(() => el.scrollIntoView?.({ block: "nearest" }));
+}
 
 const DESKTOP_QUERY = "(min-width: 48rem)"; // Tailwind `md`
 const DISMISS_OFFSET = 120;
@@ -67,7 +130,7 @@ function useIsDesktop(): boolean {
  * and the app root is `inert` (counted, so stacked sheets release it only when the last closes);
  * focus returns to the opener on close.
  */
-export function Sheet({ open, onClose, title, side = "center", children }: SheetProps) {
+export function Sheet({ open, onClose, title, side = "center", children, footer }: SheetProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const desktop = useIsDesktop();
@@ -75,6 +138,21 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
   const drag = useDragControls();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const keyboardFit = useKeyboardFit(open);
+  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
+  const [footerClaims, setFooterClaims] = useState(0);
+  const footerSlot = useMemo<FooterSlot>(
+    () => ({
+      el: footerEl,
+      claim: () => {
+        setFooterClaims((n) => n + 1);
+        return () => setFooterClaims((n) => n - 1);
+      },
+    }),
+    [footerEl],
+  );
+  const hasFooter = footer != null || footerClaims > 0;
   // The bottom sheet's drag offset; the backdrop fades out as it nears the dismiss distance.
   // Enter/exit animate y in percent (a string), which leaves the backdrop to its own fade.
   const panelY = useMotionValue<number | string>(0);
@@ -89,13 +167,15 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
 
   // Focus in on open, back to the opener on close. Children mark their initial focus target
   // with `data-autofocus`, not React's autoFocus: autoFocus fires during commit, before this
-  // effect, so the opener would be recorded as the child itself.
+  // effect, so the opener would be recorded as the child itself. On a coarse pointer the heading
+  // takes focus instead, so the on-screen keyboard never pops up before the sheet is seen.
   useEffect(() => {
     if (!open || !mounted) return;
     const opener = document.activeElement as HTMLElement | null;
     const panel = panelRef.current;
     if (panel && !panel.contains(opener)) {
-      (panel.querySelector<HTMLElement>("[data-autofocus]") ?? panel).focus();
+      const target = isCoarsePointer() ? headingRef.current : panel.querySelector<HTMLElement>("[data-autofocus]");
+      (target ?? panel).focus();
     }
     return () => {
       if (opener && opener.isConnected) opener.focus();
@@ -110,6 +190,22 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
     return () => {
       const i = sheetStack.lastIndexOf(panel);
       if (i >= 0) sheetStack.splice(i, 1);
+    };
+  }, [open, mounted]);
+
+  // While a field in the sheet has focus, keep it in view as the keyboard resizes the viewport.
+  useEffect(() => {
+    if (!open || !mounted) return;
+    const onResize = () => {
+      const active = document.activeElement;
+      if (isTextEntry(active) && panelRef.current?.contains(active)) revealSoon(active);
+    };
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", onResize);
+    window.addEventListener("resize", onResize);
+    return () => {
+      vv?.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", onResize);
     };
   }, [open, mounted]);
 
@@ -189,6 +285,7 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
       {open && (
         <div
           key="sheet"
+          style={keyboardFit}
           className={`fixed inset-0 z-50 flex items-end justify-center ${
             side === "right" ? "md:items-stretch md:justify-end md:p-3" : "md:items-center md:p-6"
           }`}
@@ -226,7 +323,11 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             dragElastic={sheetDragElastic}
             dragTransition={reduced ? INSTANT_DRAG : undefined}
             onDragEnd={onDragEnd}
-            className={`glass relative flex max-h-[90dvh] w-full flex-col rounded-b-none pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:pb-0 ${
+            // min(…, 100%): never taller than the container, which shrinks to the visible region
+            // when useKeyboardFit applies. The footer carries the safe-area padding when present.
+            className={`glass relative flex max-h-[min(90dvh,100%)] w-full flex-col rounded-b-none outline-none md:rounded-card md:pb-0 ${
+              hasFooter ? "" : "pb-[env(safe-area-inset-bottom)]"
+            } ${
               side === "right" ? "md:max-h-none md:max-w-md" : "md:max-w-lg"
             }`}
           >
@@ -244,14 +345,34 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
               </div>
             )}
             <div className="flex items-center gap-3 pl-5 pr-2 md:pt-2">
-              <h2 id={titleId} className="flex-1 py-2 text-heading font-semibold">
+              <h2
+                id={titleId}
+                ref={headingRef}
+                tabIndex={-1}
+                className="flex-1 rounded-field py-2 text-heading font-semibold outline-none focus-visible:outline-2 focus-visible:outline-accent"
+              >
                 {title}
               </h2>
               <IconButton aria-label="Close" className="text-muted" onClick={onClose}>
                 <CloseIcon size={16} />
               </IconButton>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-1">{children}</div>
+            <div
+              onFocusCapture={(e) => {
+                if (isTextEntry(e.target)) revealSoon(e.target);
+              }}
+              className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-1 ${hasFooter ? "pb-3" : "pb-5"}`}
+            >
+              <FooterSlotContext.Provider value={footerSlot}>{children}</FooterSlotContext.Provider>
+            </div>
+            <div
+              ref={setFooterEl}
+              data-sheet-footer
+              hidden={!hasFooter}
+              className="shrink-0 border-t border-line bg-surface/80 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+            >
+              {footer}
+            </div>
           </motion.div>
         </div>
       )}

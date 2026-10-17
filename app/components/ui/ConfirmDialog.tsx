@@ -12,19 +12,25 @@ type ConfirmDialogProps = {
   onClose: () => void;
 };
 
-/** Yes/no confirmation on top of Sheet; the confirm button takes focus on open. */
+/** Yes/no confirmation on top of Sheet; the confirm button takes focus on open (fine pointers). */
 export function ConfirmDialog({ open, title, body, confirmLabel, danger = false, onConfirm, onClose }: ConfirmDialogProps) {
   return (
-    <Sheet open={open} onClose={onClose} title={title}>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={title}
+      footer={
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant={danger ? "danger" : "primary"} data-autofocus onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
+        </div>
+      }
+    >
       <div className="text-muted">{body}</div>
-      <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button variant={danger ? "danger" : "primary"} data-autofocus onClick={onConfirm}>
-          {confirmLabel}
-        </Button>
-      </div>
     </Sheet>
   );
 }
