@@ -101,3 +101,18 @@ test("focus escaping from a lower stacked sheet is recovered into the topmost sh
 test("reduced motion: the drag release jumps back without a spring", () => {
   expect(INSTANT_DRAG).toEqual({ type: false });
 });
+
+test("Sheet backdrop opacity follows drag progress", async () => {
+  render(<Sheet open onClose={() => {}} title="Drag me"><p>body</p></Sheet>);
+  const backdrop = document.querySelector<HTMLElement>("[data-sheet-backdrop]")!;
+  expect(backdrop).not.toBeNull();
+  expect(Number(backdrop.style.opacity || 1)).toBe(1);
+  const handle = document.querySelector<HTMLElement>("[data-sheet-handle]")!;
+  const ptr = { pointerId: 1, isPrimary: true, button: 0, buttons: 1, pointerType: "touch" };
+  fireEvent.pointerDown(handle, { ...ptr, clientX: 100, clientY: 100 });
+  for (const y of [110, 130, 160]) fireEvent.pointerMove(window, { ...ptr, clientX: 100, clientY: y });
+  await waitFor(() => expect(Number(backdrop.style.opacity)).toBeCloseTo(0.5, 1));
+  fireEvent.pointerMove(window, { ...ptr, clientX: 100, clientY: 400 });
+  await waitFor(() => expect(Number(backdrop.style.opacity)).toBe(0));
+  fireEvent.pointerUp(window, { ...ptr, clientX: 100, clientY: 400 });
+});

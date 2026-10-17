@@ -1,5 +1,5 @@
 import { useReducedMotion, type TargetAndTransition, type Transition, type Variants } from "motion/react";
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type RefObject } from "react";
 
 /** Springy ease used for page and toast entrances. */
 export const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -18,6 +18,58 @@ export const reducedPageVariants: Variants = {
   enter: { opacity: 1, y: 0 },
   exit: { opacity: 1, y: 0 },
 };
+
+/* ---------- Route transitions ---------- */
+
+/** Tab order of the top-level pages; phone route changes slide along it. */
+export const ROUTE_ORDER = ["/", "/team", "/tasks", "/calendar", "/history"] as const;
+
+const TASK_DETAIL = /^\/tasks\/[^/]+$/;
+const normalise = (path: string) => (path.length > 1 ? path.replace(/\/+$/, "") : path);
+
+/**
+ * Which way a route change slides on phones: 1 when the new page comes in from the right
+ * (moving right along ROUTE_ORDER, or into a task's detail), -1 when it comes in from the left
+ * (moving left, or leaving a task's detail, which slides back out to the right), 0 for the same
+ * route or one outside the order.
+ */
+export function slideDirection(from: string, to: string): -1 | 0 | 1 {
+  const a = normalise(from);
+  const b = normalise(to);
+  if (a === b) return 0;
+  if (TASK_DETAIL.test(b)) return 1;
+  if (TASK_DETAIL.test(a)) return -1;
+  const i = (ROUTE_ORDER as readonly string[]).indexOf(a);
+  const j = (ROUTE_ORDER as readonly string[]).indexOf(b);
+  if (i < 0 || j < 0) return 0;
+  return j > i ? 1 : -1;
+}
+
+const PAGE_SLIDE = 24;
+/** Phone route slide: short and decelerating, so a tab switch never feels slow. */
+export const phonePageTransition: Transition = { duration: 0.18, ease: EASE_OUT };
+
+/**
+ * Page enter/exit states for a route change in direction `dir` (see slideDirection): a
+ * horizontal ±24px slide on phones, the fade/rise everywhere else.
+ */
+export function pageVariantsFor(dir: number, isPhone: boolean): Variants {
+  if (!isPhone) return pageVariants;
+  return {
+    initial: { opacity: 0, x: dir * PAGE_SLIDE },
+    enter: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -dir * PAGE_SLIDE },
+  };
+}
+
+/**
+ * pageVariantsFor resolved from motion's `custom` (the direction). The exiting page keeps the
+ * props of its last render, so it reads the new direction from AnimatePresence's `custom`.
+ */
+export function routeVariants(isPhone: boolean): Variants {
+  const at = (state: "initial" | "enter" | "exit") => (dir: number) => pageVariantsFor(dir ?? 0, isPhone)[state] as TargetAndTransition;
+  return { initial: at("initial"), enter: at("enter"), exit: at("exit") };
+}
 
 const STEP_SLIDE = 40;
 
@@ -81,6 +133,19 @@ export function useStaggerOnMount(listFirstRender: RefObject<boolean>, i: number
 export const overlayTransition: Transition = { duration: 0.2, ease: EASE_OUT };
 /** Slide-in panels (bottom sheet, right-hand slide-over). */
 export const overlaySpring: Transition = { type: "spring", stiffness: 420, damping: 40 };
+/** Bottom sheet enter/exit, tuned for touch. */
+export const touchSpring: Transition = { type: "spring", stiffness: 420, damping: 38 };
+/** Bottom sheet drag: a light rubber band above the rest position, free travel downwards. */
+export const sheetDragElastic = { top: 0.08, bottom: 1 };
+
+/**
+ * Backdrop opacity for a bottom sheet dragged `y` px down: 1 at rest (or above it), falling
+ * linearly to 0 at the dismiss distance.
+ */
+export function backdropOpacityFor(y: number, dismissDistance: number): number {
+  if (!(dismissDistance > 0) || !Number.isFinite(y)) return 1;
+  return Math.min(1, Math.max(0, 1 - y / dismissDistance));
+}
 
 const POP_STILL = { opacity: 1, scale: 1, y: 0 };
 
@@ -98,6 +163,8 @@ export const hoverLift = { y: -1 };
 export const tapPress = { scale: 0.96 };
 /** Deeper press for the bottom tab bar items. */
 export const tabPress = { scale: 0.94 };
+/** Gentler press for large tappable cards. */
+export const cardPress = { scale: 0.98 };
 
 const STILL: TargetAndTransition = {};
 
@@ -118,6 +185,28 @@ type PressMotion = { whileHover: TargetAndTransition; whileTap: TargetAndTransit
 export function pressMotion(reduced: boolean | null): PressMotion {
   return reduced ? { whileHover: STILL, whileTap: STILL } : { whileHover: hoverLift, whileTap: tapPress };
 }
+
+/** True while `query` matches; false on the server and during hydration (no mismatch). */
+export function useMediaQuery(query: string): boolean {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const mq = typeof window !== "undefined" ? window.matchMedia?.(query) : undefined;
+      if (!mq) return () => {};
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    [query],
+  );
+  const matches = useSyncExternalStore(
+    subscribe,
+    () => (typeof window !== "undefined" && window.matchMedia ? window.matchMedia(query).matches : false),
+    () => false,
+  );
+  return useHydrated() && matches;
+}
+
+/** Below Tailwind `md` (48rem). */
+export const PHONE_QUERY = "(max-width: 47.99rem)";
 
 /**
  * False during SSR and the first client render, true after mount. Gate render output that

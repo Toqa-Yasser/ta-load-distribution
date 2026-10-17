@@ -1,9 +1,17 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useLocation, useOutlet } from "react-router";
 import { FAB_SLOT_ID } from "~/components/ui/Fab";
 import { APP_ROOT_ID } from "~/components/ui/Sheet";
-import { pageTransition, pageVariants, reducedPageVariants } from "~/lib/motion";
+import {
+  PHONE_QUERY,
+  pageTransition,
+  phonePageTransition,
+  reducedPageVariants,
+  routeVariants,
+  slideDirection,
+  useMediaQuery,
+} from "~/lib/motion";
 import { OpenSettingsContext } from "~/lib/settings";
 import { UNDO_FETCHER_KEY, useHistory } from "~/lib/use-history";
 import { Background } from "./Background";
@@ -20,6 +28,15 @@ export function AppShell() {
   // reads its own loader data must fall back (see EMPTY_HISTORY in routes/history.tsx). Root data is safe.
   const outlet = useOutlet();
   const reduced = useReducedMotion();
+  // False on the server and while hydrating, so the first paint matches; the first client
+  // navigation already sees the real value.
+  const isPhone = useMediaQuery(PHONE_QUERY);
+  // Direction of the latest route change along the tab order (see slideDirection). Derived
+  // during render from the previous pathname, so the entering and exiting pages share it.
+  const [route, setRoute] = useState({ pathname, dir: 0 });
+  if (route.pathname !== pathname) setRoute({ pathname, dir: slideDirection(route.pathname, pathname) });
+  const dir = route.dir;
+  const variants = useMemo(() => (reduced ? reducedPageVariants : routeVariants(isPhone)), [reduced, isPhone]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const openSettings = useCallback(() => setSettingsOpen(true), []);
   // Toasts the result of every toast's Undo; mounted here so it outlives the page that showed it.
@@ -33,14 +50,16 @@ export function AppShell() {
         <div id={APP_ROOT_ID} className="relative min-h-dvh">
           <Background />
           <Header />
-          <AnimatePresence mode="wait" initial={false}>
+          {/* `custom` reaches the exiting page too, so it leaves in the new direction. */}
+          <AnimatePresence mode="wait" initial={false} custom={dir}>
             <motion.main
               key={pathname}
-              variants={reduced ? reducedPageVariants : pageVariants}
+              custom={dir}
+              variants={variants}
               initial="initial"
               animate="enter"
               exit="exit"
-              transition={reduced ? { duration: 0 } : pageTransition}
+              transition={reduced ? { duration: 0 } : isPhone ? phonePageTransition : pageTransition}
               // Clears the fixed header (--header-h) plus a 16px gap (32px from md), and below md the
               // floating tab bar (12px offset + --tabbar-h + safe area) plus 16px.
               className={`${CONTENT_COLUMN} pb-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+1.75rem)] pt-[calc(var(--header-h)+1rem)] md:pb-12 md:pt-[calc(var(--header-h)+2rem)]`}

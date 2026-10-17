@@ -1,8 +1,17 @@
-import { AnimatePresence, motion, useDragControls, useReducedMotion, type InertiaOptions, type PanInfo } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  useDragControls,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type InertiaOptions,
+  type PanInfo,
+} from "motion/react";
 import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FOCUSABLE } from "~/lib/focus";
-import { overlayPop, overlaySpring, overlayTransition } from "~/lib/motion";
+import { backdropOpacityFor, overlayPop, overlaySpring, overlayTransition, sheetDragElastic, touchSpring } from "~/lib/motion";
 import { IconButton } from "./IconButton";
 import { CloseIcon } from "./icons";
 
@@ -66,6 +75,10 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
   const drag = useDragControls();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  // The bottom sheet's drag offset; the backdrop fades out as it nears the dismiss distance.
+  // Enter/exit animate y in percent (a string), which leaves the backdrop to its own fade.
+  const panelY = useMotionValue<number | string>(0);
+  const dragOpacity = useTransform(panelY, (y) => (typeof y === "number" ? backdropOpacityFor(y, DISMISS_OFFSET) : 1));
 
   // Declared before the focus effect: cleanups run in order, and the opener must not be inert
   // when focus is handed back to it.
@@ -168,7 +181,7 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
         initial: { y: "100%" },
         animate: { y: 0 },
         exit: { y: "100%" },
-        transition: reduced ? { duration: 0 } : overlaySpring,
+        transition: reduced ? { duration: 0 } : touchSpring,
       };
 
   return createPortal(
@@ -188,8 +201,14 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             transition={fade}
             onClick={onClose}
             // Clicking the scrim closes the sheet, so it gets the pointer.
-            className="absolute inset-0 cursor-pointer bg-scrim backdrop-blur-sm"
-          />
+            className="absolute inset-0 cursor-pointer"
+          >
+            <motion.div
+              data-sheet-backdrop
+              style={desktop ? undefined : { opacity: dragOpacity }}
+              className="absolute inset-0 bg-scrim backdrop-blur-sm"
+            />
+          </motion.div>
           <motion.div
             ref={panelRef}
             role="dialog"
@@ -199,11 +218,12 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             onKeyDown={onKeyDown}
             onBlur={onBlur}
             {...panelMotion}
+            style={desktop ? undefined : { y: panelY }}
             drag={desktop ? false : "y"}
             dragListener={false}
             dragControls={drag}
             dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.8 }}
+            dragElastic={sheetDragElastic}
             dragTransition={reduced ? INSTANT_DRAG : undefined}
             onDragEnd={onDragEnd}
             className={`glass relative flex max-h-[90dvh] w-full flex-col rounded-b-none pb-[env(safe-area-inset-bottom)] outline-none md:rounded-card md:pb-0 ${
@@ -213,6 +233,7 @@ export function Sheet({ open, onClose, title, side = "center", children }: Sheet
             {!desktop && (
               <div
                 aria-hidden
+                data-sheet-handle
                 onPointerDown={(e) => {
                   e.preventDefault(); // no text selection while dragging with a mouse
                   drag.start(e);

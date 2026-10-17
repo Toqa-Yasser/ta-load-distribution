@@ -80,7 +80,7 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
   return (
     // Raised while the menu is open so it paints over the neighbouring cards.
     <div className={`relative h-full ${menuOpen ? "z-20" : ""}`}>
-      <Card interactive className="flex h-full flex-col gap-4 p-5">
+      <Card interactive pressable className="flex h-full flex-col gap-4 p-5">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1 pt-1">
             {/* Stretched link: its ::after covers the card, so the whole card navigates. */}

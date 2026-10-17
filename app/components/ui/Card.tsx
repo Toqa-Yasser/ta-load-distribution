@@ -7,8 +7,15 @@ import {
   useTransform,
 } from "motion/react";
 import { useState, type PointerEvent, type ReactNode } from "react";
+import { cardPress } from "~/lib/motion";
 
-type CardProps = { children: ReactNode; className?: string; interactive?: boolean };
+type CardProps = {
+  children: ReactNode;
+  className?: string;
+  interactive?: boolean;
+  /** The card itself is tappable (e.g. a stretched link): it presses to 0.98 under a tap. */
+  pressable?: boolean;
+};
 
 const TILT_DEG = 6;
 const tiltSpring = { stiffness: 260, damping: 24, mass: 0.6 };
@@ -18,8 +25,9 @@ const tiltSpring = { stiffness: 260, damping: 24, mass: 0.6 };
  * specular highlight, springing flat on leave. Touch and prefers-reduced-motion get no tilt.
  * Render output never depends on the reduced-motion flag, so SSR and hydration agree.
  * `will-change: transform` is set only while tilting, so idle cards don't each hold a layer.
+ * `pressable` (interactive cards only) adds the tap press; none under reduced motion.
  */
-export function Card({ children, className = "", interactive = false }: CardProps) {
+export function Card({ children, className = "", interactive = false, pressable = false }: CardProps) {
   const reduced = useReducedMotion();
   // Pointer position within the card, -0.5..0.5 on each axis (0 = centre).
   const px = useMotionValue(0);
@@ -55,6 +63,9 @@ export function Card({ children, className = "", interactive = false }: CardProp
     <motion.div
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
+      whileTap={pressable ? (reduced ? {} : cardPress) : undefined}
+      // The press gesture would otherwise make the card a tab stop; its link is the focus target.
+      tabIndex={pressable ? -1 : undefined}
       style={{ rotateX, rotateY, transformPerspective: 900 }}
       className={`glass card-lift relative ${tilting ? "will-change-transform" : ""} ${className}`}
     >
