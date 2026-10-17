@@ -1,7 +1,7 @@
 import { reduce, describe as describeCmd } from "~/engine/reducer";
 import { emptyWorkspace } from "~/engine/empty";
 import { capacities } from "~/engine/capacity";
-import { ValidationError, NoCapacityError, type Command } from "~/engine/types";
+import { ValidationError, NoCapacityError, NotEnoughTAsError, type Command } from "~/engine/types";
 import { ctx, run, team } from "./fixtures";
 
 test("addTA assigns distinct colours and trims the name", () => {
@@ -39,7 +39,7 @@ test("removeTA re-assigns its occurrences to the others", () => {
   expect(out.tas.map(t => t.name)).toEqual(["A", "B", "C"]);
   expect(out.sections.every(s => !s.taIds.includes(id("D")))).toBe(true);
   expect(out.tasks[0].occurrences).toHaveLength(8);
-  expect(out.tasks[0].occurrences.every(o => o.taId !== id("D"))).toBe(true);
+  expect(out.tasks[0].occurrences.every(o => o.seats[0].taId !== id("D"))).toBe(true);
   expect(out.ledgers.light.used[id("D")]).toBeUndefined();
 });
 test("removeTA throws NoCapacityError and leaves workspace unchanged when nobody else has capacity", () => {
@@ -93,14 +93,14 @@ test("unknown ids are rejected", () => {
     [{ type: "updateTask", taskId: "nope", title: "X" }, "Unknown task."],
     [{ type: "deleteTask", taskId: "nope" }, "Unknown task."],
     [{ type: "redistributeTask", taskId: "nope" }, "Unknown task."],
-    [{ type: "reassignOccurrence", ref, taId: ws.tas[0].id }, "Unknown task."],
+    [{ type: "reassignOccurrence", ref, from: ws.tas[1].id, taId: ws.tas[0].id }, "Unknown task."],
   ];
   for (const [cmd, message] of cases) expect(() => reduce(ws, cmd, ctx)).toThrow(new ValidationError(message));
   const t = reduce(ws, { type: "createTask", kind: "light", title: "Q", schedule: { type: "one-time", date: "2026-10-01" } }, ctx);
   const badOcc = { taskId: t.tasks[0].id, occurrenceId: "nope" };
-  expect(() => reduce(t, { type: "reassignOccurrence", ref: badOcc, taId: ws.tas[0].id }, ctx)).toThrow(new ValidationError("Unknown occurrence."));
+  expect(() => reduce(t, { type: "reassignOccurrence", ref: badOcc, from: ws.tas[1].id, taId: ws.tas[0].id }, ctx)).toThrow(new ValidationError("Unknown occurrence."));
   const good = { taskId: t.tasks[0].id, occurrenceId: t.tasks[0].occurrences[0].id };
-  expect(() => reduce(t, { type: "reassignOccurrence", ref: good, taId: "nope" }, ctx)).toThrow(new ValidationError("Unknown TA."));
+  expect(() => reduce(t, { type: "reassignOccurrence", ref: good, from: t.tasks[0].occurrences[0].seats[0].taId, taId: "nope" }, ctx)).toThrow(new ValidationError("Unknown TA."));
 });
 test("describe labels slots, reassignments and swaps", () => {
   const { ws, id } = team();
@@ -110,7 +110,42 @@ test("describe labels slots, reassignments and swaps", () => {
   const sec = t.sections[0];
   expect(describeCmd({ type: "setSectionSlot", sectionId: sec.id, slot: 0, taId: id("C") }, t)).toBe("Assigned C to S1");
   expect(describeCmd({ type: "setSectionSlot", sectionId: sec.id, slot: 1, taId: null }, t)).toBe("Cleared a slot in S1");
-  expect(describeCmd({ type: "reassignOccurrence", ref: { taskId: t.tasks[0].id, occurrenceId: o1.id }, taId: id("B") }, t)).toBe("Reassigned Oct 3 to B");
-  expect(describeCmd({ type: "swapOccurrences", a: { taskId: t.tasks[0].id, occurrenceId: o1.id }, b: { taskId: t.tasks[0].id, occurrenceId: o2.id } }, t))
-    .toBe(`Swapped ${name(o1.taId)} ↔ ${name(o2.taId)}`);
+  expect(describeCmd({ type: "reassignOccurrence", ref: { taskId: t.tasks[0].id, occurrenceId: o1.id }, from: o1.seats[0].taId, taId: id("B") }, t)).toBe("Reassigned Oct 3 to B");
+  expect(describeCmd({ type: "swapOccurrences", a: { taskId: t.tasks[0].id, occurrenceId: o1.id, taId: o1.seats[0].taId }, b: { taskId: t.tasks[0].id, occurrenceId: o2.id, taId: o2.seats[0].taId } }, t))
+    .toBe(`Swapped ${name(o1.seats[0].taId)} ↔ ${name(o2.seats[0].taId)}`);
+});
+
+test("removeTA refills only the removed TA's seats with a distinct TA", () => {
+  const { ws, id } = team();
+  const t = reduce(ws, { type: "createTask", kind: "light", title: "Pair", taCount: 2, schedule: { type: "daily", start: "2026-10-01", end: "2026-10-04" } }, ctx);
+  const out = reduce(t, { type: "removeTA", taId: id("A") }, ctx);
+  out.tasks[0].occurrences.forEach((o, i) => {
+    const ids = o.seats.map(s => s.taId);
+    expect(o.seats).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    expect(ids).not.toContain(id("A"));
+    for (const old of t.tasks[0].occurrences[i].seats) {
+      if (old.taId === id("A")) continue;
+      expect(o.seats).toContainEqual(old);
+    }
+    const kept = new Set(t.tasks[0].occurrences[i].seats.filter(s => s.taId !== id("A")).map(s => s.taId));
+    for (const s of o.seats) if (!kept.has(s.taId)) expect(s.turn).toBe(out.ledgers.light.turn);
+  });
+});
+test("removeTA is rejected when a seat cannot be refilled", () => {
+  let w = run([{ type: "addTA", name: "X" }, { type: "addTA", name: "Y" }, { type: "addSection", name: "S" }]);
+  w = run([
+    { type: "setSectionSlot", sectionId: w.sections[0].id, slot: 0, taId: w.tas[0].id },
+    { type: "setSectionSlot", sectionId: w.sections[0].id, slot: 1, taId: w.tas[1].id },
+    { type: "createTask", kind: "light", title: "Pair", taCount: 2, schedule: { type: "daily", start: "2026-10-01", end: "2026-10-02" } },
+  ], w);
+  const before = structuredClone(w);
+  expect(() => reduce(w, { type: "removeTA", taId: w.tas[0].id }, ctx)).toThrow(NotEnoughTAsError);
+  expect(w).toEqual(before);
+});
+test("describe labels co-staffed tasks", () => {
+  const { ws } = team();
+  const schedule = { type: "one-time", date: "2026-10-01" } as const;
+  expect(describeCmd({ type: "createTask", kind: "heavy", title: "Lab", taCount: 2, schedule }, ws)).toBe('Added heavy task "Lab" for 2 TAs');
+  expect(describeCmd({ type: "createTask", kind: "heavy", title: "Lab", taCount: 1, schedule }, ws)).toBe('Added heavy task "Lab"');
 });

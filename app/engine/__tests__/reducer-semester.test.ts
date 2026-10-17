@@ -24,7 +24,7 @@ test("extending the end adds assigned dates to open-ended tasks only", () => {
   expect(occ.slice(0, 3)).toEqual(before);
   // New ones are assigned to real TAs.
   const taIds = new Set(out.tas.map((t) => t.id));
-  expect(occ.slice(3).every((o) => taIds.has(o.taId) && o.turn >= 1 && o.id)).toBe(true);
+  expect(occ.slice(3).every((o) => taIds.has(o.seats[0].taId) && o.seats[0].turn >= 1 && o.id)).toBe(true);
   expect(new Set(occ.map((o) => o.id)).size).toBe(6);
   // The one-time task is unchanged.
   expect(out.tasks[1]).toEqual(ws.tasks[1]);
@@ -65,5 +65,20 @@ test("shrinking the end refunds the dropped current-turn units", () => {
   expect(out.ledgers.light.turn).toBe(4);
   expect(total(out)).toBe(4);
   const dropped = ws.tasks[0].occurrences.filter(o => o.date > "2026-10-28");
-  for (const o of dropped) expect(out.ledgers.light.used[o.taId]).toBeLessThan(ws.ledgers.light.used[o.taId]);
+  for (const o of dropped) expect(out.ledgers.light.used[o.seats[0].taId]).toBeLessThan(ws.ledgers.light.used[o.seats[0].taId]);
+});
+
+test("setSemester extension deals new dates with the task's taCount", () => {
+  const { ws: base } = team();
+  let ws = withSemester(base, "2026-10-01", "2026-10-14");
+  ws = reduce(ws, { type: "createTask", kind: "light", title: "Pair", taCount: 2, schedule: { type: "weekly", start: "2026-10-01", end: null } }, ctx);
+  const before = ws.tasks[0].occurrences;
+  const out = withSemester(ws, "2026-10-01", "2026-10-28");
+  const occ = out.tasks[0].occurrences;
+  expect(occ).toHaveLength(4);
+  expect(occ.slice(0, before.length)).toEqual(before);
+  for (const o of occ.slice(before.length)) {
+    expect(o.seats).toHaveLength(2);
+    expect(new Set(o.seats.map((s) => s.taId)).size).toBe(2);
+  }
 });
