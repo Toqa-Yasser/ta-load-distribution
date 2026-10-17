@@ -16,7 +16,7 @@ type SectionCardProps = {
   onSlotTap: (slot: 0 | 1) => void;
 };
 
-export const slotId = (sectionId: string, slot: 0 | 1) => `${sectionId}:${slot}`;
+const slotId = (sectionId: string, slot: 0 | 1) => `${sectionId}:${slot}`;
 
 function Slot({ section, slot, ta, onTap }: { section: Section; slot: 0 | 1; ta: TA | undefined; onTap: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: slotId(section.id, slot) });

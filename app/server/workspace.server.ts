@@ -14,7 +14,7 @@ const MAX_ATTEMPTS = 3;
 type SaveResult = { workspace: Workspace; version: number; snapshotId: number };
 type CommandResult = SaveResult & { label: string };
 
-export const UPGRADE_SNAPSHOT_LABEL = "Upgraded to task kinds";
+const UPGRADE_SNAPSHOT_LABEL = "Upgraded to task kinds";
 
 function conflict(): EngineError {
   return new EngineError("Someone else saved at the same time. Please retry.", "CONFLICT");
@@ -95,7 +95,7 @@ function asCommandError<T>(fn: () => T): T {
   }
 }
 
-export const describeCommand = (cmd: Command, ws: Workspace): string => asCommandError(() => describe(cmd, ws));
+const describeCommand = (cmd: Command, ws: Workspace): string => asCommandError(() => describe(cmd, ws));
 
 /** Applies `cmd` and saves it; `label` describes the command against the document it was applied to. */
 export async function applyCommand(store: Store, cmd: Command, ctx?: ReduceContext): Promise<CommandResult> {

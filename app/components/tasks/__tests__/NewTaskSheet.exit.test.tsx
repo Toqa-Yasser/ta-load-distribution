@@ -26,28 +26,6 @@ const deferred = (): Deferred => {
   return { promise, resolve };
 };
 
-function setup({ command, preview }: { command?: () => Promise<unknown>; preview?: (title: string) => Promise<unknown> }) {
-  const onClose = vi.fn();
-  const Stub = createRoutesStub([
-    { path: "/", Component: () => <CommandToasts><NewTaskSheet open onClose={onClose} /></CommandToasts> },
-    {
-      path: "/api/preview",
-      action: async ({ request }) => {
-        const { command: cmd } = await request.json();
-        return preview ? preview(cmd.title) : { ok: true, workspace: previewOf(cmd.title) };
-      },
-    },
-    { path: "/api/command", action: command ?? (async () => ({ ok: true, version: 2, snapshotId: 1, label: "Created" })) },
-  ]);
-  render(
-    <ToastProvider>
-      <Stub initialEntries={["/"]} />
-      <Toaster />
-    </ToastProvider>,
-  );
-  return { onClose };
-}
-
 async function toPreview(title = "Quiz") {
   fireEvent.change(await screen.findByLabelText("Title"), { target: { value: title } });
   fireEvent.click(screen.getByRole("button", { name: "Next" }));

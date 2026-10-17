@@ -55,7 +55,7 @@ export function mergeMeta(parent: readonly MetaDescriptor[], own: readonly MetaD
 
 type MatchLike = { id: string; meta?: readonly MetaDescriptor[]; loaderData?: unknown };
 
-export function appUrlFromMatches(matches: readonly (MatchLike | undefined)[]): string {
+function appUrlFromMatches(matches: readonly (MatchLike | undefined)[]): string {
   const data = matches.find((m) => m?.id === "root")?.loaderData as { appUrl?: unknown } | undefined;
   return typeof data?.appUrl === "string" && data.appUrl ? data.appUrl : DEFAULT_APP_URL;
 }
