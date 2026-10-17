@@ -6,7 +6,7 @@ import { KebabIcon } from "~/components/ui/icons";
 import { Card } from "~/components/ui/Card";
 import { ConfirmDialog } from "~/components/ui/ConfirmDialog";
 import type { Task } from "~/engine/types";
-import { fmtScheduleSummary, plural } from "~/lib/format";
+import { fmtTaskSummary, plural } from "~/lib/format";
 import { overlayPop, usePressMotion } from "~/lib/motion";
 import { useWorkspace } from "~/lib/use-workspace";
 import { KindBadge } from "./KindBadge";
@@ -92,7 +92,9 @@ export function TaskCard({ task, onRedistribute, onDelete }: TaskCardProps) {
             </Link>
             <div className="mt-1 flex min-w-0 items-center gap-2">
               <KindBadge kind={task.kind} size="sm" />
-              <p className="truncate text-sm text-muted">{fmtScheduleSummary(task.schedule)}</p>
+              <p className="truncate text-sm text-muted" title={fmtTaskSummary(task)}>
+                {fmtTaskSummary(task)}
+              </p>
             </div>
           </div>
           <div ref={menuRef} className="relative z-10">

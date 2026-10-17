@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
-import { capacities, turnSize, remainingFraction } from "~/engine/capacity";
+import { capacities, eligibleCount, turnSize, remainingFraction } from "~/engine/capacity";
 import { emptyWorkspace } from "~/engine/empty";
+import { team } from "./fixtures";
 
 const ws = { ...emptyWorkspace(),
   tas: [{ id: "A", name: "A", color: "#000" }, { id: "B", name: "B", color: "#000" }, { id: "Z", name: "Z", color: "#000" }],
@@ -22,4 +23,10 @@ test("capacity ignores slot ids that no longer match a TA", () => {
   const dangling = { ...ws, sections: [...ws.sections, { id: "s4", name: "S4", taIds: ["GONE", "A"] as [string, string] }] };
   expect(capacities(dangling)).toEqual({ A: 2, B: 3, Z: 0 });
   expect("GONE" in capacities(dangling)).toBe(false);
+});
+test("eligibleCount counts TAs with capacity > 0", () => {
+  const { ws: full } = team();
+  expect(eligibleCount(full)).toBe(4);
+  const cleared = { ...full, sections: full.sections.map(s => ({ ...s, taIds: [null, null] as [null, null] })) };
+  expect(eligibleCount(cleared)).toBe(0);
 });

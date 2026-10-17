@@ -10,7 +10,7 @@ covers. Every change is snapshotted, so you can undo or roll back.
 - **Dashboard**: the current turn, a liquid gauge per TA (used / capacity), upcoming dates, and a
   two-step swap of one TA's date with another's.
 - **Team**: add, rename and remove TAs; create sections and drag (or tap) TAs into each section's two slots.
-- **Tasks**: light or heavy (each kind has its own fairness counter); three-step creation (name → schedule → preview of who gets each date) with one-time, daily,
+- **Tasks**: light or heavy (each kind has its own fairness counter; 1 or more TAs per date); three-step creation (name → schedule → preview of who gets each date) with one-time, daily,
   weekly, monthly or custom schedules; redistribute or delete a task; a task detail page.
 - **Calendar**: month grid of every occurrence; swap two dates between TAs.
 - **History**: a snapshot per change, with rollback, toast Undo, and a password-protected "delete history".
@@ -23,8 +23,16 @@ covers. Every change is snapshotted, so you can undo or roll back.
 Each TA's **capacity** is the number of section slots they hold, and a **turn** is the sum of all
 capacities. Occurrences are dealt in date order, one unit each. Every occurrence goes to the TA with
 the **highest remaining fraction** of their capacity in this turn (`(capacity - used) / capacity`).
-**Ties are broken at random**. When everyone is full, the turn ends and all usage **resets** for the next
-turn. So a TA with two sections gets twice as many dates as a TA with one, and nobody falls behind. The rule runs separately per task kind (light and heavy), and both kinds share section capacity.
+**Ties are broken at random**. When everyone is full, the turn ends and usage **resets** for the next
+turn, except that any units a TA was dealt beyond their capacity (which co-staffing can require)
+carry into the next turn. So a TA with two sections gets twice as many dates as a TA with one, and nobody falls behind. The rule runs separately per task kind (light and heavy), and both kinds share section capacity.
+
+### TAs per date
+
+A task can need two or more TAs on each date. Every one of them is charged one unit, so a 2-TA task
+costs twice as much as a 1-TA task. The count is fixed when the task is created. Creating or
+redistributing fails with a clear message when fewer TAs hold section slots than the task needs;
+when the failure comes from removing a TA or redistributing, the message names the task.
 
 ## Local development
 

@@ -5,7 +5,7 @@ import { SplitBar } from "~/components/tasks/SplitBar";
 import { Card } from "~/components/ui/Card";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { ChevronLeftIcon, TasksIcon } from "~/components/ui/icons";
-import { fmtDateLong, fmtScheduleSummary, plural } from "~/lib/format";
+import { fmtDateLong, fmtTaskSummary, plural } from "~/lib/format";
 import { shouldRevalidateRoot } from "~/lib/revalidate";
 import { stagger } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
@@ -87,7 +87,7 @@ export default function TaskDetail() {
             <KindBadge kind={task.kind} />
           </div>
           <p className="mt-1 text-muted">
-            {fmtScheduleSummary(task.schedule)} · {plural(task.occurrences.length, "occurrence", "occurrences")}
+            {fmtTaskSummary(task)} · {plural(task.occurrences.length, "occurrence", "occurrences")}
           </p>
           {task.notes && <p className="mt-2 whitespace-pre-line">{task.notes}</p>}
         </div>
@@ -110,15 +110,21 @@ export default function TaskDetail() {
           <tbody>
             {/* Who holds each date is read-only here: dates change hands only by swapping. */}
             {task.occurrences.map((o) => {
-              const ta = taById.get(o.taId);
               return (
                 <tr key={o.id} className="border-b border-line last:border-b-0">
                   <td className="px-4 py-3 tabular-nums">{fmtDateLong(o.date)}</td>
                   <td className="w-1/2 px-4 py-3">
-                    <span className="inline-flex items-center gap-2">
-                      <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: ta?.color ?? "var(--muted)" }} />
-                      <span className={ta ? undefined : "text-muted"}>{ta?.name ?? "Unassigned"}</span>
-                    </span>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      {o.seats.map((seat) => {
+                        const ta = taById.get(seat.taId);
+                        return (
+                          <span key={seat.taId} className="inline-flex items-center gap-2">
+                            <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: ta?.color ?? "var(--muted)" }} />
+                            <span className={ta ? undefined : "text-muted"}>{ta?.name ?? "Unassigned"}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
                   </td>
                 </tr>
               );

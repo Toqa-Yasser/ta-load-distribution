@@ -9,8 +9,8 @@ import TaskDetail, { ErrorBoundary, loader, meta } from "~/routes/task-detail";
 const ws: Workspace = {
   ...emptyWorkspace(),
   tas: [{ id: "A", name: "Ahmed", color: "#f00" }, { id: "B", name: "Bassem", color: "#0f0" }],
-  tasks: [{ id: "t", title: "Quiz", kind: "heavy", createdAt: "", schedule: { type: "one-time", date: "2026-10-20" },
-    occurrences: [{ id: "o", date: "2026-10-20", taId: "A", turn: 1 }] }],
+  tasks: [{ id: "t", title: "Quiz", kind: "heavy", createdAt: "", taCount: 1, schedule: { type: "one-time", date: "2026-10-20" },
+    occurrences: [{ id: "o", date: "2026-10-20", seats: [{ taId: "A", turn: 1 }] }] }],
 };
 vi.mock("~/lib/use-workspace", () => ({ useWorkspace: () => ({ workspace: ws, today: "2026-10-17", taById: new Map(ws.tas.map((t) => [t.id, t])) }) }));
 
@@ -54,4 +54,19 @@ test("each occurrence shows its TA as text, with nothing to reassign", async () 
   const row = (await screen.findByRole("cell", { name: "Ahmed" })).closest("tr")!;
   expect(row).toHaveTextContent("Ahmed");
   expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+});
+
+test("a co-staffed date shows a chip per seat, and the header shows the TA count", async () => {
+  const saved = ws.tasks[0];
+  ws.tasks[0] = { ...saved, taCount: 2, occurrences: [{ id: "o", date: "2026-10-20", seats: [{ taId: "A", turn: 1 }, { taId: "B", turn: 1 }] }] };
+  try {
+    const Stub = createRoutesStub([{ path: "/tasks/:taskId", Component: TaskDetail as never }]);
+    render(<ToastProvider><Stub initialEntries={["/tasks/t"]} /></ToastProvider>);
+    const cell = await screen.findByRole("cell", { name: /Ahmed/ });
+    expect(cell).toHaveTextContent("Ahmed");
+    expect(cell).toHaveTextContent("Bassem");
+    expect(screen.getByText(/2 TAs per date/)).toBeInTheDocument();
+  } finally {
+    ws.tasks[0] = saved;
+  }
 });

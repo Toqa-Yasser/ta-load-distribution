@@ -67,7 +67,6 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
         </div>
         <ul className="flex flex-col gap-1">
           {view.occurrences.map((o, i) => {
-            const ta = view.taById.get(o.taId);
             return (
               <motion.li
                 key={o.id}
@@ -77,9 +76,16 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
                 className="flex min-h-11 items-center justify-between gap-3 rounded-field px-3 odd:bg-ink/[0.03]"
               >
                 <span className="tabular-nums">{fmtDate(o.date)}</span>
-                <span className="flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-sm">
-                  <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: ta?.color }} />
-                  <span className="truncate font-medium">{ta?.name ?? "Unknown TA"}</span>
+                <span className="flex min-w-0 flex-wrap justify-end gap-1.5">
+                  {o.seats.map((seat) => {
+                    const ta = view.taById.get(seat.taId);
+                    return (
+                      <span key={seat.taId} className="flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-sm">
+                        <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: ta?.color }} />
+                        <span className="truncate font-medium">{ta?.name ?? "Unknown TA"}</span>
+                      </span>
+                    );
+                  })}
                 </span>
               </motion.li>
             );

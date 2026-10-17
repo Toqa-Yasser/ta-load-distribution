@@ -16,7 +16,7 @@ const zeroKinds = (): Record<TaskKind, number> => ({ light: 0, heavy: 0 });
 
 const NEXT_DATES = 3;
 
-/** Per TA: per-kind used/counts, total occurrences across all tasks and the first few distinct dates on or after `today`. */
+/** Per TA (every seat counts): per-kind used/counts, total occurrences across all tasks and the first few distinct dates on or after `today`. */
 export function taStats(ws: Workspace, today: ISODate): Record<string, TAStats> {
   const totals: Record<string, number> = {};
   // TA -> upcoming date -> task titles (a Set keeps the first-seen order).
@@ -29,13 +29,15 @@ export function taStats(ws: Workspace, today: ISODate): Record<string, TAStats> 
   }
   for (const task of ws.tasks) {
     for (const o of task.occurrences) {
-      if (!(o.taId in totals)) continue;
-      totals[o.taId] += 1;
-      counts[o.taId][task.kind] += 1;
-      if (o.date < today) continue;
-      const day = upcoming[o.taId].get(o.date) ?? new Set<string>();
-      day.add(task.title);
-      upcoming[o.taId].set(o.date, day);
+      for (const { taId } of o.seats) {
+        if (!(taId in totals)) continue;
+        totals[taId] += 1;
+        counts[taId][task.kind] += 1;
+        if (o.date < today) continue;
+        const day = upcoming[taId].get(o.date) ?? new Set<string>();
+        day.add(task.title);
+        upcoming[taId].set(o.date, day);
+      }
     }
   }
   const result: Record<string, TAStats> = {};

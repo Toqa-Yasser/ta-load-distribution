@@ -94,7 +94,7 @@ test("preview and apply assign the same TAs for the same version and command", a
     const cmd: Command = { type: "createTask", kind: "light", title: `Task ${start}`, schedule: { type: "weekly", start, end: "2026-12-31" } };
     const previewed = await previewCommand(store, cmd);
     const applied = (await applyCommand(store, cmd)).workspace;
-    const taIds = (ws: typeof previewed) => ws.tasks[ws.tasks.length - 1].occurrences.map((o) => o.taId);
+    const taIds = (ws: typeof previewed) => ws.tasks[ws.tasks.length - 1].occurrences.map((o) => o.seats[0].taId);
     expect(taIds(applied)).toEqual(taIds(previewed));
   }
 });
@@ -135,13 +135,45 @@ test("legacy document upgrades on load and is written back once", async () => {
   expect(await store.getWorkspace()).toEqual(first);
   const snaps = await store.listSnapshots();
   expect(snaps).toHaveLength(1);
-  expect(snaps[0]).toMatchObject({ kind: "auto", label: "Upgraded to task kinds", version: 1, name: null });
+  expect(snaps[0]).toMatchObject({ kind: "auto", label: "Upgraded to co-staffed dates", version: 1, name: null });
   expect((await store.getSnapshot(snaps[0].id))!.data).toEqual(legacyDoc());
 
   const second = await loadWorkspace(store);
   expect(second).toEqual(first);
   expect(put).toHaveBeenCalledTimes(1);
   expect(await store.listSnapshots()).toHaveLength(1);
+});
+
+/** A v1.1 document: `ledgers` and task kinds, one TA per occurrence, no `taCount`. */
+function v11Doc() {
+  const { ledger, tasks, ...rest } = legacyDoc();
+  return { ...rest, tasks: tasks.map((t) => ({ ...t, kind: "light" })), ledgers: { light: ledger, heavy: { turn: 1, used: {} } } };
+}
+
+test('loading a v1.1 row writes it back once with the label "Upgraded to co-staffed dates"', async () => {
+  const store = new MemoryStore();
+  await store.putWorkspace(asStored(v11Doc()), null);
+  const put = vi.spyOn(store, "putWorkspace");
+  const first = await loadWorkspace(store);
+  expect(first.version).toBe(2);
+  expect(first.data.tasks[0].taCount).toBe(1);
+  expect(first.data.tasks[0].occurrences).toEqual([{ id: "occ_1", date: "2026-10-05", seats: [{ taId: "ta_1", turn: 1 }] }]);
+  const snaps = await store.listSnapshots();
+  expect(snaps).toHaveLength(1);
+  expect(snaps[0]).toMatchObject({ kind: "auto", label: "Upgraded to co-staffed dates", version: 1 });
+  expect((await store.getSnapshot(snaps[0].id))!.data).toEqual(v11Doc());
+  expect(await loadWorkspace(store)).toEqual(first);
+  expect(put).toHaveBeenCalledTimes(1);
+});
+
+test("rollback upgrades a v1.1 snapshot", async () => {
+  const store = new MemoryStore();
+  await loadWorkspace(store);
+  const id = await store.insertSnapshot({ name: "v1.1", label: 'Snapshot "v1.1"', kind: "manual", version: 1, data: asStored(v11Doc()) });
+  const r = await rollback(store, id);
+  expect(r.workspace.tasks[0].taCount).toBe(1);
+  expect(r.workspace.tasks[0].occurrences[0].seats).toEqual([{ taId: "ta_1", turn: 1 }]);
+  expect((await store.getWorkspace())!.data).toEqual(r.workspace);
 });
 
 test("an upgrade that loses a version race re-reads the winner's document", async () => {
@@ -152,7 +184,7 @@ test("an upgrade that loses a version race re-reads the winner's document", asyn
     // Another instance upgrades first.
     const w = (await s.getWorkspace())!;
     const { ledger, ...rest } = w.data as unknown as ReturnType<typeof legacyDoc>;
-    await s.putWorkspace(asStored({ ...rest, semester: { ...rest.semester, name: "Winner" }, tasks: rest.tasks.map((t) => ({ ...t, kind: "light" })), ledgers: { light: ledger, heavy: { turn: 1, used: {} } } }), w.version);
+    await s.putWorkspace(asStored({ ...rest, semester: { ...rest.semester, name: "Winner" }, tasks: rest.tasks.map((t) => ({ ...t, kind: "light", taCount: 1, occurrences: t.occurrences.map(({ taId, turn, ...o }) => ({ ...o, seats: [{ taId, turn }] })) })), ledgers: { light: ledger, heavy: { turn: 1, used: {} } } }), w.version);
   });
   await store.putWorkspace(asStored(legacyDoc()), null);
   const row = await loadWorkspace(store);
@@ -175,7 +207,7 @@ test("commands run on the upgraded document", async () => {
   const r = await applyCommand(store, { type: "addTA", name: "B" }, testContext());
   expect(r.version).toBe(3); // 1 legacy → 2 upgraded → 3 with the TA
   expect(r.workspace.tas.map((t) => t.name)).toEqual(["A", "B"]);
-  expect((await store.listSnapshots()).map((s) => s.label)).toEqual(['Added TA "B"', "Upgraded to task kinds"]);
+  expect((await store.listSnapshots()).map((s) => s.label)).toEqual(['Added TA "B"', "Upgraded to co-staffed dates"]);
 });
 
 test("rollback upgrades a legacy snapshot", async () => {

@@ -7,7 +7,7 @@ import type { Task, Workspace } from "~/engine/types";
 import Tasks from "~/routes/tasks";
 
 const task = (id: string, title: string, kind: Task["kind"]): Task => ({
-  id, title, kind, createdAt: "", schedule: { type: "one-time", date: "2026-10-20" }, occurrences: [],
+  id, title, kind, createdAt: "", taCount: 1, schedule: { type: "one-time", date: "2026-10-20" }, occurrences: [],
 });
 const ws: Workspace = { ...emptyWorkspace(), tasks: [task("a", "Quiz", "light"), task("b", "Exam", "heavy"), task("c", "Lab", "light")] };
 

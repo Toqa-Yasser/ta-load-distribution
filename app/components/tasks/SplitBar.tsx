@@ -11,7 +11,7 @@ type SplitBarProps = {
 
 /**
  * Horizontal stacked bar: one segment per TA, width proportional to how many of the task's
- * occurrences they hold. Widths animate on change; `initial={false}` renders the final width
+ * seats they hold. Widths animate on change; `initial={false}` renders the final width
  * on the server and on hydration. Width is not a transform, so MotionConfig does not cover it:
  * under prefers-reduced-motion (once mounted, so hydration matches SSR) the width is applied
  * directly as a style, with no tween.
@@ -21,8 +21,13 @@ export function SplitBar({ occurrences, tas, legend = false }: SplitBarProps) {
   const reducedMotion = useReducedMotion();
   const reduced = useMounted() && reducedMotion;
   const counts = new Map<string, number>();
-  for (const o of occurrences) counts.set(o.taId, (counts.get(o.taId) ?? 0) + 1);
-  const total = occurrences.length;
+  let total = 0;
+  for (const o of occurrences) {
+    for (const { taId } of o.seats) {
+      counts.set(taId, (counts.get(taId) ?? 0) + 1);
+      total += 1;
+    }
+  }
   const parts = tas.filter((ta) => (counts.get(ta.id) ?? 0) > 0).map((ta) => ({ ta, n: counts.get(ta.id)! }));
   const summary = parts.map(({ ta, n }) => `${ta.name} ${n}`).join(", ");
 

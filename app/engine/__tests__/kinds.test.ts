@@ -1,6 +1,6 @@
 import { reduce, describe as describeCmd } from "~/engine/reducer";
 import { emptyWorkspace } from "~/engine/empty";
-import { TASK_KINDS, ValidationError, type Command, type Ledger, type Occurrence, type OccurrenceRef, type TaskKind, type Workspace } from "~/engine/types";
+import { TASK_KINDS, ValidationError, type Command, type Ledger, type Occurrence, type SeatRef, type TaskKind, type Workspace } from "~/engine/types";
 import { ctx, team } from "./fixtures";
 
 const total = (l: Ledger) => Object.values(l.used).reduce((a, b) => a + b, 0);
@@ -17,7 +17,7 @@ function byName(ws: Workspace, used: Record<string, number>): Record<string, num
   return out;
 }
 
-const ref = (taskId: string, o: Occurrence): OccurrenceRef => ({ taskId, occurrenceId: o.id });
+const ref = (taskId: string, o: Occurrence): SeatRef => ({ taskId, occurrenceId: o.id, taId: o.seats[0].taId });
 
 test("TASK_KINDS lists light then heavy; empty workspace has two fresh ledgers", () => {
   expect(TASK_KINDS).toEqual(["light", "heavy"]);
@@ -62,7 +62,7 @@ test("removeTA re-deals each kind on its own ledger", () => {
   const { ws, id } = team();
   const t = daily(daily(ws, "light", 8), "heavy", 3);
   const out = reduce(t, { type: "removeTA", taId: id("D") }, ctx);
-  expect(out.tasks.flatMap((x) => x.occurrences).every((o) => o.taId !== id("D"))).toBe(true);
+  expect(out.tasks.flatMap((x) => x.occurrences).every((o) => o.seats[0].taId !== id("D"))).toBe(true);
   // Light: D's three turn-1 units are refunded; A1 B2 C2 are already full, so they land in turn 2.
   expect(out.ledgers.light.turn).toBe(2);
   expect(total(out.ledgers.light)).toBe(3);
@@ -84,8 +84,8 @@ test("redistributeAll resets both ledgers and re-deals light then heavy", () => 
   expect(total(out.ledgers.heavy)).toBe(3);
   expect(out.tasks.map((x) => x.title)).toEqual(["H", "L"]);
   const light = out.tasks[1].occurrences;
-  expect(light.slice(0, 8).every((o) => o.turn === 1)).toBe(true);
-  expect(light.slice(8).every((o) => o.turn === 2)).toBe(true);
+  expect(light.slice(0, 8).every((o) => o.seats[0].turn === 1)).toBe(true);
+  expect(light.slice(8).every((o) => o.seats[0].turn === 2)).toBe(true);
 });
 
 test("setSemester extension charges the task's own kind", () => {
@@ -132,10 +132,11 @@ test("updateTask, redistributeTask and reassignOccurrence touch only their kind'
   expect(redealt.ledgers.light).toEqual(t.ledgers.light);
 
   const occ = heavy.occurrences[0];
-  const target = occ.taId === id("A") ? id("B") : id("A");
-  const moved = reduce(t, { type: "reassignOccurrence", ref: ref(heavy.id, occ), taId: target }, ctx);
+  const from = occ.seats[0].taId;
+  const target = from === id("A") ? id("B") : id("A");
+  const moved = reduce(t, { type: "reassignOccurrence", ref: { taskId: heavy.id, occurrenceId: occ.id }, from, taId: target }, ctx);
   expect(moved.ledgers.heavy.used[target]).toBe((t.ledgers.heavy.used[target] ?? 0) + 1);
-  expect(moved.ledgers.heavy.used[occ.taId] ?? 0).toBe((t.ledgers.heavy.used[occ.taId] ?? 0) - 1);
+  expect(moved.ledgers.heavy.used[from] ?? 0).toBe((t.ledgers.heavy.used[from] ?? 0) - 1);
   expect(moved.ledgers.light).toEqual(t.ledgers.light);
 });
 

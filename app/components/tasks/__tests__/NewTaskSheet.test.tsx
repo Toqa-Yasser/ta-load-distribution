@@ -16,11 +16,22 @@ vi.mock("motion/react", async (orig) => ({
 }));
 
 const ws: Workspace = { ...emptyWorkspace(), tas: [{ id: "A", name: "Ahmed", color: "#f00" }] };
-vi.mock("~/lib/use-workspace", () => ({ useWorkspace: () => ({ workspace: ws, today: "2026-10-17", taById: new Map() }) }));
+const wsTwo: Workspace = {
+  ...ws,
+  tas: [...ws.tas, { id: "B", name: "Bassem", color: "#0f0" }],
+  sections: [{ id: "S1", name: "S1", taIds: ["A", "B"] }],
+};
+const wsOne: Workspace = { ...wsTwo, sections: [{ id: "S1", name: "S1", taIds: ["A", null] }] };
+// The workspace the mock hands out; tests swap it to change the eligible TA count.
+const current = { ws };
+vi.mock("~/lib/use-workspace", () => ({ useWorkspace: () => ({ workspace: current.ws, today: "2026-10-17", taById: new Map() }) }));
+afterEach(() => {
+  current.ws = ws;
+});
 
 const previewOf = (title: string): Workspace => {
-  const task: Task = { id: "n", title, kind: "light", createdAt: "", schedule: { type: "one-time", date: "2026-10-20" },
-    occurrences: [{ id: "o", date: "2026-10-20", taId: "A", turn: 1 }] };
+  const task: Task = { id: "n", title, kind: "light", createdAt: "", taCount: 1, schedule: { type: "one-time", date: "2026-10-20" },
+    occurrences: [{ id: "o", date: "2026-10-20", seats: [{ taId: "A", turn: 1 }] }] };
   return { ...ws, tasks: [task] };
 };
 
@@ -31,7 +42,11 @@ const deferred = (): Deferred => {
   return { promise, resolve };
 };
 
+const bodies = { preview: [] as Record<string, unknown>[], command: [] as Record<string, unknown>[] };
+
 function setup({ command, preview }: { command?: () => Promise<unknown>; preview?: (title: string) => Promise<unknown> }) {
+  bodies.preview = [];
+  bodies.command = [];
   const onClose = vi.fn();
   const Stub = createRoutesStub([
     { path: "/", Component: () => <CommandToasts><NewTaskSheet open onClose={onClose} /></CommandToasts> },
@@ -39,10 +54,17 @@ function setup({ command, preview }: { command?: () => Promise<unknown>; preview
       path: "/api/preview",
       action: async ({ request }) => {
         const { command: cmd } = await request.json();
+        bodies.preview.push(cmd);
         return preview ? preview(cmd.title) : { ok: true, workspace: previewOf(cmd.title) };
       },
     },
-    { path: "/api/command", action: command ?? (async () => ({ ok: true, version: 2, snapshotId: 1, label: "Created" })) },
+    {
+      path: "/api/command",
+      action: async ({ request }) => {
+        bodies.command.push(await request.json());
+        return command ? command() : { ok: true, version: 2, snapshotId: 1, label: "Created" };
+      },
+    },
   ]);
   render(
     <ToastProvider>
@@ -157,4 +179,47 @@ test("initialKind pre-selects that kind in step one", async () => {
   const Stub = createRoutesStub([{ path: "/", Component: () => <NewTaskSheet open initialKind="heavy" onClose={() => {}} /> }]);
   render(<ToastProvider><Stub initialEntries={["/"]} /></ToastProvider>);
   expect(await screen.findByRole("radio", { name: /heavy/i })).toBeChecked();
+});
+
+test("NewTaskSheet sends taCount in createTask", async () => {
+  current.ws = wsTwo;
+  setup({});
+  fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Quiz" } });
+  fireEvent.click(screen.getByRole("button", { name: "Increase" }));
+  expect(screen.getByRole("spinbutton", { name: "TAs per date" })).toHaveAttribute("aria-valuenow", "2");
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(await screen.findByRole("radio", { name: "One-time" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  const confirm = await screen.findByRole("button", { name: "Confirm" });
+  await waitFor(() => expect(confirm).toBeEnabled());
+  expect(bodies.preview[0]).toMatchObject({ type: "createTask", taCount: 2 });
+  fireEvent.click(confirm);
+  await waitFor(() => expect(bodies.command).toHaveLength(1));
+  expect(bodies.command[0]).toMatchObject({ command: { type: "createTask", taCount: 2 } });
+});
+
+test("taCount is clamped to the eligible count", async () => {
+  current.ws = wsTwo;
+  setup({});
+  fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Quiz" } });
+  fireEvent.click(screen.getByRole("button", { name: "Increase" }));
+  expect(screen.getByRole("spinbutton", { name: "TAs per date" })).toHaveAttribute("aria-valuenow", "2");
+  // A TA loses their section while the wizard is open; the next render sees only one eligible TA.
+  current.ws = wsOne;
+  fireEvent.click(screen.getByRole("radio", { name: "Heavy" }));
+  expect(screen.getByRole("spinbutton", { name: "TAs per date" })).toHaveAttribute("aria-valuenow", "1");
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(await screen.findByRole("radio", { name: "One-time" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  await waitFor(() => expect(bodies.preview).toHaveLength(1));
+  expect(bodies.preview[0]).toMatchObject({ taCount: 1 });
+});
+
+test("a NotEnoughTAsError from the preview renders in the preview error block", async () => {
+  const message = "This task needs 2 TAs but only 1 has sections.";
+  setup({ preview: async () => ({ ok: false, message, code: "NOT_ENOUGH_TAS" }) });
+  await toPreview();
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent(message);
+  expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
 });

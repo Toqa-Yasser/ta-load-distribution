@@ -6,8 +6,8 @@ import type { Task } from "~/engine/types";
 const ahmed = { id: "A", name: "Ahmed", color: "#f00" };
 const taById = new Map([["A", ahmed]]);
 const task = (dates: string[], kind: Task["kind"] = "light", title = "Quiz"): Task => ({
-  id: title, title, kind, createdAt: "", schedule: { type: "one-time", date: dates[0] },
-  occurrences: dates.map((date, i) => ({ id: String(i), date, taId: "A", turn: 1 })),
+  id: title, title, kind, createdAt: "", taCount: 1, schedule: { type: "one-time", date: dates[0] },
+  occurrences: dates.map((date, i) => ({ id: String(i), date, seats: [{ taId: "A", turn: 1 }] })),
 });
 
 test("Timeline shows only the next 14 days", () => {
@@ -43,4 +43,13 @@ test("the TA chip sits right after the kind badge, not at the far end of the row
 test("Timeline rows carry the task's kind badge", () => {
   render(<Timeline tasks={[task(["2026-10-16"], "heavy", "Exam")]} taById={taById} today="2026-10-16" />);
   expect(screen.getByText("Heavy", { selector: "[data-badge]" })).toBeInTheDocument();
+});
+
+test("Timeline lists every TA on a date", () => {
+  const bo = { id: "B", name: "Bo", color: "#0f0" };
+  const t = task(["2026-10-16"]);
+  t.occurrences[0].seats.push({ taId: "B", turn: 1 });
+  render(<Timeline tasks={[t]} taById={new Map([["A", ahmed], ["B", bo]])} today="2026-10-16" />);
+  expect(screen.getByText("Ahmed")).toBeInTheDocument();
+  expect(screen.getByText("Bo")).toBeInTheDocument();
 });

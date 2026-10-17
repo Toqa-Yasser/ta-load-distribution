@@ -43,3 +43,30 @@ test("api.command rejects createTask without a valid kind (400)", async () => {
     expect(await res.json()).toMatchObject({ ok: false, message: "Invalid command.", code: "BAD_REQUEST" });
   }
 });
+test("api.command rejects createTask with a non-numeric taCount (400)", async () => {
+  const schedule = { type: "one-time", date: "2026-10-01" };
+  for (const taCount of [null, "2"]) {
+    const res = await post({ command: { type: "createTask", kind: "light", title: "X", schedule, taCount } });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ ok: false, message: "Invalid command.", code: "BAD_REQUEST" });
+  }
+});
+test("api.command rejects swapOccurrences whose refs lack a taId (400)", async () => {
+  const ok = { taskId: "t", occurrenceId: "o", taId: "a" };
+  const noTa = { taskId: "t", occurrenceId: "o" };
+  for (const [a, b] of [[noTa, ok], [ok, noTa], [ok, null], ["x", ok]]) {
+    const res = await post({ command: { type: "swapOccurrences", a, b } });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ ok: false, message: "Invalid command.", code: "BAD_REQUEST" });
+  }
+});
+test("api.command createTask with taCount 2 needs two TAs with sections (400)", async () => {
+  const schedule = { type: "one-time", date: "2026-10-01" };
+  await post({ command: { type: "addTA", name: "Ahmed" } });
+  await post({ command: { type: "addSection", name: "S1" } });
+  const { data } = (await (await import("~/server/store.server")).getStore().getWorkspace())!;
+  await post({ command: { type: "setSectionSlot", sectionId: data.sections[0].id, slot: 0, taId: data.tas[0].id } });
+  const res = await post({ command: { type: "createTask", kind: "light", title: "X", schedule, taCount: 2 } });
+  expect(res.status).toBe(400);
+  expect(await res.json()).toMatchObject({ ok: false, message: "This task needs 2 TAs but only 1 has sections." });
+});

@@ -20,3 +20,8 @@ export function remainingFraction(capacity: number, used: number): number {
   if (capacity === 0) return -Infinity;
   return (capacity - used) / capacity;
 }
+
+/** TAs that hold at least one section slot; the most co-staffing a date can ask for. */
+export function eligibleCount(ws: Workspace): number {
+  return Object.values(capacities(ws)).filter((c) => c > 0).length;
+}

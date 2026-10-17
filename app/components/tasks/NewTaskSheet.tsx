@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Sheet, SHEET_ACTIONS } from "~/components/ui/Sheet";
+import { eligibleCount } from "~/engine/capacity";
 import type { Command, Schedule, TaskKind, Workspace } from "~/engine/types";
 import { messageOf } from "~/lib/errors";
 import { useStepFocus } from "~/lib/focus";
@@ -49,11 +50,12 @@ type WizardProps = { open: boolean; initialKind: TaskKind; onDone: () => void; o
 function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
   const { today, workspace } = useWorkspace();
   const reduced = useReducedMotion();
-  const [state, setState] = useState<{ step: Step; kind: TaskKind; title: string; notes: string; schedule: Schedule }>({
+  const [state, setState] = useState<{ step: Step; kind: TaskKind; title: string; notes: string; taCount: number; schedule: Schedule }>({
     step: 0,
     kind: initialKind,
     title: "",
     notes: "",
+    taCount: 1,
     schedule: { type: "weekly", start: today, end: null },
   });
   const [dir, setDir] = useState(1);
@@ -94,12 +96,15 @@ function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
   };
 
   const { step, kind, title, notes, schedule } = state;
+  const maxTaCount = Math.max(1, eligibleCount(workspace));
+  const taCount = Math.min(state.taCount, maxTaCount);
   const command = (): CreateTask => ({
     type: "createTask",
     kind,
     title: title.trim(),
     ...(notes.trim() ? { notes: notes.trim() } : {}),
     schedule,
+    taCount,
   });
 
   const valid = step === 0 ? title.trim() !== "" : step === 1 ? scheduleDates(schedule, workspace.semester).error === null : true;
@@ -150,6 +155,8 @@ function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
                 kind={kind}
                 title={title}
                 notes={notes}
+                taCount={taCount}
+                maxTaCount={maxTaCount}
                 onChange={(v) => setState((s) => ({ ...s, ...v }))}
                 onSubmit={next}
               />
