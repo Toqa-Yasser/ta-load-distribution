@@ -46,7 +46,7 @@ test("createTask stores light kind and rejects an unknown kind", () => {
 test("light and heavy turns advance independently", () => {
   const { ws } = team();
   const out = daily(daily(ws, "heavy", 8), "light", 8);
-  for (const kind of TASK_KINDS) {
+  for (const kind of LOAD_KINDS) {
     expect(out.ledgers[kind].turn).toBe(1);
     expect(byName(out, out.ledgers[kind].used)).toEqual({ A: 1, B: 2, C: 2, D: 3 });
   }
@@ -71,7 +71,7 @@ test("removeTA re-deals each kind on its own ledger", () => {
   // Heavy: re-dealt within its own turn 1, total unchanged.
   expect(out.ledgers.heavy.turn).toBe(1);
   expect(total(out.ledgers.heavy)).toBe(3);
-  for (const kind of TASK_KINDS) expect(out.ledgers[kind].used[id("D")]).toBeUndefined();
+  for (const kind of LOAD_KINDS) expect(out.ledgers[kind].used[id("D")]).toBeUndefined();
 });
 
 test("redistributeAll resets both ledgers and re-deals light then heavy", () => {

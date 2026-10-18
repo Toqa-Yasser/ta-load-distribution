@@ -1,23 +1,25 @@
 import { capacities } from "~/engine/capacity";
-import { assignOccurrences, refund, refundSeats } from "~/engine/distribute";
+import { assignOccurrences, refund, refundSeats, type PendingOccurrence } from "~/engine/distribute";
 import { emptyWorkspace } from "~/engine/empty";
+import { dealEqual } from "~/engine/equal";
 import { newId } from "~/engine/ids";
 import { nextTaColor } from "~/engine/palette";
 import { seededRng, type Rng } from "~/engine/rng";
 import { generateDates } from "~/engine/schedule";
 import {
+  isLoadKind,
   isTaskKind,
+  LOAD_KINDS,
   NotEnoughTAsError,
-  TASK_KINDS,
   ValidationError,
   type Command,
   type Ledger,
+  type LoadKind,
   type Occurrence,
   type OccurrenceRef,
   type Seat,
   type SeatRef,
   type Task,
-  type TaskKind,
   type Workspace,
 } from "~/engine/types";
 
@@ -111,7 +113,31 @@ function redeal(task: Task, caps: Record<string, number>, ledger: Ledger, rng: R
   return { ledger: assigned.ledger, task: { ...task, occurrences: task.occurrences.map((o) => byId.get(o.id) ?? o) } };
 }
 
-function withLedger(ws: Workspace, kind: TaskKind, ledger: Ledger): Workspace["ledgers"] {
+/**
+ * Deals `occurrences` of an Equal task over its order, counting `held` (its untouched occurrences).
+ * Like `dealFor`, this runs away from the wizard, so a failure names the task. No ledger is involved.
+ */
+function dealEqualFor(task: Task, occurrences: PendingOccurrence[], held: Occurrence[] = []): Occurrence[] {
+  return dealEqual({ order: task.taOrder ?? [], occurrences, taCount: task.taCount, held, taskTitle: task.title });
+}
+
+/** Re-deals every occurrence of an Equal task from scratch over its order, keeping ids and dates. */
+function redealEqual(task: Task): Task {
+  if (task.occurrences.length === 0) return task;
+  return { ...task, occurrences: dealEqualFor(task, task.occurrences.map((o) => ({ id: o.id, date: o.date }))) };
+}
+
+/** A valid Equal order: distinct ids of TAs on the team. */
+function requireOrder(ws: Workspace, value: unknown): string[] {
+  const valid =
+    Array.isArray(value) &&
+    value.every((id) => typeof id === "string" && ws.tas.some((t) => t.id === id)) &&
+    new Set(value).size === value.length;
+  if (!valid) throw new ValidationError("Pick the TA order for an equal task.");
+  return [...(value as string[])];
+}
+
+function withLedger(ws: Workspace, kind: LoadKind, ledger: Ledger): Workspace["ledgers"] {
   return { ...ws.ledgers, [kind]: ledger };
 }
 
@@ -148,7 +174,7 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
       // Each kind refunds its orphaned seats, then refills them on its own ledger, one date at a time
       // in date order across all its tasks (ties: creation order, then occurrence order; the sort is
       // stable). Only the removed TA's seats are dealt again: the other seats of a date stay put.
-      for (const kind of TASK_KINDS) {
+      for (const kind of LOAD_KINDS) {
         const orphans = byCreation(tasks.filter((t) => t.kind === kind))
           .flatMap((task) => task.occurrences.filter((o) => o.seats.some((s) => s.taId === cmd.taId)).map((occ) => ({ task, occ })))
           .sort((x, y) => (x.occ.date < y.occ.date ? -1 : x.occ.date > y.occ.date ? 1 : 0));
@@ -174,6 +200,23 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
           return byId ? { ...t, occurrences: t.occurrences.map((o) => byId.get(o.id) ?? o) } : t;
         });
       }
+      // An Equal task drops the TA from its order and refills only the TA's seats over what is left,
+      // counting its other seats. The checks run even with no seat to refill, so the order never ends
+      // up empty or shorter than the task's TAs per date.
+      tasks = tasks.map((t) => {
+        const listed = t.taOrder?.includes(cmd.taId) ?? false;
+        const orphaned = t.occurrences.filter((o) => o.seats.some((s) => s.taId === cmd.taId));
+        if (t.kind !== "equal" || (!listed && orphaned.length === 0)) return t;
+        const next: Task = { ...t, taOrder: (t.taOrder ?? []).filter((id) => id !== cmd.taId) };
+        const refilled = dealEqualFor(
+          next,
+          orphaned.map((o) => ({ id: o.id, date: o.date, seats: o.seats.filter((s) => s.taId !== cmd.taId) })),
+          t.occurrences.filter((o) => !orphaned.includes(o)),
+        );
+        if (refilled.length === 0) return next;
+        const byId = new Map(refilled.map((o) => [o.id, o]));
+        return { ...next, occurrences: t.occurrences.map((o) => byId.get(o.id) ?? o) };
+      });
       return { ...ws, tas, sections, tasks, ledgers };
     }
 
@@ -216,14 +259,15 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
       const startLater = semester.start > prev.start;
       const keep = (o: Occurrence) => o.date <= semester.end && (!startLater || o.date >= semester.start);
       const ledgers = { ...ws.ledgers };
-      for (const kind of TASK_KINDS) {
+      for (const kind of LOAD_KINDS) {
         const dropped = ws.tasks.filter((t) => t.kind === kind).flatMap((t) => t.occurrences.filter((o) => !keep(o)));
         ledgers[kind] = refund(ws.ledgers[kind], dropped);
       }
       let tasks = ws.tasks.map((t) => ({ ...t, occurrences: t.occurrences.filter(keep) }));
 
       // A later end extends open-ended recurring tasks: only the new dates are dealt, existing
-      // assignments stay put, and each kind's ledger is threaded through its tasks in order.
+      // assignments stay put, and each kind's ledger is threaded through its tasks in order. Equal
+      // tasks carry their rotation on from the seats they already hold.
       if (semester.end > prev.end) {
         const caps = capacities(ws);
         tasks = tasks.map((t) => {
@@ -232,14 +276,17 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
           const last = t.occurrences.reduce((max, o) => (o.date > max ? o.date : max), prev.end);
           const fresh = generateDates(s, semester).filter((d) => d > last && d >= semester.start);
           if (fresh.length === 0) return t;
+          const pending = fresh.map((date) => ({ id: ctx.newId("occ"), date }));
+          const kind = t.kind;
+          if (!isLoadKind(kind)) return { ...t, occurrences: [...t.occurrences, ...dealEqualFor(t, pending, t.occurrences)] };
           const assigned = dealFor(t, {
             capacities: caps,
-            ledger: ledgers[t.kind],
-            occurrences: fresh.map((date) => ({ id: ctx.newId("occ"), date })),
+            ledger: ledgers[kind],
+            occurrences: pending,
             taCount: t.taCount,
             rng: ctx.rng,
           });
-          ledgers[t.kind] = assigned.ledger;
+          ledgers[kind] = assigned.ledger;
           return { ...t, occurrences: [...t.occurrences, ...assigned.occurrences] };
         });
       }
@@ -254,15 +301,21 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
       if (typeof taCount !== "number" || !Number.isInteger(taCount) || taCount < 1) {
         throw new ValidationError("TAs per date must be a whole number of at least 1.");
       }
+      // Only Equal tasks keep an order; light and heavy ignore one sent along.
+      const taOrder = kind === "equal" ? requireOrder(ws, cmd.taOrder) : undefined;
       const dates = generateDates(cmd.schedule, ws.semester);
       if (dates.length === 0) throw new ValidationError("This schedule has no dates.");
-      const assigned = assignOccurrences({
-        capacities: capacities(ws),
-        ledger: ws.ledgers[kind],
-        occurrences: dates.map((date) => ({ id: ctx.newId("occ"), date })),
-        taCount,
-        rng: ctx.rng,
-      });
+      const pending = dates.map((date) => ({ id: ctx.newId("occ"), date }));
+      let occurrences: Occurrence[];
+      let ledgers = ws.ledgers;
+      if (isLoadKind(kind)) {
+        const assigned = assignOccurrences({ capacities: capacities(ws), ledger: ws.ledgers[kind], occurrences: pending, taCount, rng: ctx.rng });
+        occurrences = assigned.occurrences;
+        ledgers = withLedger(ws, kind, assigned.ledger);
+      } else {
+        // The wizard has the task in view, so no title: a failure says "This task".
+        occurrences = dealEqual({ order: taOrder!, occurrences: pending, taCount });
+      }
       const task: Task = {
         id: ctx.newId("task"),
         title,
@@ -271,9 +324,10 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
         createdAt: ctx.now(),
         schedule: cmd.schedule,
         taCount,
-        occurrences: assigned.occurrences,
+        occurrences,
+        ...(taOrder !== undefined ? { taOrder } : {}),
       };
-      return { ...ws, tasks: [...ws.tasks, task], ledgers: withLedger(ws, kind, assigned.ledger) };
+      return { ...ws, tasks: [...ws.tasks, task], ledgers };
     }
 
     case "reset":
@@ -286,43 +340,56 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
       const notes = cmd.notes === undefined ? task.notes : cmd.notes ?? undefined;
       let next: Task = { ...task, title, notes };
       if (notes === undefined) delete next.notes;
-      let ledger = ws.ledgers[task.kind];
+      let ledgers = ws.ledgers;
       if (cmd.schedule) {
         const dates = generateDates(cmd.schedule, ws.semester);
         if (dates.length === 0) throw new ValidationError("This schedule has no dates.");
-        const refunded = refund(ledger, task.occurrences);
-        const assigned = assignOccurrences({
-          capacities: capacities(ws),
-          ledger: refunded,
-          occurrences: dates.map((date) => ({ id: ctx.newId("occ"), date })),
-          taCount: task.taCount,
-          rng: ctx.rng,
-        });
-        next = { ...next, schedule: cmd.schedule, occurrences: assigned.occurrences };
-        ledger = assigned.ledger;
+        const pending = dates.map((date) => ({ id: ctx.newId("occ"), date }));
+        const kind = task.kind;
+        if (isLoadKind(kind)) {
+          const refunded = refund(ws.ledgers[kind], task.occurrences);
+          const assigned = assignOccurrences({
+            capacities: capacities(ws),
+            ledger: refunded,
+            occurrences: pending,
+            taCount: task.taCount,
+            rng: ctx.rng,
+          });
+          next = { ...next, schedule: cmd.schedule, occurrences: assigned.occurrences };
+          ledgers = withLedger(ws, kind, assigned.ledger);
+        } else {
+          next = { ...next, schedule: cmd.schedule, occurrences: dealEqualFor(task, pending) };
+        }
       }
-      return { ...ws, tasks: ws.tasks.map((t) => (t.id === task.id ? next : t)), ledgers: withLedger(ws, task.kind, ledger) };
+      return { ...ws, tasks: ws.tasks.map((t) => (t.id === task.id ? next : t)), ledgers };
     }
 
     case "deleteTask": {
       const task = findTask(ws, cmd.taskId);
-      const ledger = refund(ws.ledgers[task.kind], task.occurrences);
-      return { ...ws, tasks: ws.tasks.filter((t) => t.id !== task.id), ledgers: withLedger(ws, task.kind, ledger) };
+      const kind = task.kind;
+      const ledgers = isLoadKind(kind) ? withLedger(ws, kind, refund(ws.ledgers[kind], task.occurrences)) : ws.ledgers;
+      return { ...ws, tasks: ws.tasks.filter((t) => t.id !== task.id), ledgers };
     }
 
     case "redistributeTask": {
       const task = findTask(ws, cmd.taskId);
-      const refunded = refund(ws.ledgers[task.kind], task.occurrences);
+      const kind = task.kind;
+      if (!isLoadKind(kind)) {
+        const dealt = redealEqual(task);
+        return { ...ws, tasks: ws.tasks.map((t) => (t.id === task.id ? dealt : t)) };
+      }
+      const refunded = refund(ws.ledgers[kind], task.occurrences);
       const dealt = redeal(task, capacities(ws), refunded, ctx.rng);
-      return { ...ws, tasks: ws.tasks.map((t) => (t.id === task.id ? dealt.task : t)), ledgers: withLedger(ws, task.kind, dealt.ledger) };
+      return { ...ws, tasks: ws.tasks.map((t) => (t.id === task.id ? dealt.task : t)), ledgers: withLedger(ws, kind, dealt.ledger) };
     }
 
     case "redistributeAll": {
       // Both ledgers start over; light tasks are re-dealt first, then heavy, each in creation order.
+      // Equal tasks follow, each re-dealt from scratch over its own order.
       const caps = capacities(ws);
       const ledgers = {} as Workspace["ledgers"];
       const redealt = new Map<string, Task>();
-      for (const kind of TASK_KINDS) {
+      for (const kind of LOAD_KINDS) {
         let ledger: Ledger = { turn: 1, used: {} };
         for (const task of byCreation(ws.tasks.filter((t) => t.kind === kind))) {
           const dealt = redeal(task, caps, ledger, ctx.rng);
@@ -331,6 +398,7 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
         }
         ledgers[kind] = ledger;
       }
+      for (const task of byCreation(ws.tasks.filter((t) => !isLoadKind(t.kind)))) redealt.set(task.id, redealEqual(task));
       return { ...ws, tasks: ws.tasks.map((t) => redealt.get(t.id) ?? t), ledgers };
     }
 
@@ -339,7 +407,11 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
       findTA(ws, cmd.taId);
       if (cmd.from === cmd.taId) return ws;
       if (occ.seats.some((s) => s.taId === cmd.taId)) throw new ValidationError("A TA can't hold the same date twice.");
-      const ledger = ws.ledgers[task.kind];
+      const tasks = mapOccurrence(ws, cmd.ref, (o) => ({ ...o, seats: o.seats.map((s) => (s === seat ? { ...s, taId: cmd.taId } : s)) }));
+      // Equal seats have no ledger to keep in step.
+      const kind = task.kind;
+      if (!isLoadKind(kind)) return { ...ws, tasks };
+      const ledger = ws.ledgers[kind];
       // The seat keeps its turn, so the ledger's `used` keeps counting exactly the current-turn
       // seats each TA holds: a current-turn unit moves with the seat, a past-turn one is already
       // settled and leaves the ledger alone. Either way, reassigning it back restores the ledger.
@@ -348,11 +420,7 @@ export function reduce(ws: Workspace, cmd: Command, ctx: ReduceContext): Workspa
         used[cmd.from] = Math.max(0, (used[cmd.from] ?? 0) - 1);
         used[cmd.taId] = (used[cmd.taId] ?? 0) + 1;
       }
-      return {
-        ...ws,
-        tasks: mapOccurrence(ws, cmd.ref, (o) => ({ ...o, seats: o.seats.map((s) => (s === seat ? { ...s, taId: cmd.taId } : s)) })),
-        ledgers: withLedger(ws, task.kind, { turn: ledger.turn, used }),
-      };
+      return { ...ws, tasks, ledgers: withLedger(ws, kind, { turn: ledger.turn, used }) };
     }
 
     case "swapOccurrences": {
