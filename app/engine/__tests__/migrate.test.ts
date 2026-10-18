@@ -178,6 +178,25 @@ describe("isCurrentWorkspace validates element shapes", () => {
     expect(isCurrentWorkspace(doc)).toBe(false);
     expect(upgradeWorkspace(doc).tasks[0].taCount).toBe(1);
   });
+  const withKind = (extra: Record<string, unknown>) => {
+    const ws = current();
+    return { ...ws, tasks: [{ ...ws.tasks[0], kind: "equal", ...extra }] };
+  };
+  test("accepts an equal task with a non-empty taOrder", () => {
+    const doc = withKind({ taOrder: ["A"] });
+    expect(isCurrentWorkspace(doc)).toBe(true);
+    expect(upgradeWorkspace(doc)).toBe(doc);
+  });
+  test.each([["without taOrder", {}], ["with an empty taOrder", { taOrder: [] }], ["with a non-string taOrder member", { taOrder: [1] }]])("rejects an equal task %s", (_name, extra) => {
+    const doc = withKind(extra);
+    expect(isCurrentWorkspace(doc)).toBe(false);
+    expect(() => upgradeWorkspace(doc)).toThrow("Unrecognised workspace document.");
+  });
+  test("a light task may carry no taOrder", () => {
+    const ws = current();
+    expect(ws.tasks[0].kind).toBe("light");
+    expect(isCurrentWorkspace(ws)).toBe(true);
+  });
   test("a well-formed document with null slots is accepted by reference", () => {
     const ws = current();
     const doc = { ...ws, sections: [{ ...ws.sections[0], taIds: [null, null] }] };

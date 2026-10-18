@@ -66,10 +66,16 @@ function hasTaCount(value: Doc): boolean {
   return typeof value.taCount === "number" && Number.isInteger(value.taCount) && value.taCount >= 1;
 }
 
+/** An equal task stores the TA order it deals over: a non-empty array of ids. */
+function hasTaOrder(value: Doc): boolean {
+  return Array.isArray(value.taOrder) && value.taOrder.length > 0 && value.taOrder.every((id) => typeof id === "string");
+}
+
 function isCurrentTask(value: Doc): boolean {
   return (
     isTaskKind(value.kind) &&
     hasTaCount(value) &&
+    (value.kind !== "equal" || hasTaOrder(value)) &&
     Array.isArray(value.occurrences) &&
     value.occurrences.every(isOccurrence)
   );
