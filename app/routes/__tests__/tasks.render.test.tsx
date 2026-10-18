@@ -49,6 +49,7 @@ test("the equal filter with no equal tasks shows the empty state", async () => {
   try {
     renderAt("/tasks?kind=equal");
     expect(await screen.findByRole("heading", { name: "No equal tasks yet" })).toBeInTheDocument();
+    expect(screen.getByText("Create an equal task, or look at every task.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Show all tasks" }));
     expect(await screen.findByText("Quiz")).toBeInTheDocument();
   } finally {

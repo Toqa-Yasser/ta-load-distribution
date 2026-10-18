@@ -9,7 +9,7 @@ import { EmptyState } from "~/components/ui/EmptyState";
 import { Fab } from "~/components/ui/Fab";
 import { PlusIcon, TasksIcon } from "~/components/ui/icons";
 import { isTaskKind, KIND_LABEL, TASK_KINDS, type TaskKind } from "~/engine/types";
-import { plural } from "~/lib/format";
+import { plural, withArticle } from "~/lib/format";
 import { indicatorSpring, stagger, useFirstRender, usePressMotion, useStaggerOnMount } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
@@ -88,7 +88,7 @@ export default function Tasks() {
         <EmptyState
           icon={<TasksIcon />}
           title={`No ${kindFilter} tasks yet`}
-          body={`Create a ${kindFilter} task, or look at every task.`}
+          body={`Create ${kindFilter ? withArticle(kindFilter) : "a"} task, or look at every task.`}
           action={{ label: "Show all tasks", onClick: () => setKindFilter(null) }}
         />
       ) : (

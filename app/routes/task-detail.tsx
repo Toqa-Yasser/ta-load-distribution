@@ -90,20 +90,23 @@ export default function TaskDetail() {
             {fmtTaskSummary(task)} · {plural(task.occurrences.length, "occurrence", "occurrences")}
           </p>
           {task.taOrder && (
-            <ol aria-label="Order" className="mt-2 flex flex-wrap items-center gap-2">
-              {task.taOrder.map((id, i) => {
-                const ta = taById.get(id);
-                return (
-                  <li
-                    key={`${id}-${i}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-sm"
-                  >
-                    <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: ta?.color ?? "var(--muted)" }} />
-                    <span className={ta ? undefined : "text-muted"}>{ta?.name ?? "Removed TA"}</span>
-                  </li>
-                );
-              })}
-            </ol>
+            <>
+              <p id="task-order-label" className="mt-2 text-xs text-muted">Order</p>
+              <ol aria-labelledby="task-order-label" className="mt-1 flex flex-wrap items-center gap-2">
+                {task.taOrder.map((id, i) => {
+                  const ta = taById.get(id);
+                  return (
+                    <li
+                      key={`${id}-${i}`}
+                      className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-sm"
+                    >
+                      <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: ta?.color ?? "var(--muted)" }} />
+                      <span className={ta ? undefined : "text-muted"}>{ta?.name ?? "Removed TA"}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </>
           )}
           {task.notes && <p className="mt-2 whitespace-pre-line">{task.notes}</p>}
         </div>

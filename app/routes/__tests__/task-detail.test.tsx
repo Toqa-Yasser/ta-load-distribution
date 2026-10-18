@@ -78,6 +78,8 @@ test("the detail page lists the order of an equal task", async () => {
     const Stub = createRoutesStub([{ path: "/tasks/:taskId", Component: TaskDetail as never }]);
     render(<ToastProvider><Stub initialEntries={["/tasks/t"]} /></ToastProvider>);
     const list = await screen.findByRole("list", { name: "Order" });
+    // The caption is visible, not just an accessible name.
+    expect(screen.getByText("Order", { selector: "p" })).toBeVisible();
     const items = within(list).getAllByRole("listitem");
     expect(items).toHaveLength(3);
     expect(items[0]).toHaveTextContent("Bassem");
