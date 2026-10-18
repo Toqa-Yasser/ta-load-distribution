@@ -82,6 +82,32 @@ test("removeTA is refused when an Equal order becomes too short for taCount", ()
   expect(remove).toThrow('"Lab" needs 2 TAs on each date but only 1 is in its order.');
 });
 
+test("removeTA refills a seat held by a TA outside the Equal order with the order's least-loaded TA", () => {
+  const { ws, id, ids, names } = setup();
+  const cases: [number, number, string][] = [
+    // A E A: A holds both other dates, so B takes E's seat.
+    [3, 1, "ABA"],
+    // E B A: one date each, so the tie goes to A, first in the order.
+    [3, 0, "ABA"],
+  ];
+  for (const [days, seat, expected] of cases) {
+    const t = equalDaily(ws, ids("A", "B"), days);
+    const task = t.tasks[0];
+    const occ = task.occurrences[seat];
+    const from = occ.seats[0].taId;
+    const before = reduce(t, { type: "reassignOccurrence", ref: { taskId: task.id, occurrenceId: occ.id }, from, taId: id("E") }, ctx);
+    expect(before.tasks[0].occurrences[seat].seats[0].taId).toBe(id("E"));
+    let out!: Workspace;
+    expect(() => (out = reduce(before, { type: "removeTA", taId: id("E") }, ctx))).not.toThrow();
+    const occs = out.tasks[0].occurrences;
+    expect(names(occs)).toEqual(letters(expected));
+    expect(out.tasks[0].taOrder).toEqual(ids("A", "B"));
+    occs.forEach((o, i) => {
+      if (i !== seat) expect(o).toBe(before.tasks[0].occurrences[i]);
+    });
+  }
+});
+
 test("removeTA leaves Equal tasks that do not list the TA untouched", () => {
   const { ws, id, ids } = setup();
   const before = equalDaily(ws, ids("A", "B"), 3);
