@@ -82,7 +82,7 @@ function isCurrentTask(value: Doc): boolean {
 }
 
 function isV11Task(value: Doc): boolean {
-  return isTaskKind(value.kind) && Array.isArray(value.occurrences) && value.occurrences.every(isV11Occurrence);
+  return isTaskKind(value.kind) && (value.kind !== "equal" || hasTaOrder(value)) && Array.isArray(value.occurrences) && value.occurrences.every(isV11Occurrence);
 }
 
 export function isCurrentWorkspace(doc: unknown): doc is Workspace {
