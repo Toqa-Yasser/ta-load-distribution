@@ -267,7 +267,9 @@ test("the order sent is reconciled with the current team", async () => {
   current.ws = { ...wsTwo, tas: [wsTwo.tas[1], { id: "C", name: "Carla", color: "#00f" }] };
   fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Quiz 2" } });
   const items = within(screen.getByRole("list", { name: "Order" })).getAllByRole("listitem");
-  expect(items.map((li) => li.textContent)).toEqual(["1.Bassem", "2.Carla"]);
+  expect(items).toHaveLength(2);
+  expect(within(items[0]).getByText("Bassem")).toBeInTheDocument();
+  expect(within(items[1]).getByText("Carla")).toBeInTheDocument();
   await confirmAndSend();
   expect(bodies.preview[0]).toMatchObject({ kind: "equal", taOrder: ["B", "C"] });
   expect(bodies.command[0]).toMatchObject({ command: { kind: "equal", taOrder: ["B", "C"] } });
