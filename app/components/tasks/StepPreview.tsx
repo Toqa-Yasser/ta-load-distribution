@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useMemo } from "react";
 import { Gauge } from "~/components/ui/Gauge";
 import { capacities } from "~/engine/capacity";
-import type { Workspace } from "~/engine/types";
+import { isLoadKind, type Workspace } from "~/engine/types";
 import { fmtDate, plural } from "~/lib/format";
 import { EASE_OUT } from "~/lib/motion";
 import { KindBadge } from "./KindBadge";
@@ -26,7 +26,7 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
     const task = preview.tasks[preview.tasks.length - 1];
     // Each kind is dealt from its own ledger, so the gauges show the one this task draws on.
     const kind = task?.kind ?? "light";
-    const ledger = preview.ledgers[kind];
+    const ledger = isLoadKind(kind) ? preview.ledgers[kind] : undefined; // Equal tasks keep no ledger.
     const caps = capacities(preview);
     const taById = new Map(preview.tas.map((t) => [t.id, t]));
     const gauges = preview.tas.map((ta) => {

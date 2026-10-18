@@ -17,6 +17,7 @@
   --brand-stroke: #6d5dfc; /* scales mark (BrandMark, public/icon.svg) */
   --light: #0e6650; /* light-task badge text on its 15% tint over --bg: 5.0:1 */
   --heavy: #4f3ee0; /* heavy-task badge text on its 15% tint over --bg: 4.9:1 */
+  --equal: #7f5400; /* equal-task badge text on its 15% tint over --bg: 4.8:1 */
   --shadow: 0 10px 30px -12px rgba(22, 20, 26, 0.18), 0 1px 2px rgba(22, 20, 26, 0.04);
   --shadow-raised: 0 14px 36px -12px rgba(22, 20, 26, 0.28), 0 2px 6px rgba(22, 20, 26, 0.08); /* header pills once scrolled */
   --glow: color-mix(in srgb, var(--accent) 5%, transparent);
@@ -44,6 +45,7 @@
   --accent-ink: #9a8dff; /* lifted for dark: 7.0:1 on --bg, 6.4:1 on glass, 6.1:1 on a 15% tint (accent is 4.2:1) */
   --light: #5fe3bd; /* 8.9:1 on its tint */
   --heavy: #a99fff; /* 6.5:1 on its tint */
+  --equal: #f2c26b; /* 8.6:1 on its tint */
   --brand-stroke: #9a8dff;
   --line: rgba(236, 234, 228, 0.13);
   --shadow: 0 12px 36px -14px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -68,6 +70,7 @@
   --color-mint: var(--mint);
   --color-light: var(--light);
   --color-heavy: var(--heavy);
+  --color-equal: var(--equal);
   --color-scrim: var(--scrim);
   --font-display: "Sora", ui-sans-serif, sans-serif;
   --font-sans: "Inter", ui-sans-serif, sans-serif;

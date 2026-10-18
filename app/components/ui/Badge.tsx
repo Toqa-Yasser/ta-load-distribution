@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type BadgeTone = "neutral" | "plain" | "accent" | "light" | "heavy" | "danger";
+export type BadgeTone = "neutral" | "plain" | "accent" | "light" | "heavy" | "equal" | "danger";
 
 /** `tabIndex={0}` makes a badge with a `title` focusable, so its tooltip is keyboard-reachable; it stays a span, not a control. */
 type BadgeProps = { tone?: BadgeTone; size?: "sm" | "md"; title?: string; tabIndex?: number; className?: string; children: ReactNode };
@@ -11,6 +11,7 @@ const TONE: Record<BadgeTone, string> = {
   accent: "bg-accent/15 text-accent-ink",
   light: "bg-light/15 text-light",
   heavy: "bg-heavy/15 text-heavy",
+  equal: "bg-equal/15 text-equal",
   danger: "bg-danger/12 text-danger-ink",
 };
 
