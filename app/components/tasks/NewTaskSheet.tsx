@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useRevalidator } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Sheet, SHEET_ACTIONS } from "~/components/ui/Sheet";
 import { eligibleCount } from "~/engine/capacity";
@@ -10,7 +10,7 @@ import { useStepFocus } from "~/lib/focus";
 import { EASE_OUT, indicatorSpring, stepSlide } from "~/lib/motion";
 import { useCommand } from "~/lib/use-command";
 import { useWorkspace } from "~/lib/use-workspace";
-import { StepName } from "./StepName";
+import { reconcileOrder, StepName } from "./StepName";
 import { StepPreview } from "./StepPreview";
 import { scheduleDates, StepSchedule } from "./StepSchedule";
 
@@ -50,16 +50,33 @@ type WizardProps = { open: boolean; initialKind: TaskKind; onDone: () => void; o
 function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
   const { today, workspace } = useWorkspace();
   const reduced = useReducedMotion();
-  const [state, setState] = useState<{ step: Step; kind: TaskKind; title: string; notes: string; taCount: number; schedule: Schedule }>({
+  const [state, setState] = useState<{
+    step: Step;
+    kind: TaskKind;
+    title: string;
+    notes: string;
+    taCount: number;
+    taOrder: string[];
+    schedule: Schedule;
+  }>({
     step: 0,
     kind: initialKind,
     title: "",
     notes: "",
     taCount: 1,
+    taOrder: workspace.tas.map((t) => t.id),
     schedule: { type: "weekly", start: today, end: null },
   });
   const [dir, setDir] = useState(1);
   const stepFocus = useStepFocus();
+  // Root data is not refetched on focus, and neither ?new=1 nor a preview revalidates it, so a team
+  // changed in another tab would stay stale here. Refresh it when the sheet opens and before a preview.
+  const revalidator = useRevalidator();
+  const refresh = () => {
+    if (revalidator.state !== "loading") void revalidator.revalidate();
+  };
+  // Once per open: the wizard mounts fresh each time the sheet opens.
+  useEffect(() => refresh(), []);
   const preview = useFetcher<PreviewResult>();
   // fetcher.data still holds the previous answer while a new preview is in flight.
   const [staleData, setStaleData] = useState<PreviewResult | undefined>(undefined);
@@ -96,7 +113,8 @@ function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
   };
 
   const { step, kind, title, notes, schedule } = state;
-  const maxTaCount = Math.max(1, eligibleCount(workspace));
+  // Equal tasks go round the whole team, sections or not; light and heavy only reach TAs with sections.
+  const maxTaCount = kind === "equal" ? Math.max(1, workspace.tas.length) : Math.max(1, eligibleCount(workspace));
   const taCount = Math.min(state.taCount, maxTaCount);
   const command = (): CreateTask => ({
     type: "createTask",
@@ -105,12 +123,19 @@ function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
     ...(notes.trim() ? { notes: notes.trim() } : {}),
     schedule,
     taCount,
+    ...(kind === "equal" ? { taOrder: reconcileOrder(state.taOrder, workspace.tas) } : {}),
   });
 
-  const valid = step === 0 ? title.trim() !== "" : step === 1 ? scheduleDates(schedule, workspace.semester).error === null : true;
+  const valid =
+    step === 0
+      ? title.trim() !== "" && (kind !== "equal" || workspace.tas.length > 0)
+      : step === 1
+        ? scheduleDates(schedule, workspace.semester).error === null
+        : true;
 
   const go = (next: Step) => {
     if (next === 2) {
+      refresh();
       setStaleData(preview.data);
       // Runs the reducer on the server without saving.
       preview.submit(JSON.stringify({ command: command() }), {
@@ -156,8 +181,17 @@ function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
                 title={title}
                 notes={notes}
                 taCount={taCount}
+                taOrder={state.taOrder}
                 maxTaCount={maxTaCount}
-                onChange={(v) => setState((s) => ({ ...s, ...v }))}
+                tas={workspace.tas}
+                onChange={(v) =>
+                  setState((s) => ({
+                    ...s,
+                    ...v,
+                    // Switching to equal starts from the team order.
+                    ...(v.kind === "equal" && s.kind !== "equal" ? { taOrder: workspace.tas.map((t) => t.id) } : {}),
+                  }))
+                }
                 onSubmit={next}
               />
             )}

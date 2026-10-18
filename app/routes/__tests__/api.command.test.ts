@@ -70,3 +70,21 @@ test("api.command createTask with taCount 2 needs two TAs with sections (400)", 
   expect(res.status).toBe(400);
   expect(await res.json()).toMatchObject({ ok: false, message: "This task needs 2 TAs but only 1 has sections." });
 });
+test("api.command rejects an equal createTask without a string-array taOrder (400)", async () => {
+  const schedule = { type: "one-time", date: "2026-10-01" };
+  for (const taOrder of [undefined, null, "A", [1]]) {
+    const res = await post({ command: { type: "createTask", kind: "equal", title: "X", schedule, ...(taOrder === undefined ? {} : { taOrder }) } });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ ok: false, message: "Invalid command.", code: "BAD_REQUEST" });
+  }
+});
+test("api.command accepts an equal createTask with taOrder (200)", async () => {
+  await post({ command: { type: "addTA", name: "Mona" } });
+  const store = (await import("~/server/store.server")).getStore();
+  const { data } = (await store.getWorkspace())!;
+  const id = data.tas[data.tas.length - 1].id;
+  const res = await post({ command: { type: "createTask", kind: "equal", title: "Duty", schedule: { type: "one-time", date: "2026-10-01" }, taOrder: [id] } });
+  expect(res.status).toBe(200);
+  const after = (await store.getWorkspace())!.data;
+  expect(after.tasks[after.tasks.length - 1].taOrder).toEqual([id]);
+});

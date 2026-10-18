@@ -8,8 +8,8 @@ import { Button } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { Fab } from "~/components/ui/Fab";
 import { PlusIcon, TasksIcon } from "~/components/ui/icons";
-import { isTaskKind, KIND_LABEL, type TaskKind } from "~/engine/types";
-import { plural } from "~/lib/format";
+import { isTaskKind, KIND_LABEL, TASK_KINDS, type TaskKind } from "~/engine/types";
+import { plural, withArticle } from "~/lib/format";
 import { indicatorSpring, stagger, useFirstRender, usePressMotion, useStaggerOnMount } from "~/lib/motion";
 import { routeMeta } from "~/lib/seo";
 import { useCommand } from "~/lib/use-command";
@@ -38,7 +38,7 @@ export default function Tasks() {
       { replace: true, preventScrollReset: true },
     );
   const allTasks = workspace.tasks;
-  // `?kind=light|heavy` filters; anything else shows every task.
+  // `?kind=light|heavy|equal` filters; anything else shows every task.
   const rawKind = params.get("kind");
   const kindFilter: TaskKind | null = isTaskKind(rawKind) ? rawKind : null;
   const setKindFilter = (kind: TaskKind | null) =>
@@ -52,8 +52,7 @@ export default function Tasks() {
       { replace: true, preventScrollReset: true },
     );
   const tasks = kindFilter ? allTasks.filter((t) => t.kind === kindFilter) : allTasks;
-  const lightCount = allTasks.filter((t) => t.kind === "light").length;
-  const heavyCount = allTasks.length - lightCount;
+  const counts = Object.fromEntries(TASK_KINDS.map((k) => [k, allTasks.filter((t) => t.kind === k).length])) as Record<TaskKind, number>;
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,7 +60,7 @@ export default function Tasks() {
         <div>
           <h1 className="text-display font-semibold">Tasks</h1>
           <p className="mt-1 text-muted">
-            {allTasks.length === 0 ? plural(0, "task", "tasks") : `${lightCount} light · ${heavyCount} heavy`}
+            {allTasks.length === 0 ? plural(0, "task", "tasks") : `${counts.light} light · ${counts.heavy} heavy · ${counts.equal} equal`}
           </p>
         </div>
         {/* Mobile uses the floating button below instead. */}
@@ -89,7 +88,7 @@ export default function Tasks() {
         <EmptyState
           icon={<TasksIcon />}
           title={`No ${kindFilter} tasks yet`}
-          body={`Create a ${kindFilter} task, or look at every task.`}
+          body={`Create ${kindFilter ? withArticle(kindFilter) : "a"} task, or look at every task.`}
           action={{ label: "Show all tasks", onClick: () => setKindFilter(null) }}
         />
       ) : (
@@ -152,9 +151,10 @@ const FILTERS: { value: TaskKind | null; label: string }[] = [
   { value: null, label: "All" },
   { value: "light", label: KIND_LABEL.light },
   { value: "heavy", label: KIND_LABEL.heavy },
+  { value: "equal", label: KIND_LABEL.equal },
 ];
 
-/** All / Light / Heavy chips; the active chip's fill glides between them. */
+/** All / Light / Heavy / Equal chips; the active chip's fill glides between them. */
 function KindFilter({ value, onChange }: { value: TaskKind | null; onChange: (kind: TaskKind | null) => void }) {
   const press = usePressMotion();
   const reduced = useReducedMotion();

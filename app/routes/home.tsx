@@ -9,7 +9,7 @@ import { TurnHeader } from "~/components/dashboard/TurnHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { TeamIcon } from "~/components/ui/icons";
 import { turnSize as computeTurnSize } from "~/engine/capacity";
-import { TASK_KINDS, type TaskKind } from "~/engine/types";
+import { LOAD_KINDS, type LoadKind } from "~/engine/types";
 import { stagger } from "~/lib/motion";
 import { useRetained } from "~/lib/retain";
 import { routeMeta } from "~/lib/seo";
@@ -35,7 +35,7 @@ export default function Home() {
   const swapTa = swap ? taById.get(swap.taId) : undefined;
   if (swap?.open && !swapTa) setSwap({ ...swap, open: false });
   const shownTa = useRetained(swapTa);
-  const usedUnits = (kind: TaskKind) => tas.reduce((sum, ta) => sum + (workspace.ledgers[kind].used[ta.id] ?? 0), 0);
+  const usedUnits = (kind: LoadKind) => tas.reduce((sum, ta) => sum + (workspace.ledgers[kind].used[ta.id] ?? 0), 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,7 +47,7 @@ export default function Home() {
           ) : (
             // Two equal stat tiles, one per kind (each kind keeps its own turn).
             <div className="grid grid-cols-2 gap-3 md:gap-4">
-              {TASK_KINDS.map((kind) => (
+              {LOAD_KINDS.map((kind) => (
                 <TurnHeader
                   key={kind}
                   kind={kind}
@@ -76,7 +76,7 @@ export default function Home() {
                   ta={ta}
                   capacity={capacities[ta.id] ?? 0}
                   used={stats[ta.id]?.used ?? { light: 0, heavy: 0 }}
-                  counts={stats[ta.id]?.counts ?? { light: 0, heavy: 0 }}
+                  counts={stats[ta.id]?.counts ?? { light: 0, heavy: 0, equal: 0 }}
                   totalOccurrences={stats[ta.id]?.totalOccurrences ?? 0}
                   nextDates={stats[ta.id]?.nextDates ?? []}
                   onSwap={() => setSwap({ taId: ta.id, open: true })}

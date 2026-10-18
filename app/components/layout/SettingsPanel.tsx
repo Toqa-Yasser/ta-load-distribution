@@ -149,7 +149,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             <div className="flex flex-col gap-3 rounded-field border border-accent-2/30 p-3">
               <DangerRow
                 label="Redistribute everything"
-                body="Deal every task out again from scratch (both light and heavy) and reset the fairness counters. Existing assignments will change."
+                body="Deal every task out again from scratch (light, heavy and equal) and reset the fairness counters. Existing assignments will change."
                 onClick={() => askDanger("redistribute")}
               />
               <DangerRow
@@ -165,7 +165,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
       <ConfirmDialog
         open={confirm === "redistribute"}
         title="Redistribute everything?"
-        body="Deal every task out again from scratch (both light and heavy) and reset the fairness counters. Existing assignments will change."
+        body="Deal every task out again from scratch (light, heavy and equal) and reset the fairness counters. Existing assignments will change."
         confirmLabel="Redistribute"
         danger
         onConfirm={() => runDanger("redistribute")}

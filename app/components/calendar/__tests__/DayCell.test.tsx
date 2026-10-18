@@ -94,3 +94,11 @@ test("DayCell dims pills with no swappable seat and pulses those with one", () =
   fireEvent.click(screen.getByRole("button", { name: "Lab · Oct 5 · Omar, Nour · Heavy" }));
   expect(onSelect).toHaveBeenCalledWith({ taskId: "l", occurrenceId: "2" });
 });
+
+test("an Equal task's pill carries the equal kind dot", () => {
+  const eq = { ...task("e", "Rota", "equal", 1, [occ("1", "2026-10-05", "S")]), taOrder: ["S"] };
+  const { container } = render(<OccurrencePill task={eq} occ={eq.occurrences[0]} tas={[SARA]} selected={false} swapRole={null} onClick={() => {}} />);
+  const dot = container.querySelector('[data-kind="equal"]');
+  expect(dot).not.toBeNull();
+  expect(dot!.className.split(/\s+/)).toContain("bg-equal");
+});

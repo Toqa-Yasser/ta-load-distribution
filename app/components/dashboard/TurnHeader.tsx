@@ -1,10 +1,10 @@
 import { motion, useReducedMotion } from "motion/react";
-import { KindBadge } from "~/components/tasks/KindBadge";
+import { KIND_DOT, KindBadge } from "~/components/tasks/KindBadge";
 import { CountUp } from "~/components/ui/CountUp";
-import { KIND_LABEL, type TaskKind } from "~/engine/types";
+import { KIND_LABEL, type LoadKind } from "~/engine/types";
 import { EASE_OUT, useMounted } from "~/lib/motion";
 
-type TurnHeaderProps = { kind: TaskKind; turn: number; usedUnits: number; turnSize: number; className?: string };
+type TurnHeaderProps = { kind: LoadKind; turn: number; usedUnits: number; turnSize: number; className?: string };
 
 /**
  * Stat tile for one kind's current turn: the kind and turn number, a big "used/turnSize" numeral
@@ -19,7 +19,7 @@ export function TurnHeader({ kind, turn, usedUnits, turnSize, className = "" }: 
   if (turnSize === 0) return <p className="text-muted">No sections yet</p>;
 
   const width = `${Math.min(1, Math.max(0, usedUnits / turnSize)) * 100}%`;
-  const strip = `h-full rounded-full ${kind === "light" ? "bg-light" : "bg-heavy"}`;
+  const strip = `h-full rounded-full ${KIND_DOT[kind]}`;
   return (
     <div role="group" aria-label={`${KIND_LABEL[kind]} turn`} className={`glass flex min-w-0 flex-col gap-3 p-5 ${className}`}>
       <div className="flex items-center justify-between gap-2">

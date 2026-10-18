@@ -10,13 +10,14 @@ test("taStats reports used per kind and counts per kind", () => {
   ws.tasks = [
     { id: "t1", title: "Q", kind: "light", occurrences: [occ("1", "A", "2026-10-20"), occ("2", "A", "2026-10-21"), occ("3", "A", "2026-10-22")] },
     { id: "t2", title: "P", kind: "heavy", occurrences: [occ("4", "A", "2026-10-23"), occ("5", "B", "2026-10-24")] },
+    { id: "t3", title: "E", kind: "equal", taOrder: ["A", "B"], occurrences: [occ("6", "A", "2026-10-25"), occ("7", "A", "2026-10-26")] },
   ] as any;
   const s = taStats(ws, "2026-10-17");
   expect(s.A.used).toEqual({ light: 3, heavy: 1 });
   expect(s.B.used).toEqual({ light: 0, heavy: 2 });
-  expect(s.A.counts).toEqual({ light: 3, heavy: 1 });
-  expect(s.B.counts).toEqual({ light: 0, heavy: 1 });
-  expect(s.A.totalOccurrences).toBe(4);
+  expect(s.A.counts).toEqual({ light: 3, heavy: 1, equal: 2 });
+  expect(s.B.counts).toEqual({ light: 0, heavy: 1, equal: 0 });
+  expect(s.A.totalOccurrences).toBe(6);
   expect(s.A.nextDates).toHaveLength(3);
 });
 
@@ -60,7 +61,7 @@ test("taStats counts seats", () => {
   const s = taStats(ws, "2026-10-17");
   for (const id of ["A", "B"]) {
     expect(s[id].totalOccurrences).toBe(1);
-    expect(s[id].counts).toEqual({ light: 0, heavy: 1 });
+    expect(s[id].counts).toEqual({ light: 0, heavy: 1, equal: 0 });
     expect(s[id].nextDates).toEqual([{ date: "2026-10-20", titles: ["Lab"] }]);
   }
 });

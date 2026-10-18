@@ -4,14 +4,14 @@ import { CountUp } from "~/components/ui/CountUp";
 import { Gauge } from "~/components/ui/Gauge";
 import { IconButton } from "~/components/ui/IconButton";
 import { SwapIcon } from "~/components/ui/icons";
-import { KIND_LABEL, TASK_KINDS, type TA, type TaskKind } from "~/engine/types";
+import { KIND_LABEL, LOAD_KINDS, type LoadKind, type TA, type TaskKind } from "~/engine/types";
 import { fmtDate, plural } from "~/lib/format";
 import type { NextDate } from "./stats";
 
 type TACardProps = {
   ta: TA;
   capacity: number;
-  used: Record<TaskKind, number>;
+  used: Record<LoadKind, number>;
   counts: Record<TaskKind, number>;
   totalOccurrences: number;
   nextDates: NextDate[];
@@ -42,7 +42,7 @@ export function TACard({ ta, capacity, used, counts, totalOccurrences, nextDates
       {/* 220px = two 96px gauges + a 24px gap; narrower containers stack them. */}
       <div className="@container">
         <div className="flex flex-col items-center justify-center gap-4 @[220px]:flex-row @[220px]:gap-6">
-          {TASK_KINDS.map((kind) => (
+          {LOAD_KINDS.map((kind) => (
             <div key={kind} className="flex flex-col items-center gap-2">
               <Gauge
                 value={capacity ? Math.min(used[kind], capacity) / capacity : 0}
@@ -64,7 +64,7 @@ export function TACard({ ta, capacity, used, counts, totalOccurrences, nextDates
             <CountUp value={totalOccurrences} />
           </dd>
           <dd className="text-xs text-muted">
-            {counts.light} light · {counts.heavy} heavy
+            {counts.light} light · {counts.heavy} heavy · {counts.equal} equal
           </dd>
         </div>
         <div className="col-span-2">

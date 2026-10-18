@@ -1,5 +1,5 @@
 import { reduce, testContext } from "~/engine/reducer";
-import type { Occurrence, Seat, Task, TaskKind, Workspace } from "~/engine/types";
+import type { LoadKind, Occurrence, Seat, Task, Workspace } from "~/engine/types";
 import { team } from "./fixtures";
 
 /**
@@ -7,7 +7,7 @@ import { team } from "./fixtures";
  * across every task of that kind, with no exceptions: a seat that would push a TA beyond capacity
  * starts the next turn instead.
  */
-function currentTurnSeats(ws: Workspace, kind: TaskKind): Record<string, number> {
+function currentTurnSeats(ws: Workspace, kind: LoadKind): Record<string, number> {
   const turn = ws.ledgers[kind].turn;
   const counts: Record<string, number> = {};
   for (const task of ws.tasks.filter((t) => t.kind === kind)) {
@@ -18,7 +18,7 @@ function currentTurnSeats(ws: Workspace, kind: TaskKind): Record<string, number>
   return counts;
 }
 
-function expectLedgerMatchesSeats(ws: Workspace, kind: TaskKind) {
+function expectLedgerMatchesSeats(ws: Workspace, kind: LoadKind) {
   const recount = currentTurnSeats(ws, kind);
   for (const ta of ws.tas) expect(ws.ledgers[kind].used[ta.id] ?? 0).toBe(recount[ta.id] ?? 0);
 }

@@ -10,7 +10,7 @@ covers. Every change is snapshotted, so you can undo or roll back.
 - **Dashboard**: the current turn, a liquid gauge per TA (used / capacity), upcoming dates, and a
   two-step swap of one TA's date with another's.
 - **Team**: add, rename and remove TAs; create sections and drag (or tap) TAs into each section's two slots.
-- **Tasks**: light or heavy (each kind has its own fairness counter; 1 or more TAs per date); three-step creation (name → schedule → preview of who gets each date) with one-time, daily,
+- **Tasks**: light, heavy or equal (light and heavy each have their own fairness counter; equal goes round the TAs in an order you choose; 1 or more TAs per date); three-step creation (name → schedule → preview of who gets each date) with one-time, daily,
   weekly, monthly or custom schedules; redistribute or delete a task; a task detail page.
 - **Calendar**: month grid of every occurrence; swap two dates between TAs.
 - **History**: a snapshot per change, with rollback, toast Undo, and a password-protected "delete history".
@@ -31,7 +31,19 @@ usage **resets** for the next turn, so a turn is never over-full even when a dat
 A task can need two or more TAs on each date. Every one of them is charged one unit, so a 2-TA task
 costs twice as much as a 1-TA task. The count is fixed when the task is created. Creating or
 redistributing fails with a clear message when fewer TAs hold section slots than the task needs;
-when the failure comes from removing a TA or redistributing, the message names the task.
+when the failure comes from removing a TA or redistributing, the message names the task. Those rules
+are for light and heavy tasks; an Equal task charges no units, and its limit is the number of TAs in
+its order.
+
+### Equal tasks
+
+An Equal task ignores sections and deals its dates round-robin over the TA order you pick when you
+create the task, so with TAs A, B and D the dates go A, B, D, A, B, D. Every TA on the Team page is
+listed in the wizard, and the "Team list order" button resets the order to the Team page's. A second
+Equal task starts again from its own first TA. The order is fixed at creation, so a TA added later
+does not join existing Equal tasks. When you remove a TA, their dates in an Equal task go to whoever
+in the order has the fewest dates in that task (ties go to the earlier TA in the order).
+Removing a TA is refused when an Equal task's order would become shorter than its TAs per date.
 
 ## Local development
 

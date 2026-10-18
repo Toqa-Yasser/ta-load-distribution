@@ -20,7 +20,7 @@ function hasTaId(ref: unknown): boolean {
 /**
  * The `command` of a JSON body, or null unless it is an object with a string `type` (and, for
  * `createTask`, a valid `kind`: the reducer would otherwise index a ledger that does not exist, and
- * a numeric `taCount` when present; for `swapOccurrences`, refs with a string `taId`). Finer checks
+ * a numeric `taCount` when present, and for an equal task a `taOrder` array of strings; for `swapOccurrences`, refs with a string `taId`). Finer checks
  * are the reducer's.
  */
 export async function readCommand(request: Request): Promise<Command | null> {
@@ -28,10 +28,11 @@ export async function readCommand(request: Request): Promise<Command | null> {
     const body: unknown = await request.json();
     const command = body && typeof body === "object" ? (body as { command?: unknown }).command : undefined;
     if (!command || typeof command !== "object") return null;
-    const { type, kind, taCount, a, b } = command as { type?: unknown; kind?: unknown; taCount?: unknown; a?: unknown; b?: unknown };
+    const { type, kind, taCount, taOrder, a, b } = command as { type?: unknown; kind?: unknown; taCount?: unknown; taOrder?: unknown; a?: unknown; b?: unknown };
     if (typeof type !== "string") return null;
     if (type === "createTask" && !isTaskKind(kind)) return null;
     if (type === "createTask" && taCount !== undefined && typeof taCount !== "number") return null;
+    if (type === "createTask" && kind === "equal" && !(Array.isArray(taOrder) && taOrder.every((id) => typeof id === "string"))) return null;
     if (type === "swapOccurrences" && !(hasTaId(a) && hasTaId(b))) return null;
     return command as Command;
   } catch {

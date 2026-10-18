@@ -8,7 +8,7 @@ const renderCard = (nextDates: { date: string; titles: string[] }[] = []) =>
       ta={{ id: "A", name: "Ahmed", color: "#f00" } as any}
       capacity={4}
       used={{ light: 2, heavy: 1 }}
-      counts={{ light: 3, heavy: 1 }}
+      counts={{ light: 3, heavy: 1, equal: 2 }}
       totalOccurrences={4}
       nextDates={nextDates}
       onSwap={() => {}}
@@ -19,7 +19,8 @@ test("TACard renders two gauges labelled Light and Heavy", () => {
   renderCard();
   expect(screen.getByLabelText("Ahmed light: 50% used")).toBeInTheDocument();
   expect(screen.getByLabelText("Ahmed heavy: 25% used")).toBeInTheDocument();
-  expect(screen.getByText("3 light · 1 heavy")).toBeInTheDocument();
+  expect(screen.getByText("3 light · 1 heavy · 2 equal")).toBeInTheDocument();
+  expect(screen.getAllByRole("img")).toHaveLength(2);
 });
 
 test("the kind captions under the gauges are neutral, so the TA colour is the card's only colour", () => {

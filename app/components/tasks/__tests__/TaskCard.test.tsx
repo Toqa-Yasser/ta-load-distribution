@@ -119,3 +119,12 @@ test("the subtitle uses fmtTaskSummary", () => {
   );
   expect(screen.getByText("One-time · Oct 20 · 2 TAs per date")).toHaveAttribute("title", "One-time · Oct 20 · 2 TAs per date");
 });
+
+test("an Equal task shows an Equal badge", () => {
+  render(
+    <MemoryRouter>
+      <TaskCard task={{ ...task, kind: "equal", taOrder: ["A"] }} onRedistribute={() => {}} onDelete={() => {}} />
+    </MemoryRouter>,
+  );
+  expect(screen.getByText("Equal")).toBeInTheDocument();
+});

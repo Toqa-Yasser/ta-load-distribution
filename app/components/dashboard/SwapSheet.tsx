@@ -5,7 +5,7 @@ import { Button } from "~/components/ui/Button";
 import { Sheet } from "~/components/ui/Sheet";
 import type { Occurrence, SeatRef, TA, Task } from "~/engine/types";
 import { useStepFocus } from "~/lib/focus";
-import { fmtDateLong } from "~/lib/format";
+import { fmtDateLong, withArticle } from "~/lib/format";
 import { swappableSeats } from "~/lib/swap";
 import { EASE_OUT, stepSlide, usePressMotion } from "~/lib/motion";
 import { useCommand } from "~/lib/use-command";
@@ -95,7 +95,7 @@ function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: SeatRef, b: 
   const step = first === null ? 0 : 1;
   const firstTask = first && workspace.tasks.find((t) => t.id === first.taskId);
   const firstOcc = firstTask?.occurrences.find((o) => o.id === first?.occurrenceId);
-  // Only tasks of the same kind can be swapped (each kind keeps its own ledger).
+  // Swaps stay within a kind: only tasks of the same kind can be swapped.
   const others =
     firstTask && firstOcc
       ? groupByTask(workspace.tasks, (task, occ) => swappableSeats({ task: firstTask, occ: firstOcc, taId: ta.id }, { task, occ }))
@@ -145,7 +145,7 @@ function SwapPicker({ ta, onSwap, onCancel }: { ta: TA; onSwap: (a: SeatRef, b: 
             {first === null ? (
               <OccurrenceList groups={mine} taById={taById} showOwner={false} onPick={pickFirst} />
             ) : others.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted">No other TA has a {firstTask?.kind} date to trade.</p>
+              <p className="py-6 text-center text-sm text-muted">No other TA has {firstTask ? withArticle(firstTask.kind) : "a"} date to trade.</p>
             ) : (
               <OccurrenceList groups={others} taById={taById} showOwner onPick={(b) => onSwap(first, b)} />
             )}

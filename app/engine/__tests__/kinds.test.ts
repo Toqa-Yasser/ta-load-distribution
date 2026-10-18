@@ -1,6 +1,6 @@
 import { reduce, describe as describeCmd } from "~/engine/reducer";
 import { emptyWorkspace } from "~/engine/empty";
-import { TASK_KINDS, ValidationError, type Command, type Ledger, type Occurrence, type SeatRef, type TaskKind, type Workspace } from "~/engine/types";
+import { LOAD_KINDS, TASK_KINDS, ValidationError, isLoadKind, type Command, type Ledger, type Occurrence, type SeatRef, type TaskKind, type Workspace } from "~/engine/types";
 import { ctx, team } from "./fixtures";
 
 const total = (l: Ledger) => Object.values(l.used).reduce((a, b) => a + b, 0);
@@ -19,9 +19,11 @@ function byName(ws: Workspace, used: Record<string, number>): Record<string, num
 
 const ref = (taskId: string, o: Occurrence): SeatRef => ({ taskId, occurrenceId: o.id, taId: o.seats[0].taId });
 
-test("TASK_KINDS lists light then heavy; empty workspace has two fresh ledgers", () => {
-  expect(TASK_KINDS).toEqual(["light", "heavy"]);
+test("TASK_KINDS adds equal after the load kinds; empty workspace has two fresh ledgers", () => {
+  expect(TASK_KINDS).toEqual(["light", "heavy", "equal"]);
+  expect(LOAD_KINDS).toEqual(["light", "heavy"]);
   expect(emptyWorkspace().ledgers).toEqual({ light: fresh, heavy: fresh });
+  expect(isLoadKind("equal")).toBe(false);
 });
 
 test('createTask kind:"heavy" charges only ledgers.heavy', () => {
@@ -44,7 +46,7 @@ test("createTask stores light kind and rejects an unknown kind", () => {
 test("light and heavy turns advance independently", () => {
   const { ws } = team();
   const out = daily(daily(ws, "heavy", 8), "light", 8);
-  for (const kind of TASK_KINDS) {
+  for (const kind of LOAD_KINDS) {
     expect(out.ledgers[kind].turn).toBe(1);
     expect(byName(out, out.ledgers[kind].used)).toEqual({ A: 1, B: 2, C: 2, D: 3 });
   }
@@ -69,7 +71,7 @@ test("removeTA re-deals each kind on its own ledger", () => {
   // Heavy: re-dealt within its own turn 1, total unchanged.
   expect(out.ledgers.heavy.turn).toBe(1);
   expect(total(out.ledgers.heavy)).toBe(3);
-  for (const kind of TASK_KINDS) expect(out.ledgers[kind].used[id("D")]).toBeUndefined();
+  for (const kind of LOAD_KINDS) expect(out.ledgers[kind].used[id("D")]).toBeUndefined();
 });
 
 test("redistributeAll resets both ledgers and re-deals light then heavy", () => {

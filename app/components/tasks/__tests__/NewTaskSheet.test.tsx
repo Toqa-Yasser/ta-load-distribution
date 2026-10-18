@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { createRoutesStub } from "react-router";
 import { CommandToasts } from "~/components/layout/CommandToasts";
@@ -14,6 +14,19 @@ vi.mock("motion/react", async (orig) => ({
   useReducedMotion: () => true,
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
 }));
+
+// Counts revalidation requests; the real revalidator still runs.
+const revalidations = { count: 0 };
+vi.mock("react-router", async (orig) => {
+  const rr = await orig<typeof import("react-router")>();
+  return {
+    ...rr,
+    useRevalidator: () => {
+      const r = rr.useRevalidator();
+      return { ...r, revalidate: () => (revalidations.count++, r.revalidate()) };
+    },
+  };
+});
 
 const ws: Workspace = { ...emptyWorkspace(), tas: [{ id: "A", name: "Ahmed", color: "#f00" }] };
 const wsTwo: Workspace = {
@@ -222,4 +235,79 @@ test("a NotEnoughTAsError from the preview renders in the preview error block", 
   const alert = await screen.findByRole("alert");
   expect(alert).toHaveTextContent(message);
   expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
+});
+
+async function confirmAndSend() {
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(await screen.findByRole("radio", { name: "One-time" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  const confirm = await screen.findByRole("button", { name: "Confirm" });
+  await waitFor(() => expect(confirm).toBeEnabled());
+  fireEvent.click(confirm);
+  await waitFor(() => expect(bodies.command).toHaveLength(1));
+}
+
+test("an equal task sends taOrder in team order and caps TAs per date by the team size", async () => {
+  current.ws = wsOne;
+  setup({});
+  fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Quiz" } });
+  expect(screen.getByRole("spinbutton", { name: "TAs per date" })).toHaveAttribute("aria-valuemax", "1");
+  fireEvent.click(screen.getByRole("radio", { name: "Equal" }));
+  expect(screen.getByRole("spinbutton", { name: "TAs per date" })).toHaveAttribute("aria-valuemax", "2");
+  expect(screen.getByRole("list", { name: "Order" })).toBeInTheDocument();
+  await confirmAndSend();
+  expect(bodies.preview[0]).toMatchObject({ type: "createTask", kind: "equal", taOrder: ["A", "B"] });
+  expect(bodies.command[0]).toMatchObject({ command: { type: "createTask", kind: "equal", taOrder: ["A", "B"] } });
+});
+
+test("a light task sends no taOrder", async () => {
+  current.ws = wsTwo;
+  setup({});
+  fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Quiz" } });
+  await confirmAndSend();
+  expect(bodies.preview[0]).toMatchObject({ kind: "light" });
+  expect(bodies.preview[0]).not.toHaveProperty("taOrder");
+  expect(bodies.command[0].command).not.toHaveProperty("taOrder");
+});
+
+test("the order sent is reconciled with the current team", async () => {
+  current.ws = wsTwo;
+  setup({});
+  fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Quiz" } });
+  fireEvent.click(screen.getByRole("radio", { name: "Equal" }));
+  fireEvent.click(screen.getByRole("button", { name: "Move Ahmed down" }));
+  // Ahmed leaves and Carla joins while the wizard is open; the next render sees the new team.
+  current.ws = { ...wsTwo, tas: [wsTwo.tas[1], { id: "C", name: "Carla", color: "#00f" }] };
+  fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Quiz 2" } });
+  const items = within(screen.getByRole("list", { name: "Order" })).getAllByRole("listitem");
+  expect(items).toHaveLength(2);
+  expect(within(items[0]).getByText("Bassem")).toBeInTheDocument();
+  expect(within(items[1]).getByText("Carla")).toBeInTheDocument();
+  await confirmAndSend();
+  expect(bodies.preview[0]).toMatchObject({ kind: "equal", taOrder: ["B", "C"] });
+  expect(bodies.command[0]).toMatchObject({ command: { kind: "equal", taOrder: ["B", "C"] } });
+});
+
+test("with no TAs the order list is replaced by the message and Next is disabled", async () => {
+  current.ws = emptyWorkspace();
+  setup({});
+  fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Quiz" } });
+  expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+  fireEvent.click(screen.getByRole("radio", { name: "Equal" }));
+  expect(screen.getByText("Add TAs on the Team page first.")).toBeInTheDocument();
+  expect(screen.queryByRole("list", { name: "Order" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+});
+
+test("the wizard refreshes the team data when it opens and again before the preview", async () => {
+  revalidations.count = 0;
+  setup({});
+  fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Quiz" } });
+  await waitFor(() => expect(revalidations.count).toBe(1));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(await screen.findByRole("radio", { name: "One-time" }));
+  expect(revalidations.count).toBe(1);
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  await waitFor(() => expect(bodies.preview).toHaveLength(1));
+  expect(revalidations.count).toBe(2);
 });

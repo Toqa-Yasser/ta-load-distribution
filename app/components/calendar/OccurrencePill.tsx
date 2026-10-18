@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { KIND_DOT } from "~/components/tasks/KindBadge";
 import { KIND_LABEL, type Occurrence, type TA, type Task } from "~/engine/types";
 import { fmtDate } from "~/lib/format";
 import { usePressMotion } from "~/lib/motion";
@@ -72,7 +73,7 @@ export function OccurrencePill({ task, occ, tas, selected, swapRole, onClick }: 
       <span
         aria-hidden
         data-kind={task.kind}
-        className={`size-1.5 shrink-0 rounded-full ${task.kind === "heavy" ? "bg-heavy" : "bg-light"}`}
+        className={`size-1.5 shrink-0 rounded-full ${KIND_DOT[task.kind]}`}
       />
       <span className="min-w-0 flex-1 truncate">{task.title}</span>
       {swapRole === "source" && (

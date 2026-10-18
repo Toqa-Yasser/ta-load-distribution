@@ -15,13 +15,21 @@ export interface Seat { taId: string; turn: number }
 /** A date of a task; `seats` holds one entry per co-staffing TA, all distinct. */
 export interface Occurrence { id: string; date: ISODate; seats: Seat[] }
 
-export type TaskKind = "light" | "heavy";
+export type TaskKind = "light" | "heavy" | "equal";
 
-/** Light and heavy tasks are shared out independently, each with its own turn ledger. */
-export const TASK_KINDS = ["light", "heavy"] as const satisfies readonly TaskKind[];
+/** Kinds shared out by section load; each has its own turn ledger. Equal tasks have none. */
+export type LoadKind = "light" | "heavy";
+
+export const TASK_KINDS = ["light", "heavy", "equal"] as const satisfies readonly TaskKind[];
+
+export const LOAD_KINDS = ["light", "heavy"] as const satisfies readonly LoadKind[];
 
 /** Display name of each kind; shared by the badge, filters, gauges and calendar pills. */
-export const KIND_LABEL: Record<TaskKind, string> = { light: "Light", heavy: "Heavy" };
+export const KIND_LABEL: Record<TaskKind, string> = { light: "Light", heavy: "Heavy", equal: "Equal" };
+
+export function isLoadKind(kind: TaskKind): kind is LoadKind {
+  return (LOAD_KINDS as readonly string[]).includes(kind);
+}
 
 export function isTaskKind(value: unknown): value is TaskKind {
   return (TASK_KINDS as readonly unknown[]).includes(value);
@@ -37,13 +45,15 @@ export interface Task {
   /** How many distinct TAs cover each date. */
   taCount: number;
   occurrences: Occurrence[];
+  /** Equal tasks only: the TAs in rotation order. */
+  taOrder?: string[];
 }
 
 export interface Ledger { turn: number; used: Record<string, number> }
 
 export interface Semester { name: string; start: ISODate; end: ISODate }
 
-export interface Workspace { semester: Semester; tas: TA[]; sections: Section[]; tasks: Task[]; ledgers: Record<TaskKind, Ledger> }
+export interface Workspace { semester: Semester; tas: TA[]; sections: Section[]; tasks: Task[]; ledgers: Record<LoadKind, Ledger> }
 
 export type OccurrenceRef = { taskId: string; occurrenceId: string };
 
@@ -59,7 +69,7 @@ export type Command =
   | { type: "setSectionSlot"; sectionId: string; slot: 0 | 1; taId: string | null }
   | { type: "removeSection"; sectionId: string }
   | { type: "setSemester"; semester: Semester }
-  | { type: "createTask"; kind: TaskKind; title: string; notes?: string; schedule: Schedule; taCount?: number }
+  | { type: "createTask"; kind: TaskKind; title: string; notes?: string; schedule: Schedule; taCount?: number; taOrder?: string[] }
   /** `notes: null` clears the notes; omitting it keeps them. The kind cannot be changed. */
   | { type: "updateTask"; taskId: string; title?: string; notes?: string | null; schedule?: Schedule }
   | { type: "deleteTask"; taskId: string }
@@ -92,8 +102,10 @@ export class NotEnoughTAsError extends EngineError {
     public readonly needed: number,
     public readonly available: number,
     public readonly taskTitle?: string,
+    public readonly reason: "sections" | "order" = "sections",
   ) {
-    const rest = `but only ${available} ${available === 1 ? "has" : "have"} sections.`;
+    const tail = reason === "order" ? `${available} ${available === 1 ? "is" : "are"} in its order.` : `${available} ${available === 1 ? "has" : "have"} sections.`;
+    const rest = `but only ${tail}`;
     super(
       taskTitle === undefined ? `This task needs ${needed} TAs ${rest}` : `"${taskTitle}" needs ${needed} TAs on each date ${rest}`,
       "NOT_ENOUGH_TAS",

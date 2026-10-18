@@ -1,5 +1,5 @@
 import { format, parseISO } from "date-fns";
-import type { ISODate, Schedule, Task } from "~/engine/types";
+import type { ISODate, Schedule, Task, TaskKind } from "~/engine/types";
 
 /** "Oct 20" */
 export function fmtDate(iso: ISODate): string {
@@ -40,4 +40,9 @@ export function fmtTaskSummary(task: Pick<Task, "schedule" | "taCount">): string
 /** "1 occurrence", "3 occurrences" */
 export function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+/** "a light", "a heavy", "an equal" */
+export function withArticle(kind: TaskKind): string {
+  return `${kind === "equal" ? "an" : "a"} ${kind}`;
 }
