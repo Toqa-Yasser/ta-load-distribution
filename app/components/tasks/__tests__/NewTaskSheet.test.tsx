@@ -15,6 +15,19 @@ vi.mock("motion/react", async (orig) => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+// Counts revalidation requests; the real revalidator still runs.
+const revalidations = { count: 0 };
+vi.mock("react-router", async (orig) => {
+  const rr = await orig<typeof import("react-router")>();
+  return {
+    ...rr,
+    useRevalidator: () => {
+      const r = rr.useRevalidator();
+      return { ...r, revalidate: () => (revalidations.count++, r.revalidate()) };
+    },
+  };
+});
+
 const ws: Workspace = { ...emptyWorkspace(), tas: [{ id: "A", name: "Ahmed", color: "#f00" }] };
 const wsTwo: Workspace = {
   ...ws,
@@ -284,4 +297,17 @@ test("with no TAs the order list is replaced by the message and Next is disabled
   expect(screen.getByText("Add TAs on the Team page first.")).toBeInTheDocument();
   expect(screen.queryByRole("list", { name: "Order" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+});
+
+test("the wizard refreshes the team data when it opens and again before the preview", async () => {
+  revalidations.count = 0;
+  setup({});
+  fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Quiz" } });
+  await waitFor(() => expect(revalidations.count).toBe(1));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(await screen.findByRole("radio", { name: "One-time" }));
+  expect(revalidations.count).toBe(1);
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  await waitFor(() => expect(bodies.preview).toHaveLength(1));
+  expect(revalidations.count).toBe(2);
 });

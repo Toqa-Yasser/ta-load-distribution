@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useRevalidator } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Sheet, SHEET_ACTIONS } from "~/components/ui/Sheet";
 import { eligibleCount } from "~/engine/capacity";
@@ -69,6 +69,14 @@ function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
   });
   const [dir, setDir] = useState(1);
   const stepFocus = useStepFocus();
+  // Root data is not refetched on focus, and neither ?new=1 nor a preview revalidates it, so a team
+  // changed in another tab would stay stale here. Refresh it when the sheet opens and before a preview.
+  const revalidator = useRevalidator();
+  const refresh = () => {
+    if (revalidator.state !== "loading") void revalidator.revalidate();
+  };
+  // Once per open: the wizard mounts fresh each time the sheet opens.
+  useEffect(() => refresh(), []);
   const preview = useFetcher<PreviewResult>();
   // fetcher.data still holds the previous answer while a new preview is in flight.
   const [staleData, setStaleData] = useState<PreviewResult | undefined>(undefined);
@@ -127,6 +135,7 @@ function Wizard({ open, initialKind, onDone, onCancel }: WizardProps) {
 
   const go = (next: Step) => {
     if (next === 2) {
+      refresh();
       setStaleData(preview.data);
       // Runs the reducer on the server without saving.
       preview.submit(JSON.stringify({ command: command() }), {
