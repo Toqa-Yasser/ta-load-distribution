@@ -42,6 +42,8 @@ test("Team list order resets to team order and is disabled when already matching
   expect(onChange).toHaveBeenCalledWith(["A", "B", "C"]);
   rerender(<TAOrderList tas={tas} order={["A", "B", "C"]} onChange={onChange} />);
   expect(screen.getByRole("button", { name: "Team list order" })).toBeDisabled();
+  // The pressed button is now disabled, so focus moves to the first row instead of <body>.
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Move Ahmed down" }));
 });
 
 test("with no TAs it shows the message and no list", () => {

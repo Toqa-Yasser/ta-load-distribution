@@ -23,7 +23,8 @@ export function TAOrderList({ tas, order, onChange }: TAOrderListProps) {
 
   // Moving a row re-parents its DOM node (which blurs it), and a row at a bound disables the pressed
   // button; either way focus would drop to <body>. Put it back on the moved TA's button, or its other
-  // button once the pressed one is disabled.
+  // button once the pressed one is disabled. "Team list order" disables itself too, so it hands focus
+  // to the first row's down button.
   const key = ids.join(" ");
   useEffect(() => {
     const m = moved.current;
@@ -43,6 +44,10 @@ export function TAOrderList({ tas, order, onChange }: TAOrderListProps) {
     moved.current = { id: ids[i], dir };
     onChange(next);
   };
+  const reset = () => {
+    moved.current = { id: teamOrder[0], dir: "down" };
+    onChange(teamOrder);
+  };
   const bind = (id: string, dir: Dir) => (el: HTMLButtonElement | null) => {
     if (el) buttons.current.set(`${id}:${dir}`, el);
     else buttons.current.delete(`${id}:${dir}`);
@@ -50,7 +55,7 @@ export function TAOrderList({ tas, order, onChange }: TAOrderListProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <Button variant="ghost" size="sm" className="self-start" disabled={isTeamOrder} onClick={() => onChange(teamOrder)}>
+      <Button variant="ghost" size="sm" className="self-start" disabled={isTeamOrder} onClick={reset}>
         Team list order
       </Button>
       <ol aria-label="Order" className="flex flex-col divide-y divide-line rounded-field border border-line">
