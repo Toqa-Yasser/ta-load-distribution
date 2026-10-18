@@ -27,16 +27,16 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
     const kind = task?.kind ?? "light";
     const taById = new Map(preview.tas.map((t) => [t.id, t]));
     const occurrences = task?.occurrences ?? [];
-    if (task && !isLoadKind(kind)) {
+    if (!isLoadKind(kind)) {
       // Equal tasks keep no ledger: show how many dates each TA in the order holds.
-      const perTa = (task.taOrder ?? []).map((id) => ({
+      const perTa = (task?.taOrder ?? []).map((id) => ({
         ta: taById.get(id),
         dates: occurrences.filter((o) => o.seats.some((s) => s.taId === id)).length,
       }));
       return { kind, occurrences, taById, gauges: null, perTa };
     }
     // Load kinds are dealt from their own ledger, so the gauges show the one this task draws on.
-    const ledger = preview.ledgers[isLoadKind(kind) ? kind : "light"];
+    const ledger = preview.ledgers[kind];
     const caps = capacities(preview);
     const gauges = preview.tas.map((ta) => {
       const capacity = caps[ta.id] ?? 0;
