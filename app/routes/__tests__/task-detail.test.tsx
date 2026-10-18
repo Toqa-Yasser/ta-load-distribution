@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { createRoutesStub, data } from "react-router";
 import { emptyWorkspace } from "~/engine/empty";
 import type { Workspace } from "~/engine/types";
@@ -69,4 +69,28 @@ test("a co-staffed date shows a chip per seat, and the header shows the TA count
   } finally {
     ws.tasks[0] = saved;
   }
+});
+
+test("the detail page lists the order of an equal task", async () => {
+  const saved = ws.tasks[0];
+  ws.tasks[0] = { ...saved, kind: "equal", taOrder: ["B", "A", "Z"] };
+  try {
+    const Stub = createRoutesStub([{ path: "/tasks/:taskId", Component: TaskDetail as never }]);
+    render(<ToastProvider><Stub initialEntries={["/tasks/t"]} /></ToastProvider>);
+    const list = await screen.findByRole("list", { name: "Order" });
+    const items = within(list).getAllByRole("listitem");
+    expect(items).toHaveLength(3);
+    expect(items[0]).toHaveTextContent("Bassem");
+    expect(items[1]).toHaveTextContent("Ahmed");
+    expect(items[2]).toHaveTextContent("Removed TA");
+  } finally {
+    ws.tasks[0] = saved;
+  }
+});
+
+test("a light or heavy task renders no order list", async () => {
+  const Stub = createRoutesStub([{ path: "/tasks/:taskId", Component: TaskDetail as never }]);
+  render(<ToastProvider><Stub initialEntries={["/tasks/t"]} /></ToastProvider>);
+  await screen.findByRole("heading", { name: "Quiz" });
+  expect(screen.queryByRole("list", { name: "Order" })).toBeNull();
 });

@@ -9,7 +9,7 @@ import Tasks from "~/routes/tasks";
 const task = (id: string, title: string, kind: Task["kind"]): Task => ({
   id, title, kind, createdAt: "", taCount: 1, schedule: { type: "one-time", date: "2026-10-20" }, occurrences: [],
 });
-const ws: Workspace = { ...emptyWorkspace(), tasks: [task("a", "Quiz", "light"), task("b", "Exam", "heavy"), task("c", "Lab", "light")] };
+const ws: Workspace = { ...emptyWorkspace(), tasks: [task("a", "Quiz", "light"), task("b", "Exam", "heavy"), task("c", "Lab", "light"), { ...task("d", "Rota", "equal"), taOrder: ["A"] }] };
 
 vi.mock("~/lib/use-workspace", () => ({ useWorkspace: () => ({ workspace: ws, today: "2026-10-17", taById: new Map() }) }));
 
@@ -30,7 +30,30 @@ test("tasks page filters by ?kind", async () => {
   const chips = screen.getByRole("group", { name: "Filter by kind" });
   expect(within(chips).getByRole("button", { name: "Heavy" })).toHaveAttribute("aria-pressed", "true");
   expect(within(chips).getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "false");
-  expect(screen.getByText("2 light · 1 heavy")).toBeInTheDocument();
+  expect(screen.getByText("2 light · 1 heavy · 1 equal")).toBeInTheDocument();
+});
+
+test("tasks page filters by ?kind=equal", async () => {
+  renderAt("/tasks?kind=equal");
+  expect(await screen.findByText("Rota")).toBeInTheDocument();
+  expect(screen.queryByText("Quiz")).not.toBeInTheDocument();
+  expect(screen.queryByText("Exam")).not.toBeInTheDocument();
+  const chips = screen.getByRole("group", { name: "Filter by kind" });
+  expect(within(chips).getByRole("button", { name: "Equal" })).toHaveAttribute("aria-pressed", "true");
+  expect(within(chips).getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "false");
+});
+
+test("the equal filter with no equal tasks shows the empty state", async () => {
+  const saved = ws.tasks;
+  ws.tasks = saved.filter((t) => t.kind === "light");
+  try {
+    renderAt("/tasks?kind=equal");
+    expect(await screen.findByRole("heading", { name: "No equal tasks yet" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show all tasks" }));
+    expect(await screen.findByText("Quiz")).toBeInTheDocument();
+  } finally {
+    ws.tasks = saved;
+  }
 });
 
 test("tasks page shows every task and a kind badge without a filter", async () => {
