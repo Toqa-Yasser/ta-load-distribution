@@ -24,17 +24,26 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
   const view = useMemo(() => {
     if (!preview) return null;
     const task = preview.tasks[preview.tasks.length - 1];
-    // Each kind is dealt from its own ledger, so the gauges show the one this task draws on.
     const kind = task?.kind ?? "light";
-    const ledger = isLoadKind(kind) ? preview.ledgers[kind] : undefined; // Equal tasks keep no ledger.
-    const caps = capacities(preview);
     const taById = new Map(preview.tas.map((t) => [t.id, t]));
+    const occurrences = task?.occurrences ?? [];
+    if (task && !isLoadKind(kind)) {
+      // Equal tasks keep no ledger: show how many dates each TA in the order holds.
+      const perTa = (task.taOrder ?? []).map((id) => ({
+        ta: taById.get(id),
+        dates: occurrences.filter((o) => o.seats.some((s) => s.taId === id)).length,
+      }));
+      return { kind, occurrences, taById, gauges: null, perTa };
+    }
+    // Load kinds are dealt from their own ledger, so the gauges show the one this task draws on.
+    const ledger = preview.ledgers[isLoadKind(kind) ? kind : "light"];
+    const caps = capacities(preview);
     const gauges = preview.tas.map((ta) => {
       const capacity = caps[ta.id] ?? 0;
-      const used = ledger?.used[ta.id] ?? 0;
+      const used = ledger.used[ta.id] ?? 0;
       return { ta, capacity, used, value: capacity === 0 ? 0 : used / capacity };
     });
-    return { kind, occurrences: task?.occurrences ?? [], taById, gauges };
+    return { kind, occurrences, taById, gauges, perTa: null };
   }, [preview]);
 
   if (error) {
@@ -97,17 +106,28 @@ export function StepPreview({ preview, taskTitle, loading, error }: StepPreviewP
         <h3 id="preview-after" className="mb-3 text-sm font-semibold text-muted">
           After this {view.kind} task
         </h3>
-        <div className="grid grid-cols-3 gap-3 md:grid-cols-2">
-          {view.gauges.map(({ ta, capacity, used, value }) => (
-            <Gauge
-              key={ta.id}
-              size={64}
-              value={value}
-              color={ta.color}
-              label={capacity === 0 ? `${ta.name} · no slots` : `${ta.name} · ${used}/${capacity}`}
-            />
-          ))}
-        </div>
+        {view.perTa ? (
+          <ul aria-label="Dates per TA" className="flex flex-col gap-2">
+            {view.perTa.map(({ ta, dates }, i) => (
+              <li key={ta?.id ?? i} className="flex items-center gap-2 text-sm">
+                <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: ta?.color }} />
+                <span>{`${ta?.name ?? "Removed TA"} · ${plural(dates, "date", "dates")}`}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="grid grid-cols-3 gap-3 md:grid-cols-2">
+            {view.gauges?.map(({ ta, capacity, used, value }) => (
+              <Gauge
+                key={ta.id}
+                size={64}
+                value={value}
+                color={ta.color}
+                label={capacity === 0 ? `${ta.name} · no slots` : `${ta.name} · ${used}/${capacity}`}
+              />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
