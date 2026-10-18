@@ -94,6 +94,7 @@ export const CloseIcon = icon("Close", <path d="M6 6l12 12M18 6L6 18" />);
 export const ChevronLeftIcon = icon("ChevronLeft", <path d="M15 6l-6 6 6 6" />);
 export const ChevronRightIcon = icon("ChevronRight", <path d="M9 6l6 6-6 6" />);
 export const ChevronDownIcon = icon("ChevronDown", <path d="M6 9l6 6 6-6" />);
+export const ChevronUpIcon = icon("ChevronUp", <path d="M6 15l6-6 6 6" />);
 export const TrashIcon = icon("Trash", <path d="M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />);
 export const SwapIcon = icon("Swap", <path d="M7 4L4 7l3 3M4 7h12a4 4 0 0 1 4 4M17 20l3-3-3-3M20 17H8a4 4 0 0 1-4-4" />);
 
