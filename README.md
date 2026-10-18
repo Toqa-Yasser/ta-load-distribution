@@ -31,7 +31,9 @@ usage **resets** for the next turn, so a turn is never over-full even when a dat
 A task can need two or more TAs on each date. Every one of them is charged one unit, so a 2-TA task
 costs twice as much as a 1-TA task. The count is fixed when the task is created. Creating or
 redistributing fails with a clear message when fewer TAs hold section slots than the task needs;
-when the failure comes from removing a TA or redistributing, the message names the task.
+when the failure comes from removing a TA or redistributing, the message names the task. Those rules
+are for light and heavy tasks; an Equal task charges no units, and its limit is the number of TAs in
+its order.
 
 ### Equal tasks
 
@@ -41,6 +43,7 @@ listed in the wizard, and the "Team list order" button resets the order to the T
 Equal task starts again from its own first TA. The order is fixed at creation, so a TA added later
 does not join existing Equal tasks. When you remove a TA, their dates in an Equal task go to whoever
 in the order has the fewest dates in that task (ties go to the earlier TA in the order).
+Removing a TA is refused when an Equal task's order would become shorter than its TAs per date.
 
 ## Local development
 
